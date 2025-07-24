@@ -75,3 +75,25 @@ $Enemy4 = @{
     )
     #https://www.asciiart.eu/mythology/dragons
 }
+
+$Enemy5 = @{
+    Name    = "Test5"
+    Level   = 4
+    HP      = 28
+    Attack  = 5
+    Defense = 2
+    MP      = 0
+    BaseXP  = 5
+    Spells  = @() # Add spell names here later
+    Art     = @(
+        "                       ",
+        "       __________      ",
+        "      /          \     ",
+        "      |   \   /  |     ",
+        "      |     O    |     ",
+        "      |          |     ",
+        "      |/\/\/\/\/\|     ",
+        "                       ",
+        "                       "
+    )
+}
