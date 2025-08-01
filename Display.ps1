@@ -120,6 +120,7 @@ $Maps = @{
     "Town"     = $TownMap
     "Dungeon"  = $DungeonMap
     "DungeonMap2" = $DungeonMap2
+    "RandomizedDungeon" = $global:RandomizedDungeon
     # Add more maps here, e.g. "Shop" = $ShopMap
 }
 
@@ -144,6 +145,11 @@ $DoorRegistry = @{
     "Dungeon,42,24" = @{ Map = "DungeonMap2";    X = 42; Y = 24 }
     "DungeonMap2,42,10" = @{ Map = "Dungeon";    X = 42; Y = 24 }
     # Add more doors for other maps here
+}
+
+# Add randomized dungeon door registry entry after the dungeon is generated
+if ($global:RandomDungeonEntrance) {
+    $DoorRegistry["RandomizedDungeon,$($global:RandomDungeonEntrance.X),$($global:RandomDungeonEntrance.Y)"] = @{ Map = "Town"; X = 70; Y = 26 }
 }
 
 # Function to draw the current viewport of the map
@@ -365,6 +371,27 @@ try {
                     $playerX = $dest.X
                     $playerY = $dest.Y
                 }
+            }
+
+            # Randomized dungeon entrance: step on 'R' symbol
+            if ($currentMap[$playerY][$playerX] -eq 'R') {
+                Write-Host "Entering the randomized dungeon..." -ForegroundColor Green
+                Start-Sleep -Milliseconds 500
+                
+                # Generate a new randomized dungeon each time
+                $global:RandomizedDungeon = New-RandomizedDungeon
+                $Maps["RandomizedDungeon"] = $global:RandomizedDungeon
+                
+                # Add door registry entry for exiting the dungeon
+                $exitKey = "RandomizedDungeon,$($global:RandomDungeonEntrance.X),$($global:RandomDungeonEntrance.Y)"
+                $DoorRegistry[$exitKey] = @{ Map = "Town"; X = 70; Y = 26 }
+                
+                # Transition to the dungeon
+                & $TransitionEffects[$ChosenTransition] $boxWidth $boxHeight
+                $CurrentMapName = "RandomizedDungeon"
+                $currentMap = $Maps[$CurrentMapName]
+                $playerX = $global:RandomDungeonEntrance.X
+                $playerY = $global:RandomDungeonEntrance.Y
             }
 
             # Random battle trigger in Dungeon (with cooldown)

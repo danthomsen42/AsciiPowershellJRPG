@@ -41,7 +41,7 @@ $TownMap = @(
     "#................................................................................#",
     "#................................................................................#",
     "#................................................................................#",
-    "#........................B.......................................................#",
+    "#........................B....................................R..................#",
     "#................................................................................#",
     "#................................................................................#",
     "#....................+...........................................................#",
@@ -150,3 +150,53 @@ $DungeonMap2 = @(
     "#....................+...........................................................#",
     "##################################################################################"
 )
+
+# Load procedural map generation system
+. "$PSScriptRoot\ProceduralMaps.ps1"
+
+# Generate a randomized dungeon for the 'R' entrance
+function New-RandomizedDungeon {
+    # Generate a room-based dungeon with random seed
+    $randomSeed = Get-Random
+    $procMap = New-ProceduralMap -Type "room" -Width 78 -Height 28 -Seed $randomSeed
+    
+    # Find a suitable entrance location (search bottom half of map for floor tiles)
+    $entranceFound = $false
+    for ($y = $procMap.Count - 2; $y -ge [math]::Floor($procMap.Count / 2) -and -not $entranceFound; $y--) {
+        for ($x = 35; $x -lt 45; $x++) {
+            if ($procMap[$y][$x] -eq '.') {
+                $row = $procMap[$y].ToCharArray()
+                $row[$x] = '+'
+                $procMap[$y] = -join $row
+                
+                # Store entrance coordinates for later use
+                $global:RandomDungeonEntrance = @{ X = $x; Y = $y }
+                $entranceFound = $true
+                break
+            }
+        }
+    }
+    
+    # If no entrance found in center, find any floor tile in the bottom half
+    if (-not $entranceFound) {
+        for ($y = $procMap.Count - 2; $y -ge [math]::Floor($procMap.Count / 2) -and -not $entranceFound; $y--) {
+            for ($x = 1; $x -lt $procMap[0].Length - 1; $x++) {
+                if ($procMap[$y][$x] -eq '.') {
+                    $row = $procMap[$y].ToCharArray()
+                    $row[$x] = '+'
+                    $procMap[$y] = -join $row
+                    
+                    # Store entrance coordinates for later use
+                    $global:RandomDungeonEntrance = @{ X = $x; Y = $y }
+                    $entranceFound = $true
+                    break
+                }
+            }
+        }
+    }
+    
+    return $procMap
+}
+
+# Initialize the randomized dungeon
+$global:RandomizedDungeon = New-RandomizedDungeon
