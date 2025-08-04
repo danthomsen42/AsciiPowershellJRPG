@@ -22,8 +22,69 @@ function Draw-CombatViewport {
         Write-Host $row -ForegroundColor DarkGray
     }
     Write-Host ("+" + ("-" * $boxWidth) + "+") -ForegroundColor Yellow
-    Write-Host "Press R to Run away and return to the map." -ForegroundColor Cyan
-    [System.Console]::Out.Flush()
+}
+
+# Function to display combat messages in a fixed area
+function Write-CombatMessage {
+    param($Message, $Color = "White", $CurrentTurn = "")
+    
+    # Ultra-simple approach: just write the message without any positioning
+    # This prevents scrolling completely
+    if ($CurrentTurn -ne "") {
+        Write-Host ">>> $CurrentTurn <<< $Message" -ForegroundColor $Color
+    } else {
+        Write-Host $Message -ForegroundColor $Color
+    }
+}
+
+# Function to create turn order based on Speed stats
+function New-TurnOrder {
+    param($Player, $Enemy)
+    
+    # Create combatants array with speed and type info
+    $combatants = @()
+    
+    # Add player to combatants
+    $combatants += @{
+        Name = $Player.Name
+        Speed = $Player.Speed
+        Type = "Player"
+        Entity = $Player
+    }
+    
+    # Add enemy to combatants  
+    $combatants += @{
+        Name = $Enemy.Name
+        Speed = $Enemy.Speed
+        Type = "Enemy"
+        Entity = $Enemy
+    }
+    
+    # Sort by Speed (highest first), with random tiebreaker
+    $turnOrder = $combatants | Sort-Object { $_.Speed + (Get-Random -Minimum 0.0 -Maximum 1.0) } -Descending
+    
+    return $turnOrder
+}
+
+# Function to display turn order to player
+function Show-TurnOrder {
+    param($TurnOrder, $CurrentTurnIndex)
+    
+    $orderText = "Turn Order: "
+    for ($i = 0; $i -lt $TurnOrder.Count; $i++) {
+        $combatant = $TurnOrder[$i]
+        if ($i -eq $CurrentTurnIndex) {
+            $orderText += "[$($combatant.Name)]"
+        } else {
+            $orderText += "$($combatant.Name)"
+        }
+        if ($i -lt $TurnOrder.Count - 1) {
+            $orderText += " → "
+        }
+    }
+    
+    # Simple approach - just display the turn order
+    Write-Host $orderText -ForegroundColor Cyan
 }
 # Set console output encoding to UTF-8 for Unicode support
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -237,71 +298,362 @@ try {
 
 
 
+                # Initialize battle state
+                $playerDefending = $false
                 $inCombat = $true
-                while ($inCombat) {
-                    # Draw combat viewport with HP info
-                    [System.Console]::SetCursorPosition(0, 0)
+                
+                # Create turn order based on Speed stats
+                $turnOrder = New-TurnOrder $player $enemy
+                $currentTurnIndex = 0
+                $maxTurns = 100  # Prevent infinite loops
+                $turnCount = 0
+                
+                while ($inCombat -and $turnCount -lt $maxTurns) {
+                    $turnCount++
+                    
+                    # Simple safe approach: minimal clear at start of each combat round
+                    # Clear screen only once per turn to reset everything cleanly
+                    [System.Console]::Clear()
+                    
+                    # Redraw the essential combat interface (static elements)
                     Draw-CombatViewport $enemyArt $EnemyName $boxWidth $boxHeight
+                    Write-Host "Combat Controls: A=Attack   D=Defend   S=Spells   I=Items   R=Run" -ForegroundColor Cyan
+                    
+                    # Calculate and display current stats
                     $enemyHPDisplay = [math]::Max(0, $enemy.HP)
+                    $enemyMPDisplay = [math]::Max(0, $enemy.MP)
                     $playerHPDisplay = [math]::Max(0, $player.HP)
+                    $playerMPDisplay = [math]::Max(0, $player.MP)
                     $playerHPStr = $playerHPDisplay.ToString().PadRight(4)
                     $playerMaxHPStr = $player.MaxHP.ToString().PadRight(4)
+                    $playerMPStr = $playerMPDisplay.ToString().PadRight(4)
+                    $playerMaxMPStr = $player.MaxMP.ToString().PadRight(4)
                     $enemyHPStr = $enemyHPDisplay.ToString().PadRight(4)
-                    Write-Host ("Player HP: $playerHPStr/$playerMaxHPStr   Enemy HP: $enemyHPStr    ") -ForegroundColor White
-                    Write-Host "X: Attack   R: Run" -ForegroundColor Cyan
-                    $input = [System.Console]::ReadKey($true)
-                    if ($input.Key -eq "X") {
-                        $damage = [math]::Max(1, $player.Attack - $enemy.Defense)
-                        $enemy.HP -= $damage
-                        Write-Host "You attack $EnemyName for $damage damage!"
-                        Start-Sleep -Milliseconds 500
-                        if ($enemy.HP -le 0) {
-                            $xpGained = $enemy.Level * $enemy.BaseXP
-                            $player.XP += $xpGained
-                            Write-Host "$EnemyName defeated! You gained $xpGained XP. Total XP: $($player.XP)"
-                            # Update save state for monster kill (save only here)
-                            $SaveState.Player.XP = $player.XP
-                            $SaveState.Player.MonstersDefeated++
-                            if (-not $SaveState.Monsters.ContainsKey($EnemyName)) {
-                                $SaveState.Monsters[$EnemyName] = 0
+                    $enemyMaxHPStr = $enemy.MaxHP.ToString().PadRight(4)
+                    $enemyMPStr = $enemyMPDisplay.ToString().PadRight(4)
+                    $enemyMaxMPStr = $enemy.MaxMP.ToString().PadRight(4)
+                    
+                    Write-Host ("Player HP: $playerHPStr/$playerMaxHPStr   MP: $playerMPStr/$playerMaxMPStr") -ForegroundColor White
+                    Write-Host ("Enemy  HP: $enemyHPStr/$enemyMaxHPStr   MP: $enemyMPStr/$enemyMaxMPStr") -ForegroundColor Yellow
+                    
+                    # Show turn order
+                    Show-TurnOrder $turnOrder $currentTurnIndex
+                    
+                    # Get current combatant
+                    $currentCombatant = $turnOrder[$currentTurnIndex]
+                    $isPlayerTurn = ($currentCombatant.Type -eq "Player")
+                    
+                    if ($isPlayerTurn) {
+                        # Player turn
+                        Write-CombatMessage "Choose your action..." "White" "PLAYER TURN"
+                        $input = [System.Console]::ReadKey($true)
+                        # Reset defending status at start of turn
+                        $playerDefending = $false
+                        
+                        # Process player action
+                        if ($input.Key -eq "A") {
+                            # Attack action
+                            $damage = [math]::Max(1, $player.Attack - $enemy.Defense)
+                            $enemy.HP -= $damage
+                            Write-CombatMessage "You attack $EnemyName for $damage damage!" "Yellow"
+                            Start-Sleep -Milliseconds 1200
+                            
+                        } elseif ($input.Key -eq "D") {
+                            # Defend action - reduces incoming damage next turn
+                            $playerDefending = $true
+                            Write-CombatMessage "You brace yourself for the enemy's attack!" "Green"
+                            Start-Sleep -Milliseconds 1200
+                            
+                        } elseif ($input.Key -eq "S") {
+                            # Spell casting menu
+                            Write-CombatMessage "Opening spell menu..." "Magenta"
+                            Start-Sleep -Milliseconds 500
+                            
+                            # Calculate safe menu position based on console size
+                            $menuStartY = 28  # Start menu below message area
+                            $maxY = [System.Console]::BufferHeight - 10
+                            if ($menuStartY -gt $maxY) {
+                                $menuStartY = $maxY
                             }
-                            $SaveState.Monsters[$EnemyName]++
-                            Save-GameState
-                            Start-Sleep -Milliseconds 1500
-                            # Clear input buffer when exiting battle
-                            while ([System.Console]::KeyAvailable) {
-                                [System.Console]::ReadKey($true) | Out-Null
+                            
+                            # Clear area below message for spell menu - safely
+                            try {
+                                for ($clearY = $menuStartY; $clearY -lt ($menuStartY + 8) -and $clearY -lt ([System.Console]::BufferHeight - 1); $clearY++) {
+                                    [System.Console]::SetCursorPosition(0, $clearY)
+                                    Write-Host (" " * 80)
+                                }
+                            } catch {
+                                # If cursor positioning fails, just clear the screen and continue
+                                [System.Console]::Clear()
                             }
-                            $battleMode = $false
-                            $inCombat = $false
-                            $battleCooldown = 100  # 100 frames of cooldown before next battle
-                            [System.Console]::Clear()
+                            
+                            # Display spell menu in controlled position
+                            try {
+                                [System.Console]::SetCursorPosition(0, $menuStartY)
+                                Write-Host "Available Spells:" -ForegroundColor Magenta
+                            } catch {
+                                Write-Host "`nAvailable Spells:" -ForegroundColor Magenta
+                            }
+                            
+                            . "$PSScriptRoot\Spells.ps1"
+                            $availableSpells = @()
+                            $menuLine = $menuStartY + 1
+                            
+                            for ($i = 0; $i -lt $player.Spells.Count; $i++) {
+                                $spellName = $player.Spells[$i]
+                                $spell = $Spells | Where-Object { $_.Name -eq $spellName }
+                                if ($spell -and $player.MP -ge $spell.MP) {
+                                    $availableSpells += $spell
+                                    try {
+                                        [System.Console]::SetCursorPosition(0, $menuLine)
+                                        Write-Host "[$($i+1)] $($spell.Name) (MP: $($spell.MP))" -ForegroundColor Cyan
+                                    } catch {
+                                        Write-Host "[$($i+1)] $($spell.Name) (MP: $($spell.MP))" -ForegroundColor Cyan
+                                    }
+                                    $menuLine++
+                                }
+                            }
+                            
+                            if ($availableSpells.Count -eq 0) {
+                                Write-CombatMessage "No spells available (insufficient MP)!" "Red"
+                                Start-Sleep -Milliseconds 1500
+                                continue
+                            }
+                            
+                            try {
+                                [System.Console]::SetCursorPosition(0, $menuLine)
+                                Write-Host "[0] Cancel" -ForegroundColor Gray
+                                $menuLine++
+                                [System.Console]::SetCursorPosition(0, $menuLine)
+                                Write-Host "Choose a spell: " -NoNewline -ForegroundColor White
+                            } catch {
+                                Write-Host "[0] Cancel" -ForegroundColor Gray
+                                Write-Host "Choose a spell: " -NoNewline -ForegroundColor White
+                            }
+                            
+                            $spellChoice = [System.Console]::ReadKey($true)
+                            $spellIndex = [int]$spellChoice.KeyChar - 49  # Convert to 0-based index
+                            
+                            if ($spellChoice.KeyChar -eq '0') {
+                                Write-CombatMessage "Spell casting cancelled." "Gray"
+                                Start-Sleep -Milliseconds 800
+                                continue
+                            } elseif ($spellIndex -ge 0 -and $spellIndex -lt $availableSpells.Count) {
+                                $selectedSpell = $availableSpells[$spellIndex]
+                                $player.MP -= $selectedSpell.MP
+                                
+                                if ($selectedSpell.Type -eq "Attack") {
+                                    $spellDamage = $selectedSpell.Power + [math]::Floor($player.Attack / 2)
+                                    $enemy.HP -= $spellDamage
+                                    Write-CombatMessage "You cast $($selectedSpell.Name) for $spellDamage damage!" "Magenta"
+                                } elseif ($selectedSpell.Type -eq "Recovery") {
+                                    $healAmount = [math]::Min($selectedSpell.Power, $player.MaxHP - $player.HP)
+                                    $player.HP += $healAmount
+                                    Write-CombatMessage "You cast $($selectedSpell.Name) and recover $healAmount HP!" "Green"
+                                }
+                                Start-Sleep -Milliseconds 1200
+                            } else {
+                                Write-CombatMessage "Invalid spell selection!" "Red"
+                                Start-Sleep -Milliseconds 1200
+                                continue
+                            }
+                            
+                        } elseif ($input.Key -eq "I") {
+                            # Items menu (basic implementation)
+                            Write-CombatMessage "Opening inventory..." "Yellow"
+                            Start-Sleep -Milliseconds 500
+                            
+                            if ($player.Inventory.Count -eq 0) {
+                                # Basic item system - add potion if inventory empty for demo
+                                if ($player.Inventory -notcontains "Health Potion") {
+                                    $player.Inventory += "Health Potion"
+                                }
+                            }
+                            
+                            if ($player.Inventory.Count -eq 0) {
+                                Write-CombatMessage "No items available!" "Red"
+                                Start-Sleep -Milliseconds 1500
+                                continue
+                            }
+                            
+                            # Calculate safe menu position
+                            $menuStartY = 28  # Start menu below message area
+                            $maxY = [System.Console]::BufferHeight - 6
+                            if ($menuStartY -gt $maxY) {
+                                $menuStartY = $maxY
+                            }
+                            
+                            # Clear area below message for item menu - safely
+                            try {
+                                for ($clearY = $menuStartY; $clearY -lt ($menuStartY + 5) -and $clearY -lt ([System.Console]::BufferHeight - 1); $clearY++) {
+                                    [System.Console]::SetCursorPosition(0, $clearY)
+                                    Write-Host (" " * 80)
+                                }
+                            } catch {
+                                # If cursor positioning fails, fall back to normal output
+                            }
+                            
+                            # Display item menu in controlled position
+                            try {
+                                [System.Console]::SetCursorPosition(0, $menuStartY)
+                                Write-Host "Inventory:" -ForegroundColor Yellow
+                                
+                                [System.Console]::SetCursorPosition(0, $menuStartY + 1)
+                                Write-Host "[1] Health Potion (Restores 15 HP)" -ForegroundColor Cyan
+                                [System.Console]::SetCursorPosition(0, $menuStartY + 2)
+                                Write-Host "[0] Cancel" -ForegroundColor Gray
+                                [System.Console]::SetCursorPosition(0, $menuStartY + 3)
+                                Write-Host "Choose an item: " -NoNewline -ForegroundColor White
+                            } catch {
+                                Write-Host "`nInventory:" -ForegroundColor Yellow
+                                Write-Host "[1] Health Potion (Restores 15 HP)" -ForegroundColor Cyan
+                                Write-Host "[0] Cancel" -ForegroundColor Gray
+                                Write-Host "Choose an item: " -NoNewline -ForegroundColor White
+                            }
+                            
+                            $itemChoice = [System.Console]::ReadKey($true)
+                            
+                            if ($itemChoice.KeyChar -eq '0') {
+                                Write-CombatMessage "Item use cancelled." "Gray"
+                                Start-Sleep -Milliseconds 800
+                                continue
+                            } elseif ($itemChoice.KeyChar -eq '1' -and $player.Inventory -contains "Health Potion") {
+                                $healAmount = [math]::Min(15, $player.MaxHP - $player.HP)
+                                $player.HP += $healAmount
+                                $player.Inventory = $player.Inventory | Where-Object { $_ -ne "Health Potion" }
+                                Write-CombatMessage "You use a Health Potion and recover $healAmount HP!" "Green"
+                                Start-Sleep -Milliseconds 1200
+                            } else {
+                                Write-CombatMessage "Invalid item selection!" "Red"
+                                Start-Sleep -Milliseconds 1200
+                                continue
+                            }
+                            
+                        } elseif ($input.Key -eq "R") {
+                            # Attempt to flee
+                            $fleeChance = 75 + ($player.Level * 5)  # Base 75% + 5% per level
+                            $fleeRoll = Get-Random -Minimum 1 -Maximum 101
+                            
+                            if ($fleeRoll -le $fleeChance) {
+                                Write-CombatMessage "You successfully escaped!" "Green"
+                                Start-Sleep -Milliseconds 1500
+                                # Track monster as encountered only if not already in hashtable
+                                if (-not $SaveState.Monsters.ContainsKey($EnemyName)) {
+                                    $SaveState.Monsters[$EnemyName] = 0
+                                    Save-GameState
+                                }
+                                # Clear input buffer when exiting battle
+                                while ([System.Console]::KeyAvailable) {
+                                    [System.Console]::ReadKey($true) | Out-Null
+                                }
+                                $battleMode = $false
+                                $inCombat = $false
+                                $battleCooldown = 100  # 100 frames of cooldown before next battle
+                                [System.Console]::Clear()
+                                break
+                            } else {
+                                Write-CombatMessage "Couldn't escape!" "Red"
+                                Start-Sleep -Milliseconds 1200
+                            }
+                            
+                        } else {
+                            # Invalid input
+                            Write-CombatMessage "Invalid action! Use A/D/S/I/R" "Red"
+                            Start-Sleep -Milliseconds 800
                             continue
                         }
-                        # Enemy turn
-                        $enemyDamage = [math]::Max(1, $enemy.Attack - $player.Defense)
-                        $player.HP -= $enemyDamage
-                        Write-Host "$EnemyName attacks you for $enemyDamage damage!"
-                        Start-Sleep -Milliseconds 500
-                        if ($player.HP -le 0) {
-                            Write-Host "You were defeated!" -ForegroundColor Magenta
-                            Start-Sleep -Milliseconds 1500
-                            # Clear input buffer when exiting battle
-                            while ([System.Console]::KeyAvailable) {
-                                [System.Console]::ReadKey($true) | Out-Null
+                        
+                    } else {
+                        # Enemy turn - Enhanced AI with spell casting
+                        . "$PSScriptRoot\Spells.ps1"
+                        
+                        $enemyAction = "attack"  # Default action
+                        $spellToCast = $null
+                        
+                        # AI Decision Logic
+                        if ($enemy.Spells.Count -gt 0 -and $enemy.MP -gt 0) {
+                            # Check available spells
+                            $availableSpells = @()
+                            foreach ($spellName in $enemy.Spells) {
+                                $spell = $Spells | Where-Object { $_.Name -eq $spellName }
+                                if ($spell -and $enemy.MP -ge $spell.MP) {
+                                    $availableSpells += $spell
+                                }
                             }
-                            $battleMode = $false
-                            $inCombat = $false
-                            $battleCooldown = 100  # 100 frames of cooldown before next battle
-                            [System.Console]::Clear()
-                            continue
+                            
+                            if ($availableSpells.Count -gt 0) {
+                                # AI Decision Making
+                                $healingSpells = $availableSpells | Where-Object { $_.Type -eq "Recovery" }
+                                $attackSpells = $availableSpells | Where-Object { $_.Type -eq "Attack" }
+                                
+                                # Healing logic: heal if health is below 40%
+                                if ($healingSpells.Count -gt 0 -and $enemy.HP -le ($enemy.MaxHP * 0.4)) {
+                                    $spellToCast = $healingSpells[0]
+                                    $enemyAction = "heal"
+                                }
+                                # Attack spell logic: 60% chance to cast attack spell if available
+                                elseif ($attackSpells.Count -gt 0 -and (Get-Random -Minimum 1 -Maximum 101) -le 60) {
+                                    $spellToCast = $attackSpells | Get-Random
+                                    $enemyAction = "spell"
+                                }
+                            }
                         }
-                    } elseif ($input.Key -eq "R") {
-                        # Track monster as encountered only if not already in hashtable
+                        
+                        # Execute enemy action
+                        if ($enemyAction -eq "heal" -and $spellToCast) {
+                            # Enemy heals itself
+                            $enemy.MP -= $spellToCast.MP
+                            $healAmount = [math]::Min($spellToCast.Power, $enemy.MaxHP - $enemy.HP)
+                            $enemy.HP += $healAmount
+                            Write-CombatMessage "$EnemyName casts $($spellToCast.Name) and recovers $healAmount HP!" "Yellow" "ENEMY TURN"
+                            
+                        } elseif ($enemyAction -eq "spell" -and $spellToCast) {
+                            # Enemy casts attack spell
+                            $enemy.MP -= $spellToCast.MP
+                            $spellDamage = $spellToCast.Power + [math]::Floor($enemy.Attack / 2)
+                            
+                            # Apply defense bonus if player defended
+                            if ($playerDefending) {
+                                $spellDamage = [math]::Max(1, [math]::Floor($spellDamage / 2))
+                                Write-CombatMessage "$EnemyName casts $($spellToCast.Name), but your defense reduces the damage to $spellDamage!" "Blue" "ENEMY TURN"
+                            } else {
+                                Write-CombatMessage "$EnemyName casts $($spellToCast.Name) for $spellDamage damage!" "Magenta" "ENEMY TURN"
+                            }
+                            
+                            $player.HP -= $spellDamage
+                            
+                        } else {
+                            # Basic attack
+                            $enemyDamage = [math]::Max(1, $enemy.Attack - $player.Defense)
+                            
+                            # Apply defense bonus if player defended
+                            if ($playerDefending) {
+                                $enemyDamage = [math]::Max(1, [math]::Floor($enemyDamage / 2))
+                                Write-CombatMessage "$EnemyName attacks, but your defense reduces the damage to $enemyDamage!" "Blue" "ENEMY TURN"
+                            } else {
+                                Write-CombatMessage "$EnemyName attacks you for $enemyDamage damage!" "Red" "ENEMY TURN"
+                            }
+                            
+                            $player.HP -= $enemyDamage
+                        }
+                        
+                        Start-Sleep -Milliseconds 2000  # Pause to read the enemy action
+                    }
+                    
+                    # Check if enemy is defeated
+                    if ($enemy.HP -le 0) {
+                        $xpGained = $enemy.Level * $enemy.BaseXP
+                        $player.XP += $xpGained
+                        Write-CombatMessage "$EnemyName defeated! You gained $xpGained XP. Total XP: $($player.XP)" "Green"
+                        # Update save state for monster kill
+                        $SaveState.Player.XP = $player.XP
+                        $SaveState.Player.MonstersDefeated++
                         if (-not $SaveState.Monsters.ContainsKey($EnemyName)) {
                             $SaveState.Monsters[$EnemyName] = 0
-                            Save-GameState
                         }
+                        $SaveState.Monsters[$EnemyName]++
+                        Save-GameState
+                        Start-Sleep -Milliseconds 2000
                         # Clear input buffer when exiting battle
                         while ([System.Console]::KeyAvailable) {
                             [System.Console]::ReadKey($true) | Out-Null
@@ -310,7 +662,30 @@ try {
                         $inCombat = $false
                         $battleCooldown = 100  # 100 frames of cooldown before next battle
                         [System.Console]::Clear()
-                        continue
+                        break
+                    }
+                    
+                    # Check if player is defeated
+                    if ($player.HP -le 0) {
+                        Write-CombatMessage "You were defeated!" "Magenta"
+                        Start-Sleep -Milliseconds 2000
+                        # Clear input buffer when exiting battle
+                        while ([System.Console]::KeyAvailable) {
+                            [System.Console]::ReadKey($true) | Out-Null
+                        }
+                        $battleMode = $false
+                        $inCombat = $false
+                        $battleCooldown = 100  # 100 frames of cooldown before next battle
+                        [System.Console]::Clear()
+                        break
+                    }
+                    
+                    # Advance to next turn
+                    $currentTurnIndex = ($currentTurnIndex + 1) % $turnOrder.Count
+                    
+                    # Reset defending status for enemy turns (player defending only lasts one enemy attack)
+                    if ($currentCombatant.Type -eq "Enemy") {
+                        $playerDefending = $false
                     }
                 }
                 continue

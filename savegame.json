@@ -1,12 +1,12 @@
 {
     "Player":  {
-                   "XP":  5,
+                   "XP":  20,
                    "Level":  1,
-                   "MonstersDefeated":  4
+                   "MonstersDefeated":  10
                },
     "Monsters":  {
-                     "Test2":  2,
+                     "Test2":  4,
                      "Test":  1,
-                     "Test4":  1
+                     "Test4":  5
                  }
 }

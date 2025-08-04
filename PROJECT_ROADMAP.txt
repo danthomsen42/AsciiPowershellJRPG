@@ -1,0 +1,355 @@
+PowerShell ASCII JRPG Development Roadmap
+Project: AsciiPowershellJRPG  
+Owner: danthomsen42  
+Last Updated: August 4, 2025  
+Status: Living Document
+
+================================================================================
+CURRENT PROJECT STATUS
+================================================================================
+✅ Working battle system (single enemy, basic attack/run)
+✅ Map navigation with viewport rendering  
+✅ NPC dialogue system with branching conversations
+✅ Procedural map generation (already implemented!)
+✅ Save/load system
+✅ Equipment and stats framework
+✅ Basic enemy variety (5 enemies with ASCII art)
+
+================================================================================
+PHASE 1: CORE BATTLE SYSTEM ENHANCEMENT (HIGH PRIORITY)
+================================================================================
+Goal: Build upon existing battle foundation
+
+1.1 Enhanced Player Battle Options ⭐ ✅ COMPLETED
+- Current: Attack, Defend, Spells, Items, Run options
+- Added: 
+  * Defend action (reduces incoming damage by 50%)
+  * Use Items (Health Potions restore 15 HP)
+  * Cast Spells (Fire, Heal with MP costs)
+  * Improved Flee mechanics (75% base chance + 5% per level)
+- Files modified: Display.ps1 (battle system section)
+- Completion date: August 4, 2025
+
+1.2 Speed-Based Turn Order ⭐ ✅ COMPLETED
+- Current: Player always goes first
+- Add: Speed stat determines who acts when
+- Implementation: 
+  * Add Speed property to Player.ps1 and Enemies.ps1
+  * Create turn queue system
+  * Display turn order to player
+- Dependencies: 1.1 complete
+- Files modified: Player.ps1, Enemies.ps1, Display.ps1
+- Completion date: August 4, 2025
+
+1.3 Enemy AI & Spell System ⭐ ✅ COMPLETED
+- Current: Enemies only do basic attacks
+- Add: 
+  * Enemy spell casting
+  * Intelligent target selection
+  * Different AI behaviors per enemy type
+- Implementation:
+  * Added MP/MaxMP to all enemies
+  * Gave enemies spell lists (Fire, Ice, Heal combinations)
+  * Enhanced AI decision-making: 
+    - Heals when HP below 40%
+    - 60% chance to cast attack spells
+    - Falls back to basic attacks
+  * Updated enemy stats display to show MP
+  * Enhanced spell system with more variety
+  * Implemented anti-flicker display system:
+    - Static elements drawn once (enemy viewport, controls)
+    - Selective updates for dynamic content (HP/MP, messages)
+    - Eliminated screen flickering during combat
+- Dependencies: 1.2 complete
+- Files modified: Enemies.ps1, Spells.ps1, Display.ps1
+- Completion date: August 4, 2025
+- Files to modify: Enemies.ps1, Spells.ps1
+- Estimated effort: 3-4 days
+
+1.4 Comprehensive Save System ⭐⭐
+- Current: Basic XP and monster kill tracking in savegame.json
+- Add:
+  * Character stats and progression (HP, MP, Level, Skills)
+  * Equipment and inventory state
+  * Quest progress and completion status
+  * World state (NPC dialogue flags, triggered events)
+  * Map exploration progress
+  * Optional: Player coordinates and current map location
+  * Multiple save slots with timestamps
+  * Auto-save functionality
+- Dependencies: 1.3 helpful, but can start independently
+- Files to modify: Display.ps1 (save/load functions), Player.ps1, NPCs.ps1
+- New files: SaveSystem.ps1 (optional modular approach)
+- Estimated effort: 4-5 days
+
+================================================================================
+PHASE 2: PARTY SYSTEM (MEDIUM-HIGH PRIORITY)
+================================================================================
+Goal: Major gameplay expansion - multiple controllable characters
+
+2.1 Multiple Party Members ⭐⭐
+- Current: Single player character
+- Add: 
+  * 2-4 party members with different classes
+  * Unique stats, abilities, equipment per member
+  * Class system (Warrior, Mage, Healer, Rogue)
+- Dependencies: Phase 1 complete
+- New files: PartySystem.ps1
+- Files to modify: Player.ps1, Display.ps1
+- Estimated effort: 5-7 days
+
+2.2 Snake-Style Following ⭐⭐
+- Current: Single @ character
+- Add: 
+  * Party members follow leader in overworld
+  * Snake-like movement trail
+  * Different characters for each party member
+- Dependencies: 2.1 complete
+- Files to modify: Display.ps1 (movement system)
+- Estimated effort: 2-3 days
+
+2.3 Multi-Enemy Battles ⭐⭐
+- Current: Single enemy encounters
+- Add: 
+  * Multiple enemies on screen (Dragon Quest style)
+  * Target selection for attacks/spells
+  * Formation-based combat
+- Dependencies: 2.1 complete
+- Files to modify: Display.ps1, Enemies.ps1
+- Estimated effort: 4-5 days
+
+================================================================================
+PHASE 3: QUEST & CONTENT SYSTEM (MEDIUM PRIORITY)
+================================================================================
+Goal: Build on existing NPC framework
+
+3.1 Quest Tracking System ⭐
+- Current: Basic quest flags in NPCs.ps1
+- Add: 
+  * Quest log/journal interface
+  * Objective tracking
+  * Quest completion rewards
+  * Multiple active quests
+- Dependencies: None (can start anytime)
+- New files: QuestSystem.ps1
+- Estimated effort: 3-4 days
+
+3.2 Expanded NPC Dialogues ⭐
+- Current: Basic branching dialogues
+- Add: 
+  * Conditional dialogues based on party composition
+  * Story progress-dependent conversations
+  * More complex dialogue trees
+- Dependencies: 3.1 helpful but not required
+- Files to modify: NPCs.ps1
+- Estimated effort: 2-3 days
+
+================================================================================
+PHASE 4: VISUAL & QOL IMPROVEMENTS (MEDIUM PRIORITY)
+================================================================================
+Goal: Polish and accessibility
+
+4.1 Color Implementation 🎨
+- Current: Mostly monochrome display
+- Add: 
+  * Color coding for different elements
+  * HP/MP bars with colors
+  * Enemy/ally distinction
+  * Map terrain colors
+- Dependencies: None
+- Files to modify: Display.ps1
+- Estimated effort: 2-3 days
+
+4.2 Resizable Viewport 🖥️
+- Current: Fixed 50x20 viewport
+- Add: 
+  * Dynamic sizing based on terminal size
+  * Settings to adjust viewport
+  * Minimum/maximum size constraints
+- Dependencies: None
+- Files to modify: Display.ps1
+- Estimated effort: 1-2 days
+
+4.3 Settings Menu ⚙️
+- Add: 
+  * Accessible settings for graphics, controls
+  * Save/load settings to file
+  * In-game settings access (ESC key?)
+- Dependencies: 4.1, 4.2 helpful
+- New files: SettingsMenu.ps1
+- Estimated effort: 2-3 days
+
+================================================================================
+PHASE 5: CONTENT EXPANSION (LOW PRIORITY)
+================================================================================
+Goal: More variety and replayability
+
+5.1 Monster Variety 🐉
+- Current: 5 basic enemies
+- Add: 
+  * 20+ unique enemies with special abilities
+  * Boss monsters with unique mechanics
+  * Area-specific enemy types
+- Dependencies: Phase 1 complete for spell system
+- Files to modify: Enemies.ps1
+- Estimated effort: 4-6 days
+
+5.2 Procedural Content Integration 🎲
+- Current: Already implemented in ProceduralMaps.ps1!
+- Add: 
+  * Story integration with procedural dungeons
+  * Themed procedural areas
+  * Random encounter variety
+- Dependencies: None (ready to use!)
+- Estimated effort: 2-3 days
+
+================================================================================
+MISSING CORE FEATURES (SHOULD CONSIDER)
+================================================================================
+
+Character Progression:
+- Level Up Mechanics: Stat increases, new abilities on level up
+- Character Classes/Jobs: Warrior, Mage, Healer, Rogue with unique abilities
+- Skill Trees: Branching advancement paths
+
+Combat Features:
+- Status Effects: Poison, Sleep, Paralysis, Buffs/Debuffs
+- Critical Hits: Chance-based bonus damage
+- Elemental System: Fire, Ice, Lightning weaknesses/resistances
+
+Item System:
+- Item Crafting: Combine items to make better equipment
+- Treasure Chests & Loot: Random item rewards
+- Consumable Items: Potions, scrolls, temporary buffs
+
+World Features:
+- Shop System: Buy/sell with NPCs (framework exists)
+- Magic Points (MP) System: Currently exists but underutilized
+- Day/Night Cycle: Time-based events and NPC schedules
+
+================================================================================
+ARCHITECTURE IMPROVEMENTS
+================================================================================
+
+Code Organization:
+- GameState.ps1: Centralize all game state management
+- BattleSystem.ps1: Separate combat logic into dedicated module  
+- Utils.ps1: Common helper functions
+- Config.ps1: Game configuration and constants
+
+Performance Optimizations:
+- Viewport Culling: Only render visible map areas
+- Input Buffering: Prevent movement lag
+- Memory Management: Efficient enemy/party data handling
+
+================================================================================
+FUTURE/POTENTIAL IDEAS
+================================================================================
+
+Audio System 🔊
+- Sound Effects: 
+  * PowerShell natively supports .wav files via System.Media.SoundPlayer
+  * Battle sounds, menu navigation, footsteps
+  * Investigate support for other formats (mp3, ogg)
+- Background Music: 
+  * Looping background tracks for different areas
+  * Dynamic music based on combat/exploration
+- Audio Settings: Volume controls, mute options
+
+Advanced Graphics:
+- Unicode Art: Enhanced visual elements using extended Unicode
+- Animation System: Character movement animations, spell effects
+- Weather Effects: Rain, snow visual overlays
+- Lighting System: Torch/lantern mechanics, darkness effects
+
+Multiplayer Features:
+- Local Co-op: Multiple players controlling different party members
+- Turn-based Multiplayer: Hot-seat style gameplay
+- Online Features: Shared world state, leaderboards
+
+Modding Support:
+- Script Loading: External PowerShell modules for custom content
+- Asset Loading: External files for maps, enemies, items
+- Configuration Files: JSON/XML-based content definition
+
+Quality of Life:
+- Auto-save: Periodic background saving
+- Multiple Save Slots: Different playthroughs
+- Replay System: Record and playback gameplay
+- Debug Mode: Developer tools and cheats
+
+Platform Features:
+- Cross-Platform: PowerShell Core compatibility
+- Windows Terminal: Enhanced terminal feature support
+- Package Distribution: PowerShell Gallery module
+
+Accessibility:
+- Screen Reader Support: Text-to-speech integration
+- Colorblind Support: Alternative visual indicators
+- Keyboard Shortcuts: Full keyboard navigation
+- Text Scaling: Adjustable font sizes
+
+Data Persistence:
+- Cloud Save Integration: OneDrive/Google Drive sync
+- Export/Import Features: Share save files between devices
+- Statistics Tracking: Play time, battles won, areas explored
+
+Advanced AI:
+- Machine Learning NPCs: Adaptive dialogue based on player behavior
+- Procedural Story Generation: Dynamic quest creation
+- Smart Enemy Scaling: Difficulty adjustment based on player skill
+
+================================================================================
+RECOMMENDED DEVELOPMENT ORDER
+================================================================================
+
+1. Enhanced Battle Options (1.1) - Quick win, immediate gameplay improvement
+2. Speed-Based Combat (1.2) - Natural progression from 1.1
+3. Color System (4.1) - Visual improvement while building other systems
+4. Quest Tracking (3.1) - Expands content without complex dependencies  
+5. Multiple Party Members (2.1) - Major feature upgrade
+6. Enemy AI & Spells (1.3) - Completes core combat system
+7. Multi-Enemy Battles (2.3) - Advanced combat mechanics
+
+================================================================================
+DEVELOPMENT NOTES
+================================================================================
+
+Strengths of Current Codebase:
+- Solid procedural map generation (impressive feature!)
+- Clean separation of concerns (separate files for different systems)
+- Working save/load system
+- Efficient viewport rendering
+- Extensible NPC dialogue system
+
+Technical Considerations:
+- PowerShell performance limitations for real-time graphics
+- Console/terminal compatibility across different systems
+- Memory usage with large maps and multiple enemies
+- Input handling responsiveness
+
+Version Control Strategy:
+- Feature branches for major additions
+- Regular commits for incremental progress
+- Tag releases for stable versions
+- Document breaking changes
+
+================================================================================
+SUCCESS METRICS
+================================================================================
+- Phase 1: Engaging turn-based combat with multiple options
+- Phase 2: Full party-based gameplay like classic JRPGs
+- Phase 3: Rich story content with meaningful quests
+- Phase 4: Polished, accessible user experience
+- Phase 5: High replay value with varied content
+
+================================================================================
+NOTES SECTION
+================================================================================
+(Add your development notes, ideas, and progress updates here)
+
+Remember: This is a living document. Update priorities, add new ideas, and 
+adjust timelines based on development progress and inspiration!
+
+Last Updated: August 4, 2025
+Next Review Date: [Add your preferred review schedule]
