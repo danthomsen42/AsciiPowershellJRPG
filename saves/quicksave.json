@@ -1,0 +1,47 @@
+{
+    "GameInfo":  {
+                     "GameStarted":  "2025-08-04 14:46:12",
+                     "PlayTime":  0.8736175083333334,
+                     "Version":  "1.4",
+                     "SaveTime":  "2025-08-04 14:47:05"
+                 },
+    "GameEvents":  {
+                       "LastBattleWon":  {
+                                             "XPGained":  5,
+                                             "Time":  "2025-08-04 14:46:59",
+                                             "Enemy":  "Test"
+                                         },
+                       "LastItemFound":  null,
+                       "LastLevelUp":  null,
+                       "LastNPCTalk":  null
+                   },
+    "Player":  {
+                   "MP":  3,
+                   "ItemsCollected":  [
+
+                                      ],
+                   "MaxMP":  5,
+                   "MonstersDefeated":  1,
+                   "HP":  24,
+                   "AreasDiscovered":  [
+
+                                       ],
+                   "CurrentMap":  "StartingArea",
+                   "NPCsSpokenTo":  [
+
+                                    ],
+                   "XP":  5,
+                   "Y":  0,
+                   "QuestsCompleted":  [
+
+                                       ],
+                   "Armor":  "Leather Armor",
+                   "X":  0,
+                   "MaxHP":  30,
+                   "Weapon":  "Axe",
+                   "Level":  1
+               },
+    "Monsters":  {
+                     "Test":  1
+                 }
+}

@@ -37,3 +37,6 @@ Actual value was 24."
 [2025-08-04 14:19:11] STARTUP ERROR: Exception calling "SetCursorPosition" with "2" argument(s): "The value must be greater than or equal to zero and less than the console's buffer size in that dimension.
 Parameter name: top
 Actual value was 24."
+[2025-08-04 14:46:07] STARTUP ERROR: Exception calling "SetCursorPosition" with "2" argument(s): "The value must be greater than or equal to zero and less than the console's buffer size in that dimension.
+Parameter name: top
+Actual value was 24."
