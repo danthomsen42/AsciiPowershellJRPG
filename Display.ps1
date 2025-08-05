@@ -166,6 +166,11 @@ $SaveState = @{
         ItemsCollected = @()
         AreasDiscovered = @()
     }
+    Party = @{
+        Members = @()  # Array of party member objects
+        Formation = "Diamond"  # Battle formation (for future use)
+        Leader = 0  # Index of party leader
+    }
     Monsters = @{}
     GameEvents = @{
         LastBattleWon = $null
@@ -209,6 +214,13 @@ if (Test-Path $AutoSaveFilePath) {
             $SaveState.Player.NPCsSpokenTo = if ($loadedData.Player.NPCsSpokenTo) { $loadedData.Player.NPCsSpokenTo } else { @() }
             $SaveState.Player.ItemsCollected = if ($loadedData.Player.ItemsCollected) { $loadedData.Player.ItemsCollected } else { @() }
             $SaveState.Player.AreasDiscovered = if ($loadedData.Player.AreasDiscovered) { $loadedData.Player.AreasDiscovered } else { @() }
+        }
+        
+        # Load party data
+        if ($loadedData.Party) {
+            $SaveState.Party.Members = if ($loadedData.Party.Members) { $loadedData.Party.Members } else { @() }
+            $SaveState.Party.Formation = if ($loadedData.Party.Formation) { $loadedData.Party.Formation } else { "Diamond" }
+            $SaveState.Party.Leader = if ($loadedData.Party.Leader) { $loadedData.Party.Leader } else { 0 }
         }
         
         # Load monsters data
@@ -513,6 +525,17 @@ function Update-SaveStateFromPlayer {
     $SaveState.Player.Armor = $PlayerObject.Equipped.Armor
 }
 
+# Update save state from party
+function Update-SaveStateFromParty {
+    param([array]$PartyArray)
+    
+    if ($PartyArray -and $PartyArray.Count -gt 0) {
+        $SaveState.Party.Members = ConvertTo-PartySaveData $PartyArray
+        # Leader is always the first party member for now
+        $SaveState.Party.Leader = 0
+    }
+}
+
 # Set initial player position (centered, inside box)
 $playerX = [math]::Floor($boxWidth / 2)
 $playerY = [math]::Floor($boxHeight / 2)
@@ -640,6 +663,13 @@ try {
             if ($battleMode) {
                 # Load player and enemy stats
                 . "$PSScriptRoot\Player.ps1"
+                . "$PSScriptRoot\PartySystem.ps1"
+                
+                # Initialize party if not already done
+                if ($global:Party -eq $null) {
+                    $global:Party = New-DefaultParty
+                    Write-Host "Party assembled! Ready for adventure!" -ForegroundColor Green
+                }
                 
                 # Sync Player object with save state
                 $Player = Sync-PlayerFromSaveState $Player
@@ -660,11 +690,14 @@ try {
 
 
                 # Initialize battle state
-                $playerDefending = $false
+                $partyDefending = @{}
+                foreach ($member in $Party) {
+                    $partyDefending[$member.Name] = $false
+                }
                 $inCombat = $true
                 
-                # Create turn order based on Speed stats
-                $turnOrder = New-TurnOrder $player $enemy
+                # Create turn order for party vs enemy
+                $turnOrder = New-PartyTurnOrder $Party $enemy
                 $currentTurnIndex = 0
                 $maxTurns = 100  # Prevent infinite loops
                 $turnCount = 0
@@ -680,49 +713,57 @@ try {
                     Draw-CombatViewport $enemyArt $EnemyName $boxWidth $boxHeight
                     Write-Host "Combat Controls: A=Attack   D=Defend   S=Spells   I=Items   R=Run" -ForegroundColor Cyan
                     
-                    # Calculate and display current stats
+                    # Display party status
+                    Write-Host "`nParty Status:" -ForegroundColor Green
+                    foreach ($member in $Party) {
+                        $hpDisplay = [math]::Max(0, $member.HP)
+                        $mpDisplay = [math]::Max(0, $member.MP)
+                        $hpStr = $hpDisplay.ToString().PadRight(3)
+                        $maxHPStr = $member.MaxHP.ToString().PadRight(3)
+                        $mpStr = $mpDisplay.ToString().PadRight(3)
+                        $maxMPStr = $member.MaxMP.ToString().PadRight(3)
+                        
+                        $status = if ($member.HP -le 0) { " [KO]" } else { "" }
+                        Write-Host ("  $($member.Name) ($($member.Class)): HP $hpStr/$maxHPStr MP $mpStr/$maxMPStr$status") -ForegroundColor White
+                    }
+                    
+                    # Display enemy status
                     $enemyHPDisplay = [math]::Max(0, $enemy.HP)
                     $enemyMPDisplay = [math]::Max(0, $enemy.MP)
-                    $playerHPDisplay = [math]::Max(0, $player.HP)
-                    $playerMPDisplay = [math]::Max(0, $player.MP)
-                    $playerHPStr = $playerHPDisplay.ToString().PadRight(4)
-                    $playerMaxHPStr = $player.MaxHP.ToString().PadRight(4)
-                    $playerMPStr = $playerMPDisplay.ToString().PadRight(4)
-                    $playerMaxMPStr = $player.MaxMP.ToString().PadRight(4)
                     $enemyHPStr = $enemyHPDisplay.ToString().PadRight(4)
                     $enemyMaxHPStr = $enemy.MaxHP.ToString().PadRight(4)
                     $enemyMPStr = $enemyMPDisplay.ToString().PadRight(4)
                     $enemyMaxMPStr = $enemy.MaxMP.ToString().PadRight(4)
                     
-                    Write-Host ("Player HP: $playerHPStr/$playerMaxHPStr   MP: $playerMPStr/$playerMaxMPStr") -ForegroundColor White
-                    Write-Host ("Enemy  HP: $enemyHPStr/$enemyMaxHPStr   MP: $enemyMPStr/$enemyMaxMPStr") -ForegroundColor Yellow
+                    Write-Host ("`nEnemy  HP: $enemyHPStr/$enemyMaxHPStr   MP: $enemyMPStr/$enemyMaxMPStr") -ForegroundColor Yellow
                     
                     # Show turn order
-                    Show-TurnOrder $turnOrder $currentTurnIndex
+                    Show-PartyTurnOrder $turnOrder $currentTurnIndex
                     
                     # Get current combatant
                     $currentCombatant = $turnOrder[$currentTurnIndex]
                     $isPlayerTurn = ($currentCombatant.Type -eq "Player")
                     
                     if ($isPlayerTurn) {
-                        # Player turn
-                        Write-CombatMessage "Choose your action..." "White" "PLAYER TURN"
+                        # Party member turn
+                        $currentMember = $currentCombatant.Character
+                        Write-CombatMessage "$($currentMember.Name) - Choose action..." "White" "$($currentMember.Name.ToUpper()) TURN"
                         $input = [System.Console]::ReadKey($true)
                         # Reset defending status at start of turn
-                        $playerDefending = $false
+                        $partyDefending[$currentMember.Name] = $false
                         
-                        # Process player action
+                        # Process party member action
                         if ($input.Key -eq "A") {
                             # Attack action
-                            $damage = [math]::Max(1, $player.Attack - $enemy.Defense)
+                            $damage = [math]::Max(1, $currentMember.Attack - $enemy.Defense)
                             $enemy.HP -= $damage
-                            Write-CombatMessage "You attack $EnemyName for $damage damage!" "Yellow"
+                            Write-CombatMessage "$($currentMember.Name) attacks $EnemyName for $damage damage!" "Yellow"
                             Start-Sleep -Milliseconds 1200
                             
                         } elseif ($input.Key -eq "D") {
                             # Defend action - reduces incoming damage next turn
-                            $playerDefending = $true
-                            Write-CombatMessage "You brace yourself for the enemy's attack!" "Green"
+                            $partyDefending[$currentMember.Name] = $true
+                            Write-CombatMessage "$($currentMember.Name) braces for the enemy's attack!" "Green"
                             Start-Sleep -Milliseconds 1200
                             
                         } elseif ($input.Key -eq "S") {
@@ -760,10 +801,10 @@ try {
                             $availableSpells = @()
                             $menuLine = $menuStartY + 1
                             
-                            for ($i = 0; $i -lt $player.Spells.Count; $i++) {
-                                $spellName = $player.Spells[$i]
+                            for ($i = 0; $i -lt $currentMember.Spells.Count; $i++) {
+                                $spellName = $currentMember.Spells[$i]
                                 $spell = $Spells | Where-Object { $_.Name -eq $spellName }
-                                if ($spell -and $player.MP -ge $spell.MP) {
+                                if ($spell -and $currentMember.MP -ge $spell.MP) {
                                     $availableSpells += $spell
                                     try {
                                         [System.Console]::SetCursorPosition(0, $menuLine)
@@ -801,16 +842,17 @@ try {
                                 continue
                             } elseif ($spellIndex -ge 0 -and $spellIndex -lt $availableSpells.Count) {
                                 $selectedSpell = $availableSpells[$spellIndex]
-                                $player.MP -= $selectedSpell.MP
+                                $currentMember.MP -= $selectedSpell.MP
                                 
                                 if ($selectedSpell.Type -eq "Attack") {
-                                    $spellDamage = $selectedSpell.Power + [math]::Floor($player.Attack / 2)
+                                    $spellDamage = $selectedSpell.Power + [math]::Floor($currentMember.Attack / 2)
                                     $enemy.HP -= $spellDamage
-                                    Write-CombatMessage "You cast $($selectedSpell.Name) for $spellDamage damage!" "Magenta"
+                                    Write-CombatMessage "$($currentMember.Name) casts $($selectedSpell.Name) for $spellDamage damage!" "Magenta"
                                 } elseif ($selectedSpell.Type -eq "Recovery") {
-                                    $healAmount = [math]::Min($selectedSpell.Power, $player.MaxHP - $player.HP)
-                                    $player.HP += $healAmount
-                                    Write-CombatMessage "You cast $($selectedSpell.Name) and recover $healAmount HP!" "Green"
+                                    # For healing spells, let party member choose target (simplified to self for now)
+                                    $healAmount = [math]::Min($selectedSpell.Power, $currentMember.MaxHP - $currentMember.HP)
+                                    $currentMember.HP += $healAmount
+                                    Write-CombatMessage "$($currentMember.Name) casts $($selectedSpell.Name) and recovers $healAmount HP!" "Green"
                                 }
                                 Start-Sleep -Milliseconds 1200
                             } else {
@@ -824,14 +866,14 @@ try {
                             Write-CombatMessage "Opening inventory..." "Yellow"
                             Start-Sleep -Milliseconds 500
                             
-                            if ($player.Inventory.Count -eq 0) {
+                            if ($currentMember.Inventory.Count -eq 0) {
                                 # Basic item system - add potion if inventory empty for demo
-                                if ($player.Inventory -notcontains "Health Potion") {
-                                    $player.Inventory += "Health Potion"
+                                if ($currentMember.Inventory -notcontains "Health Potion") {
+                                    $currentMember.Inventory += "Health Potion"
                                 }
                             }
                             
-                            if ($player.Inventory.Count -eq 0) {
+                            if ($currentMember.Inventory.Count -eq 0) {
                                 Write-CombatMessage "No items available!" "Red"
                                 Start-Sleep -Milliseconds 1500
                                 continue
@@ -878,11 +920,11 @@ try {
                                 Write-CombatMessage "Item use cancelled." "Gray"
                                 Start-Sleep -Milliseconds 800
                                 continue
-                            } elseif ($itemChoice.KeyChar -eq '1' -and $player.Inventory -contains "Health Potion") {
-                                $healAmount = [math]::Min(15, $player.MaxHP - $player.HP)
-                                $player.HP += $healAmount
-                                $player.Inventory = $player.Inventory | Where-Object { $_ -ne "Health Potion" }
-                                Write-CombatMessage "You use a Health Potion and recover $healAmount HP!" "Green"
+                            } elseif ($itemChoice.KeyChar -eq '1' -and $currentMember.Inventory -contains "Health Potion") {
+                                $healAmount = [math]::Min(15, $currentMember.MaxHP - $currentMember.HP)
+                                $currentMember.HP += $healAmount
+                                $currentMember.Inventory = $currentMember.Inventory | Where-Object { $_ -ne "Health Potion" }
+                                Write-CombatMessage "$($currentMember.Name) uses a Health Potion and recovers $healAmount HP!" "Green"
                                 Start-Sleep -Milliseconds 1200
                             } else {
                                 Write-CombatMessage "Invalid item selection!" "Red"
@@ -969,33 +1011,44 @@ try {
                             Write-CombatMessage "$EnemyName casts $($spellToCast.Name) and recovers $healAmount HP!" "Yellow" "ENEMY TURN"
                             
                         } elseif ($enemyAction -eq "spell" -and $spellToCast) {
-                            # Enemy casts attack spell
+                            # Enemy casts attack spell - choose random living party member
                             $enemy.MP -= $spellToCast.MP
                             $spellDamage = $spellToCast.Power + [math]::Floor($enemy.Attack / 2)
                             
-                            # Apply defense bonus if player defended
-                            if ($playerDefending) {
-                                $spellDamage = [math]::Max(1, [math]::Floor($spellDamage / 2))
-                                Write-CombatMessage "$EnemyName casts $($spellToCast.Name), but your defense reduces the damage to $spellDamage!" "Blue" "ENEMY TURN"
-                            } else {
-                                Write-CombatMessage "$EnemyName casts $($spellToCast.Name) for $spellDamage damage!" "Magenta" "ENEMY TURN"
+                            $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
+                            if ($aliveMembers.Count -gt 0) {
+                                $target = $aliveMembers | Get-Random
+                                
+                                # Apply defense bonus if target defended
+                                if ($partyDefending[$target.Name]) {
+                                    $spellDamage = [math]::Max(1, [math]::Floor($spellDamage / 2))
+                                    Write-CombatMessage "$EnemyName casts $($spellToCast.Name) on $($target.Name), but their defense reduces the damage to $spellDamage!" "Blue" "ENEMY TURN"
+                                } else {
+                                    Write-CombatMessage "$EnemyName casts $($spellToCast.Name) on $($target.Name) for $spellDamage damage!" "Magenta" "ENEMY TURN"
+                                }
+                                
+                                $target.HP -= $spellDamage
+                                $target.HP = [math]::Max(0, $target.HP)
                             }
-                            
-                            $player.HP -= $spellDamage
                             
                         } else {
-                            # Basic attack
-                            $enemyDamage = [math]::Max(1, $enemy.Attack - $player.Defense)
-                            
-                            # Apply defense bonus if player defended
-                            if ($playerDefending) {
-                                $enemyDamage = [math]::Max(1, [math]::Floor($enemyDamage / 2))
-                                Write-CombatMessage "$EnemyName attacks, but your defense reduces the damage to $enemyDamage!" "Blue" "ENEMY TURN"
-                            } else {
-                                Write-CombatMessage "$EnemyName attacks you for $enemyDamage damage!" "Red" "ENEMY TURN"
+                            # Basic attack - choose random living party member
+                            $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
+                            if ($aliveMembers.Count -gt 0) {
+                                $target = $aliveMembers | Get-Random
+                                $enemyDamage = [math]::Max(1, $enemy.Attack - $target.Defense)
+                                
+                                # Apply defense bonus if target defended
+                                if ($partyDefending[$target.Name]) {
+                                    $enemyDamage = [math]::Max(1, [math]::Floor($enemyDamage / 2))
+                                    Write-CombatMessage "$EnemyName attacks $($target.Name), but their defense reduces the damage to $enemyDamage!" "Blue" "ENEMY TURN"
+                                } else {
+                                    Write-CombatMessage "$EnemyName attacks $($target.Name) for $enemyDamage damage!" "Red" "ENEMY TURN"
+                                }
+                                
+                                $target.HP -= $enemyDamage
+                                $target.HP = [math]::Max(0, $target.HP)
                             }
-                            
-                            $player.HP -= $enemyDamage
                         }
                         
                         Start-Sleep -Milliseconds 2000  # Pause to read the enemy action
@@ -1004,10 +1057,20 @@ try {
                     # Check if enemy is defeated
                     if ($enemy.HP -le 0) {
                         $xpGained = $enemy.Level * $enemy.BaseXP
-                        $player.XP += $xpGained
-                        Write-CombatMessage "$EnemyName defeated! You gained $xpGained XP. Total XP: $($player.XP)" "Green"
-                        # Update save state for monster kill
-                        $SaveState.Player.XP = $player.XP
+                        
+                        # Distribute XP to all living party members
+                        $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
+                        $xpPerMember = [math]::Floor($xpGained / $aliveMembers.Count)
+                        
+                        foreach ($member in $aliveMembers) {
+                            $member.XP += $xpPerMember
+                        }
+                        
+                        Write-CombatMessage "$EnemyName defeated! Party gained $xpGained XP total ($xpPerMember each)!" "Green"
+                        
+                        # Update save state for monster kill (using party leader for global stats)
+                        $partyLeader = $Party[0]
+                        $SaveState.Player.XP = $partyLeader.XP
                         $SaveState.Player.MonstersDefeated++
                         if (-not $SaveState.Monsters.ContainsKey($EnemyName)) {
                             $SaveState.Monsters[$EnemyName] = 0
@@ -1017,8 +1080,8 @@ try {
                         # Trigger auto-save for battle victory
                         Trigger-BattleVictoryAutoSave -enemyName $EnemyName -xpGained $xpGained
                         
-                        # Update global save state with final player stats
-                        Update-SaveStateFromPlayer $player
+                        # Update global save state with party data
+                        Update-SaveStateFromParty $Party
                         
                         Start-Sleep -Milliseconds 2000
                         # Clear input buffer when exiting battle
@@ -1032,9 +1095,10 @@ try {
                         break
                     }
                     
-                    # Check if player is defeated
-                    if ($player.HP -le 0) {
-                        Write-CombatMessage "You were defeated!" "Magenta"
+                    # Check if party is defeated (all members at 0 HP)
+                    $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
+                    if ($aliveMembers.Count -eq 0) {
+                        Write-CombatMessage "Your party was defeated!" "Magenta"
                         Start-Sleep -Milliseconds 2000
                         # Clear input buffer when exiting battle
                         while ([System.Console]::KeyAvailable) {
@@ -1050,9 +1114,11 @@ try {
                     # Advance to next turn
                     $currentTurnIndex = ($currentTurnIndex + 1) % $turnOrder.Count
                     
-                    # Reset defending status for enemy turns (player defending only lasts one enemy attack)
+                    # Reset defending status for enemy turns (defending only lasts one enemy attack)
                     if ($currentCombatant.Type -eq "Enemy") {
-                        $playerDefending = $false
+                        foreach ($member in $Party) {
+                            $partyDefending[$member.Name] = $false
+                        }
                     }
                 }
                 continue
