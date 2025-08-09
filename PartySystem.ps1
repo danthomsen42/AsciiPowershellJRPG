@@ -3,6 +3,15 @@
 # =============================================================================
 # Foundation for multi-character gameplay with class-based party members
 # Built to integrate seamlessly with Phase 5 Character Creation System
+# PHASE 2.2: Snake-Style Following System
+
+# =============================================================================
+# SNAKE FOLLOWING SYSTEM VARIABLES
+# =============================================================================
+
+# Global movement trail for party following (stores last N positions)
+$global:PartyTrail = @()
+$global:MaxTrailLength = 10  # How many positions to remember
 
 # =============================================================================
 # CHARACTER CLASS DEFINITIONS
@@ -49,6 +58,110 @@ $CharacterClasses = @{
 
 # =============================================================================
 # PARTY MANAGEMENT FUNCTIONS
+# =============================================================================
+
+# =============================================================================
+# SNAKE FOLLOWING SYSTEM FUNCTIONS  
+# =============================================================================
+
+# Initialize party positions for a new map
+function Initialize-PartyPositions {
+    param([int]$LeaderX, [int]$LeaderY, [array]$Party)
+    
+    # Clear the movement trail
+    $global:PartyTrail = @()
+    
+    # Place party members in a line behind the leader initially
+    for ($i = 0; $i -lt $Party.Count; $i++) {
+        $member = $Party[$i]
+        if ($i -eq 0) {
+            # Leader starts at specified position
+            $member.Position.X = $LeaderX
+            $member.Position.Y = $LeaderY
+        } else {
+            # Other members start one space behind in a line
+            $member.Position.X = $LeaderX
+            $member.Position.Y = [math]::Max(0, $LeaderY - $i)
+        }
+    }
+    
+    # Add initial positions to trail
+    $global:PartyTrail += @{ X = $LeaderX; Y = $LeaderY }
+}
+
+# Update party positions when leader moves (snake-following)
+function Update-PartyPositions {
+    param([int]$NewLeaderX, [int]$NewLeaderY, [array]$Party)
+    
+    if ($Party.Count -eq 0) { return }
+    
+    # Add new leader position to front of trail
+    $global:PartyTrail = @(@{ X = $NewLeaderX; Y = $NewLeaderY }) + $global:PartyTrail
+    
+    # Trim trail to max length
+    if ($global:PartyTrail.Count -gt $global:MaxTrailLength) {
+        $global:PartyTrail = $global:PartyTrail[0..($global:MaxTrailLength-1)]
+    }
+    
+    # Update party member positions from trail
+    for ($i = 0; $i -lt $Party.Count; $i++) {
+        $member = $Party[$i]
+        if ($i -eq 0) {
+            # Leader gets the new position
+            $member.Position.X = $NewLeaderX
+            $member.Position.Y = $NewLeaderY
+        } elseif ($i -lt $global:PartyTrail.Count) {
+            # Other members follow the trail with spacing
+            $trailIndex = [math]::Min($i * 2, $global:PartyTrail.Count - 1)  # 2-space separation
+            $trailPos = $global:PartyTrail[$trailIndex]
+            $member.Position.X = $trailPos.X
+            $member.Position.Y = $trailPos.Y
+        }
+    }
+}
+
+# Get party member positions for rendering
+function Get-PartyPositions {
+    param([array]$Party)
+    
+    $positions = @{}
+    foreach ($member in $Party) {
+        if ($member.Position) {
+            $key = "$($member.Position.X),$($member.Position.Y)"
+            $positions[$key] = @{
+                Name = $member.Name
+                Class = $member.Class
+                Symbol = $member.MapSymbol
+                IsLeader = ($Party.IndexOf($member) -eq 0)
+            }
+        }
+    }
+    return $positions
+}
+
+# Handle map transitions for entire party
+function Move-PartyToMap {
+    param([int]$NewX, [int]$NewY, [array]$Party, [string]$MapName)
+    
+    # Move leader to new position
+    if ($Party.Count -gt 0) {
+        $Party[0].Position.X = $NewX
+        $Party[0].Position.Y = $NewY
+    }
+    
+    # Initialize party positions on new map
+    Initialize-PartyPositions $NewX $NewY $Party
+    
+    # Update save state if needed
+    if ($global:SaveState) {
+        $global:SaveState.Player.X = $NewX
+        $global:SaveState.Player.Y = $NewY
+        $global:SaveState.Player.CurrentMap = $MapName
+    }
+}
+
+# =============================================================================
+# ORIGINAL PARTY MANAGEMENT FUNCTIONS
 # =============================================================================
 
 # Create a party member from class template

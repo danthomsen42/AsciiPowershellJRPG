@@ -1,15 +1,15 @@
 {
     "GameInfo":  {
                      "GameStarted":  "2025-08-04 14:46:12",
-                     "PlayTime":  0.7832359333333333,
+                     "PlayTime":  0.67101842833333336,
                      "Version":  "1.4",
-                     "SaveTime":  "2025-08-04 14:46:59"
+                     "SaveTime":  "2025-08-08 11:14:25"
                  },
     "GameEvents":  {
                        "LastBattleWon":  {
-                                             "XPGained":  5,
-                                             "Time":  "2025-08-04 14:46:59",
-                                             "Enemy":  "Test"
+                                             "XPGained":  10,
+                                             "Time":  "2025-08-08 11:14:25",
+                                             "Enemy":  "Test2"
                                          },
                        "LastItemFound":  null,
                        "LastLevelUp":  null,
@@ -17,24 +17,16 @@
                    },
     "Player":  {
                    "MP":  5,
-                   "ItemsCollected":  [
-
-                                      ],
+                   "ItemsCollected":  null,
                    "MaxMP":  5,
-                   "MonstersDefeated":  1,
+                   "MonstersDefeated":  5,
                    "HP":  30,
-                   "AreasDiscovered":  [
-
-                                       ],
+                   "AreasDiscovered":  null,
                    "CurrentMap":  "StartingArea",
-                   "NPCsSpokenTo":  [
-
-                                    ],
-                   "XP":  5,
+                   "NPCsSpokenTo":  null,
+                   "XP":  2,
                    "Y":  0,
-                   "QuestsCompleted":  [
-
-                                       ],
+                   "QuestsCompleted":  null,
                    "Armor":  "Leather Armor",
                    "X":  0,
                    "MaxHP":  30,
@@ -42,6 +34,13 @@
                    "Level":  1
                },
     "Monsters":  {
-                     "Test":  1
-                 }
+                     "Test":  2,
+                     "Test2":  1,
+                     "Test4":  2
+                 },
+    "Party":  {
+                  "Formation":  "Diamond",
+                  "Leader":  0,
+                  "Members":  null
+              }
 }

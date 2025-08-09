@@ -245,6 +245,15 @@ if (Test-Path $AutoSaveFilePath) {
 }
 
 # =============================================================================
+# PARTY INITIALIZATION (after save system loads)
+# =============================================================================
+
+# Party initialization will happen after PartySystem.ps1 is loaded
+
+# Set global SaveState for the party system
+$global:SaveState = $SaveState
+
+# =============================================================================
 # SAVE SYSTEM FUNCTIONS
 # =============================================================================
 
@@ -552,6 +561,18 @@ $playerChar = "@"
 # Load enemies
 . "$PSScriptRoot\Enemies.ps1"
 
+# Load party system (Phase 2.1/2.2)
+. "$PSScriptRoot\PartySystem.ps1"
+
+# Initialize global party from save data or create new party (after PartySystem.ps1 loads)
+if ($SaveState.Party.Members -and $SaveState.Party.Members.Count -gt 0) {
+    $global:Party = ConvertFrom-PartySaveData $SaveState.Party.Members
+    Write-Host "Party loaded from save data!" -ForegroundColor Green
+} else {
+    $global:Party = New-DefaultParty
+    Write-Host "New party assembled! Ready for adventure!" -ForegroundColor Green
+}
+
 # Pause for startup error visibility (after imports)
 Read-Host "Press Enter to continue..."
 
@@ -601,6 +622,12 @@ function Draw-Viewport {
     $viewX = [math]::Max(0, [math]::Min($playerX - [math]::Floor($boxWidth/2), $mapWidth - $boxWidth))
     $viewY = [math]::Max(0, [math]::Min($playerY - [math]::Floor($boxHeight/2), $mapHeight - $boxHeight))
     
+    # Get party positions for rendering (if party system is loaded)
+    $partyPositions = @{}
+    if ($global:Party) {
+        $partyPositions = Get-PartyPositions $global:Party
+    }
+    
     # Build entire frame as one large string for fastest output
     $sb = [System.Text.StringBuilder]::new()
     [void]$sb.AppendLine("+" + ("-" * $boxWidth) + "+")
@@ -615,7 +642,16 @@ function Draw-Viewport {
         for ($x = 0; $x -lt $boxWidth; $x++) {
             $worldX = $x + $viewX
             $worldY = $y + $viewY
-            if ($worldX -eq $playerX -and $worldY -eq $playerY) {
+            
+            # Check for party members first (they take priority)
+            $partyMember = $partyPositions["$worldX,$worldY"]
+            if ($partyMember) {
+                if ($partyMember.IsLeader) {
+                    $rowChars[$x] = '@'  # Leader symbol
+                } else {
+                    $rowChars[$x] = $partyMember.Symbol  # Party member symbol
+                }
+            } elseif ($worldX -eq $playerX -and $worldY -eq $playerY) {
                 $rowChars[$x] = $playerChar
             } else {
                 # Ultra-fast NPC lookup - direct hashtable access
@@ -651,6 +687,11 @@ function Set-CursorInBox {
  # Start in town
  $CurrentMapName = "Town"
  $currentMap = $Maps[$CurrentMapName]
+ 
+ # Initialize party positions if party exists
+ if ($global:Party) {
+     Initialize-PartyPositions $playerX $playerY $global:Party
+ }
 
  $running = $true
  $battleMode = $false
@@ -663,13 +704,8 @@ try {
             if ($battleMode) {
                 # Load player and enemy stats
                 . "$PSScriptRoot\Player.ps1"
-                . "$PSScriptRoot\PartySystem.ps1"
                 
-                # Initialize party if not already done
-                if ($global:Party -eq $null) {
-                    $global:Party = New-DefaultParty
-                    Write-Host "Party assembled! Ready for adventure!" -ForegroundColor Green
-                }
+                # Party is already initialized globally
                 
                 # Sync Player object with save state
                 $Player = Sync-PlayerFromSaveState $Player
@@ -695,9 +731,17 @@ try {
                     $partyDefending[$member.Name] = $false
                 }
                 $inCombat = $true
+                $invalidKeyCount = 0  # Track invalid keypresses without slowing combat
                 
-                # Create turn order for party vs enemy
-                $turnOrder = New-PartyTurnOrder $Party $enemy
+                # Clear input buffer at battle start to prevent overworld key spillover
+                Write-Host "Battle starting..." -ForegroundColor Yellow
+                while ([System.Console]::KeyAvailable) {
+                    [System.Console]::ReadKey($true) | Out-Null
+                }
+                Start-Sleep -Milliseconds 500
+                
+                # Create turn order for party vs enemy (wrap enemy in array)
+                $turnOrder = New-PartyTurnOrder $Party @($enemy)
                 $currentTurnIndex = 0
                 $maxTurns = 100  # Prevent infinite loops
                 $turnCount = 0
@@ -742,7 +786,7 @@ try {
                     
                     # Get current combatant
                     $currentCombatant = $turnOrder[$currentTurnIndex]
-                    $isPlayerTurn = ($currentCombatant.Type -eq "Player")
+                    $isPlayerTurn = ($currentCombatant.Type -eq "Party")
                     
                     if ($isPlayerTurn) {
                         # Party member turn
@@ -960,9 +1004,10 @@ try {
                             }
                             
                         } else {
-                            # Invalid input
-                            Write-CombatMessage "Invalid action! Use A/D/S/I/R" "Red"
-                            Start-Sleep -Milliseconds 800
+                            # Invalid input - show brief message without blocking combat flow
+                            $invalidKeyCount++
+                            $keyPressed = if ($input.KeyChar) { $input.KeyChar } else { $input.Key.ToString() }
+                            Write-Host "[$keyPressed] - Use A/D/S/I/R" -ForegroundColor DarkRed
                             continue
                         }
                         
@@ -1151,6 +1196,11 @@ try {
             if ($currentMap[$newY][$newX] -ne '#') {
                 $playerX = $newX
                 $playerY = $newY
+                
+                # Update party positions for snake-following (if party system is loaded)
+                if ($global:Party) {
+                    Update-PartyPositions $playerX $playerY $global:Party
+                }
             }
             
             # Clear input buffer to prevent movement lag (only in exploration mode)
@@ -1180,6 +1230,11 @@ try {
                     $currentMap = $Maps[$CurrentMapName]
                     $playerX = $dest.X
                     $playerY = $dest.Y
+                    
+                    # Move entire party to new map
+                    if ($global:Party) {
+                        Move-PartyToMap $playerX $playerY $global:Party $CurrentMapName
+                    }
                 }
             }
 
@@ -1202,6 +1257,11 @@ try {
                 $currentMap = $Maps[$CurrentMapName]
                 $playerX = $global:RandomDungeonEntrance.X
                 $playerY = $global:RandomDungeonEntrance.Y
+                
+                # Move entire party to randomized dungeon
+                if ($global:Party) {
+                    Move-PartyToMap $playerX $playerY $global:Party $CurrentMapName
+                }
             }
 
             # Random battle trigger in Dungeon (with cooldown)
@@ -1233,7 +1293,24 @@ try {
             $logPath = Join-Path $scriptDir 'error.log'
             $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
             if (!(Test-Path $logPath)) { New-Item -Path $logPath -ItemType File -Force | Out-Null }
-            "[$timestamp] $errorMsg" | Add-Content -Path $logPath
+            
+            # Try multiple times to write to log in case of file lock
+            $attempts = 0
+            $maxAttempts = 3
+            while ($attempts -lt $maxAttempts) {
+                try {
+                    "[$timestamp] $errorMsg" | Add-Content -Path $logPath -ErrorAction Stop
+                    break
+                } catch {
+                    $attempts++
+                    if ($attempts -ge $maxAttempts) {
+                        # If we can't write to the log, just write to console
+                        Write-Host "ERROR (log write failed): $errorMsg" -ForegroundColor Red
+                    } else {
+                        Start-Sleep -Milliseconds 100
+                    }
+                }
+            }
         }
 
         Start-Sleep -Milliseconds 20
@@ -1250,6 +1327,23 @@ catch {
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     $startupError = $_.Exception.Message
     if (!(Test-Path $logPath)) { New-Item -Path $logPath -ItemType File -Force | Out-Null }
-    "[$timestamp] STARTUP ERROR: $startupError" | Add-Content -Path $logPath
+    
+    # Try multiple times to write to log in case of file lock
+    $attempts = 0
+    $maxAttempts = 3
+    while ($attempts -lt $maxAttempts) {
+        try {
+            "[$timestamp] STARTUP ERROR: $startupError" | Add-Content -Path $logPath -ErrorAction Stop
+            break
+        } catch {
+            $attempts++
+            if ($attempts -ge $maxAttempts) {
+                # If we can't write to the log, just continue
+                break
+            } else {
+                Start-Sleep -Milliseconds 100
+            }
+        }
+    }
     Write-Host "Startup ERROR: $startupError" -ForegroundColor Red
 }
