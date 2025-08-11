@@ -1,15 +1,15 @@
 {
     "GameInfo":  {
                      "GameStarted":  "2025-08-04 14:46:12",
-                     "PlayTime":  0.67101842833333336,
+                     "PlayTime":  0.70713860166666664,
                      "Version":  "1.4",
-                     "SaveTime":  "2025-08-08 11:14:25"
+                     "SaveTime":  "2025-08-11 10:13:12"
                  },
     "GameEvents":  {
                        "LastBattleWon":  {
-                                             "XPGained":  10,
-                                             "Time":  "2025-08-08 11:14:25",
-                                             "Enemy":  "Test2"
+                                             "XPGained":  5,
+                                             "Time":  "2025-08-11 10:13:12",
+                                             "Enemy":  "Test"
                                          },
                        "LastItemFound":  null,
                        "LastLevelUp":  null,
@@ -19,24 +19,24 @@
                    "MP":  5,
                    "ItemsCollected":  null,
                    "MaxMP":  5,
-                   "MonstersDefeated":  5,
+                   "MonstersDefeated":  6,
                    "HP":  30,
                    "AreasDiscovered":  null,
-                   "CurrentMap":  "StartingArea",
+                   "CurrentMap":  "Dungeon",
                    "NPCsSpokenTo":  null,
-                   "XP":  2,
-                   "Y":  0,
+                   "XP":  1,
+                   "Y":  29,
                    "QuestsCompleted":  null,
                    "Armor":  "Leather Armor",
-                   "X":  0,
+                   "X":  21,
                    "MaxHP":  30,
                    "Weapon":  "Axe",
                    "Level":  1
                },
     "Monsters":  {
-                     "Test":  2,
                      "Test2":  1,
-                     "Test4":  2
+                     "Test4":  2,
+                     "Test":  3
                  },
     "Party":  {
                   "Formation":  "Diamond",

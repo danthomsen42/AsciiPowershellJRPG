@@ -104,6 +104,13 @@ $ChosenTransition = "flash"
 # ==============================
 # JRPG Real-Time Movement Demo (Real-Time Updates)
 # ==============================
+# 
+# WATER ANIMATION CONFIGURATION:
+# - Set $global:EnableWaterAnimation = $false to completely disable water effects
+# - Set $global:WaterRenderMethod to:
+#   * "ANSI"   = Fast ANSI escape sequences (best performance, modern terminals)
+#   * "CURSOR" = Original cursor positioning (slower, maximum compatibility)  
+#   * "NONE"   = Static water without animation (fastest, no effects)
 
 # Enable ANSI escape codes (optional, but not needed for SetCursorPosition)
 # Remove stray output (True True) and unnecessary code
@@ -112,6 +119,76 @@ $ChosenTransition = "flash"
 $boxWidth = 50
 $boxHeight = 20
 
+# =============================================================================
+# WATER ANIMATION SYSTEM (EASILY REMOVABLE - MULTIPLE RENDERING OPTIONS)
+# =============================================================================
+
+# *** WATER ANIMATION CONTROL ***
+$global:EnableWaterAnimation = $true
+
+# *** RENDERING METHOD SELECTION ***
+# Options: "ANSI", "CURSOR", "NONE"
+# - "ANSI"   = Fast ANSI escape sequences (recommended for performance)
+# - "CURSOR" = Original cursor positioning method (slower but more compatible)
+# - "NONE"   = No water animation at all (fastest, static blue water)
+$global:WaterRenderMethod = "ANSI"
+
+# EASY REMOVAL: To completely disable water effects:
+# $global:EnableWaterAnimation = $false
+
+# EASY FALLBACK: If ANSI doesn't work well:
+# $global:WaterRenderMethod = "CURSOR"
+
+# EASY DISABLE: For maximum performance:
+# $global:WaterRenderMethod = "NONE"
+
+# Water animation configuration - simple frame counter
+$global:WaterFrame = 0
+
+# ANSI Color codes for high-performance rendering (using [char]27 for better compatibility)
+$global:WaterANSIColors = @{
+    "DarkBlue" = "$([char]27)[34m"
+    "Blue"     = "$([char]27)[94m"  # Bright blue
+    "DarkCyan" = "$([char]27)[36m"
+    "Cyan"     = "$([char]27)[96m"  # Bright cyan
+    "Reset"    = "$([char]27)[0m"
+}
+
+# Function to get animated water color (backwards compatible)
+function Get-WaterColor {
+    param([int]$X, [int]$Y, [int]$Frame)
+    
+    if (-not $global:EnableWaterAnimation -or $global:WaterRenderMethod -eq "NONE") {
+        return "DarkBlue"  # Static water color when disabled
+    }
+    
+    # Create wave-like color pattern
+    $offset = ($X + $Y + $Frame) % 4
+    switch ($offset) {
+        0 { return "DarkBlue" }
+        1 { return "Blue" }
+        2 { return "DarkCyan" }
+        3 { return "Cyan" }
+    }
+}
+
+# Function to get ANSI color code for water
+function Get-WaterANSIColor {
+    param([int]$X, [int]$Y, [int]$Frame)
+    
+    if (-not $global:EnableWaterAnimation -or $global:WaterRenderMethod -eq "NONE") {
+        return $global:WaterANSIColors["DarkBlue"]
+    }
+    
+    # Create wave-like color pattern
+    $offset = ($X + $Y + $Frame) % 4
+    switch ($offset) {
+        0 { return $global:WaterANSIColors["DarkBlue"] }
+        1 { return $global:WaterANSIColors["Blue"] }
+        2 { return $global:WaterANSIColors["DarkCyan"] }
+        3 { return $global:WaterANSIColors["Cyan"] }
+    }
+}
 
 # =============================================================================
 # PHASE 1.4 COMPREHENSIVE SAVE SYSTEM
@@ -558,6 +635,9 @@ $playerChar = "@"
 # Load maps
 . "$PSScriptRoot\Maps.ps1"
 
+# Load color zones
+. "$PSScriptRoot\ColorZones.ps1"
+
 # Load enemies
 . "$PSScriptRoot\Enemies.ps1"
 
@@ -575,6 +655,9 @@ if ($SaveState.Party.Members -and $SaveState.Party.Members.Count -gt 0) {
 
 # Pause for startup error visibility (after imports)
 Read-Host "Press Enter to continue..."
+
+# Clear screen before starting the game
+Clear-Host
 
 # Registry of all maps by name
 $Maps = @{
@@ -628,50 +711,224 @@ function Draw-Viewport {
         $partyPositions = Get-PartyPositions $global:Party
     }
     
-    # Build entire frame as one large string for fastest output
-    $sb = [System.Text.StringBuilder]::new()
-    [void]$sb.AppendLine("+" + ("-" * $boxWidth) + "+")
-    [void]$sb.AppendLine("Map: $CurrentMapName | Player: ($playerX,$playerY)")
+    # Choose rendering method based on water animation settings
+    if ($global:EnableWaterAnimation -and $global:WaterRenderMethod -eq "ANSI") {
+        # High-performance ANSI rendering with embedded water colors
+        Draw-ViewportWithANSI $map $playerX $playerY $boxWidth $boxHeight $viewX $viewY $partyPositions
+    } else {
+        # Traditional rendering (backwards compatible)
+        Draw-ViewportTraditional $map $playerX $playerY $boxWidth $boxHeight $viewX $viewY $partyPositions
+    }
+}
+
+# High-performance ANSI rendering with embedded water colors
+function Draw-ViewportWithANSI {
+    param($map, $playerX, $playerY, $boxWidth, $boxHeight, $viewX, $viewY, $partyPositions)
     
-    # Pre-build all viewport rows
+    # Ultra-fast rendering using StringBuilder with embedded ANSI color codes
+    $output = [System.Text.StringBuilder]::new(8192)  # Larger buffer for ANSI codes
+    
+    # Build header
+    [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
+    [void]$output.AppendLine("Map: $CurrentMapName | Player: ($playerX,$playerY)")
+    
+    # Pre-build all viewport rows with embedded ANSI colors
     for ($y = 0; $y -lt $boxHeight; $y++) {
-        $mapRow = $map[$viewY + $y].Substring($viewX, $boxWidth)
-        $rowChars = $mapRow.ToCharArray()
+        [void]$output.Append("|")
         
-        # Fast character replacement using array indexing
         for ($x = 0; $x -lt $boxWidth; $x++) {
             $worldX = $x + $viewX
             $worldY = $y + $viewY
+            $mapChar = $map[$viewY + $y][$viewX + $x]
             
-            # Check for party members first (they take priority)
+            # Determine what character to display
+            $displayChar = $mapChar
             $partyMember = $partyPositions["$worldX,$worldY"]
+            
             if ($partyMember) {
-                if ($partyMember.IsLeader) {
-                    $rowChars[$x] = '@'  # Leader symbol
-                } else {
-                    $rowChars[$x] = $partyMember.Symbol  # Party member symbol
-                }
+                $displayChar = $partyMember.Symbol
             } elseif ($worldX -eq $playerX -and $worldY -eq $playerY) {
-                $rowChars[$x] = $playerChar
+                $displayChar = $playerChar
             } else {
-                # Ultra-fast NPC lookup - direct hashtable access
                 $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
                 if ($npcChar) {
-                    $rowChars[$x] = $npcChar.Char
+                    $displayChar = $npcChar.Char
+                }
+            }
+            
+            # Apply colors based on tile type and zones
+            if ($mapChar -eq '~' -and -not $partyMember) {
+                # Water tiles get special animation treatment
+                $ansiColor = Get-WaterANSIColor $worldX $worldY $global:WaterFrame
+                [void]$output.Append("$ansiColor$displayChar$($global:WaterANSIColors['Reset'])")
+            } elseif ($global:EnableColorZones -and -not $partyMember -and $worldX -ne $playerX -and $worldY -ne $playerY -and -not $npcChar) {
+                # Regular tiles get zone-based coloring (ONLY if color zones enabled)
+                $tileColor = Get-TileANSIColor $CurrentMapName $worldX $worldY $mapChar
+                if ($tileColor) {
+                    [void]$output.Append("$tileColor$displayChar$($global:WaterANSIColors['Reset'])")
+                } else {
+                    [void]$output.Append($displayChar)
+                }
+            } else {
+                [void]$output.Append($displayChar)
+            }
+        }
+        
+        [void]$output.AppendLine("|")
+    }
+    
+    [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
+    [void]$output.AppendLine("Use Arrow Keys or WASD to move. Press Q to quit. Step on + to change maps.")
+    [void]$output.AppendLine("Save: F5=Quick Save   F9=Save Menu   Auto-saves after battles!")
+    
+    # Single high-performance output with embedded ANSI colors
+    [System.Console]::SetCursorPosition(0, 0)
+    [System.Console]::Write($output.ToString())
+    [System.Console]::Out.Flush()
+}
+
+# Traditional rendering method (backwards compatible)
+function Draw-ViewportTraditional {
+    param($map, $playerX, $playerY, $boxWidth, $boxHeight, $viewX, $viewY, $partyPositions)
+    
+    # Traditional StringBuilder approach (same as original)
+    $output = [System.Text.StringBuilder]::new(4096)
+    
+    # Build header
+    [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
+    [void]$output.AppendLine("Map: $CurrentMapName | Player: ($playerX,$playerY)")
+    
+    # Pre-build all viewport rows
+    for ($y = 0; $y -lt $boxHeight; $y++) {
+        [void]$output.Append("|")
+        
+        for ($x = 0; $x -lt $boxWidth; $x++) {
+            $worldX = $x + $viewX
+            $worldY = $y + $viewY
+            $mapChar = $map[$viewY + $y][$viewX + $x]
+            
+            # Determine what character to display
+            $displayChar = $mapChar
+            $partyMember = $partyPositions["$worldX,$worldY"]
+            if ($partyMember) {
+                $displayChar = $partyMember.Symbol
+            } elseif ($worldX -eq $playerX -and $worldY -eq $playerY) {
+                $displayChar = $playerChar
+            } else {
+                $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
+                if ($npcChar) {
+                    $displayChar = $npcChar.Char
+                }
+            }
+            
+            [void]$output.Append($displayChar)
+        }
+        
+        [void]$output.AppendLine("|")
+    }
+    
+    [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
+    [void]$output.AppendLine("Use Arrow Keys or WASD to move. Press Q to quit. Step on + to change maps.")
+    [void]$output.AppendLine("Save: F5=Quick Save   F9=Save Menu   Auto-saves after battles!")
+    
+    # Compatible console positioning and output
+    [System.Console]::SetCursorPosition(0, 0)
+    [System.Console]::Write($output.ToString())
+    
+    # Apply zone-based coloring using individual positioning (for backwards compatibility)
+    if ($global:EnableColorZones -and $global:WaterRenderMethod -eq "CURSOR") {
+        # Apply colors to zone tiles using individual cursor positioning (ONLY if zones enabled)
+        $mapHeight = $map.Count
+        $mapWidth = if ($mapHeight -gt 0) { $map[0].Length } else { 0 }
+        
+        try {
+            for ($y = 0; $y -lt $boxHeight; $y++) {
+                for ($x = 0; $x -lt $boxWidth; $x++) {
+                    $worldX = $x + $viewX
+                    $worldY = $y + $viewY
+                    
+                    # Check if this position is safe to access
+                    if ($worldY -lt $mapHeight -and $worldX -lt $map[$worldY].Length) {
+                        $mapChar = $map[$worldY][$worldX]
+                        $partyMember = $partyPositions["$worldX,$worldY"]
+                        $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
+                        
+                        # Only color tiles that aren't covered by player, party, or NPCs
+                        if (-not $partyMember -and $worldX -ne $playerX -and $worldY -ne $playerY -and -not $npcChar) {
+                            $color = Get-TileColor $CurrentMapName $worldX $worldY $mapChar
+                            
+                            if ($color) {
+                                # Safe cursor positioning with bounds checking
+                                $cursorX = $x + 1
+                                $cursorY = $y + 2
+                                if ($cursorX -lt [System.Console]::BufferWidth -and $cursorY -lt [System.Console]::BufferHeight) {
+                                    [System.Console]::SetCursorPosition($cursorX, $cursorY)
+                                    Write-Host $mapChar -ForegroundColor $color -NoNewline
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch {
+            # If coloring fails, continue without colors
+            Write-Host "Zone coloring error - continuing without colors" -ForegroundColor DarkYellow
+        }
+    }
+    
+    # Water animation rendering using individual positioning (if needed)
+    if ($global:EnableWaterAnimation -and $global:WaterRenderMethod -eq "CURSOR") {
+        Render-WaterAnimationSafe $map $playerX $playerY $boxWidth $boxHeight $partyPositions
+    }
+    
+    [System.Console]::Out.Flush()
+}
+
+# Safe water animation rendering using individual cursor positioning (LEGACY - for compatibility)
+function Render-WaterAnimationSafe {
+    param($map, $playerX, $playerY, $boxWidth, $boxHeight, $partyPositions)
+    
+    # Only run if specifically set to CURSOR method
+    if (-not $global:EnableWaterAnimation -or $global:WaterRenderMethod -ne "CURSOR") { 
+        return 
+    }
+    
+    $mapHeight = $map.Count
+    $mapWidth = if ($mapHeight -gt 0) { $map[0].Length } else { 0 }
+    $viewX = [math]::Max(0, [math]::Min($playerX - [math]::Floor($boxWidth/2), $mapWidth - $boxWidth))
+    $viewY = [math]::Max(0, [math]::Min($playerY - [math]::Floor($boxHeight/2), $mapHeight - $boxHeight))
+    
+    # Update ALL water tiles (legacy method)
+    try {
+        for ($y = 0; $y -lt $boxHeight; $y++) {
+            for ($x = 0; $x -lt $boxWidth; $x++) {
+                $worldX = $x + $viewX
+                $worldY = $y + $viewY
+                
+                # Check if this position has water and is safe to access
+                if ($worldY -lt $mapHeight -and $worldX -lt $map[$worldY].Length) {
+                    $mapChar = $map[$worldY][$worldX]
+                    
+                    # Only render water tiles, skip if party member is on this tile
+                    if ($mapChar -eq '~' -and -not $partyPositions["$worldX,$worldY"]) {
+                        $color = Get-WaterColor $worldX $worldY $global:WaterFrame
+                        
+                        # Safe cursor positioning with bounds checking
+                        $cursorX = $x + 1
+                        $cursorY = $y + 2
+                        if ($cursorX -lt [System.Console]::BufferWidth -and $cursorY -lt [System.Console]::BufferHeight) {
+                            [System.Console]::SetCursorPosition($cursorX, $cursorY)
+                            Write-Host '~' -ForegroundColor $color -NoNewline
+                        }
+                    }
                 }
             }
         }
-        [void]$sb.AppendLine("|" + (-join $rowChars) + "|")
+    } catch {
+        # If water animation fails, fall back to NONE method
+        Write-Host "Water animation error - falling back to static water" -ForegroundColor DarkYellow
+        $global:WaterRenderMethod = "NONE"
     }
-    
-    [void]$sb.AppendLine("+" + ("-" * $boxWidth) + "+")
-    [void]$sb.AppendLine("Use Arrow Keys or WASD to move. Press Q to quit. Step on + to change maps.")
-    [void]$sb.AppendLine("Save: F5=Quick Save   F9=Save Menu   Auto-saves after battles!")
-    
-    # Single output operation - no colors for maximum speed
-    [System.Console]::SetCursorPosition(0, 0)
-    [System.Console]::Write($sb.ToString())
-    [System.Console]::Out.Flush()
 }
 
 # Move cursor to a specific position inside the box
@@ -692,6 +949,9 @@ function Set-CursorInBox {
  if ($global:Party) {
      Initialize-PartyPositions $playerX $playerY $global:Party
  }
+
+ # Initialize simple water animation counter
+ $global:FrameCounter = 0
 
  $running = $true
  $battleMode = $false
@@ -1169,31 +1429,47 @@ try {
                 continue
             }
 
+            # Update water animation with simple frame counter (runs every loop, independent of movement)
+            $global:FrameCounter++
+            if ($global:EnableWaterAnimation -and ($global:FrameCounter % 10) -eq 0) {
+                # Update water frame every 10 game loops for smooth animation
+                $global:WaterFrame = ($global:WaterFrame + 1) % 8
+            }
+
             Draw-Viewport $currentMap $playerX $playerY $boxWidth $boxHeight
 
-            # Read a key without waiting for Enter
-            $key = [System.Console]::ReadKey($true)
+            # Read a key without waiting for Enter (with timeout so animation continues)
+            if ([System.Console]::KeyAvailable) {
+                $key = [System.Console]::ReadKey($true)
+            } else {
+                # Small delay to prevent CPU spinning, but keep animation going
+                Start-Sleep -Milliseconds 50
+                continue  # Continue the loop to keep animation running
+            }
 
-            # Calculate new position
+            # Calculate new position (only if we have a key press)
             $newX = $playerX
             $newY = $playerY
             $moved = $false
-            switch ($key.Key) {
-                "LeftArrow" { $newX = [math]::Max(0, $playerX - 1); $moved = $true }
-                "A"         { $newX = [math]::Max(0, $playerX - 1); $moved = $true }
-                "RightArrow"{ $newX = [math]::Min($currentMap[0].Length - 1, $playerX + 1); $moved = $true }
-                "D"         { $newX = [math]::Min($currentMap[0].Length - 1, $playerX + 1); $moved = $true }
-                "UpArrow"   { $newY = [math]::Max(0, $playerY - 1); $moved = $true }
-                "W"         { $newY = [math]::Max(0, $playerY - 1); $moved = $true }
-                "DownArrow" { $newY = [math]::Min($currentMap.Count - 1, $playerY + 1); $moved = $true }
-                "S"         { $newY = [math]::Min($currentMap.Count - 1, $playerY + 1); $moved = $true }
-                "Q"         { $running = $false }
-                "F5"        { QuickSave-GameState }
-                "F9"        { Show-SaveMenu }
+            
+            if ($key) {
+                switch ($key.Key) {
+                    "LeftArrow" { $newX = [math]::Max(0, $playerX - 1); $moved = $true }
+                    "A"         { $newX = [math]::Max(0, $playerX - 1); $moved = $true }
+                    "RightArrow"{ $newX = [math]::Min($currentMap[0].Length - 1, $playerX + 1); $moved = $true }
+                    "D"         { $newX = [math]::Min($currentMap[0].Length - 1, $playerX + 1); $moved = $true }
+                    "UpArrow"   { $newY = [math]::Max(0, $playerY - 1); $moved = $true }
+                    "W"         { $newY = [math]::Max(0, $playerY - 1); $moved = $true }
+                    "DownArrow" { $newY = [math]::Min($currentMap.Count - 1, $playerY + 1); $moved = $true }
+                    "S"         { $newY = [math]::Min($currentMap.Count - 1, $playerY + 1); $moved = $true }
+                    "Q"         { $running = $false }
+                    "F5"        { QuickSave-GameState }
+                    "F9"        { Show-SaveMenu }
+                }
             }
 
-            # Collision: only move if not wall
-            if ($currentMap[$newY][$newX] -ne '#') {
+            # Collision: only move if not wall and player actually pressed a movement key
+            if ($moved -and $currentMap[$newY][$newX] -ne '#') {
                 $playerX = $newX
                 $playerY = $newY
                 
@@ -1316,6 +1592,7 @@ try {
         Start-Sleep -Milliseconds 20
     }
     # End of while ($running) loop
+    
     # Move cursor below the box for end message
     [System.Console]::SetCursorPosition(0, $boxHeight + 3)
     Write-Host "`nThanks for playing!"
