@@ -1,15 +1,15 @@
 {
     "GameInfo":  {
                      "GameStarted":  "2025-08-04 14:46:12",
-                     "PlayTime":  0.70713860166666664,
+                     "PlayTime":  0.52958279833333333,
                      "Version":  "1.4",
-                     "SaveTime":  "2025-08-11 10:13:12"
+                     "SaveTime":  "2025-08-12 12:37:34"
                  },
     "GameEvents":  {
                        "LastBattleWon":  {
-                                             "XPGained":  5,
-                                             "Time":  "2025-08-11 10:13:12",
-                                             "Enemy":  "Test"
+                                             "XPGained":  20,
+                                             "Time":  "2025-08-12 12:37:34",
+                                             "Enemy":  "Test4"
                                          },
                        "LastItemFound":  null,
                        "LastLevelUp":  null,
@@ -19,12 +19,12 @@
                    "MP":  5,
                    "ItemsCollected":  null,
                    "MaxMP":  5,
-                   "MonstersDefeated":  6,
+                   "MonstersDefeated":  7,
                    "HP":  30,
                    "AreasDiscovered":  null,
                    "CurrentMap":  "Dungeon",
                    "NPCsSpokenTo":  null,
-                   "XP":  1,
+                   "XP":  5,
                    "Y":  29,
                    "QuestsCompleted":  null,
                    "Armor":  "Leather Armor",
@@ -35,8 +35,8 @@
                },
     "Monsters":  {
                      "Test2":  1,
-                     "Test4":  2,
-                     "Test":  3
+                     "Test":  3,
+                     "Test4":  3
                  },
     "Party":  {
                   "Formation":  "Diamond",

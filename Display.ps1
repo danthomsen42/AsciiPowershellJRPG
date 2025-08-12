@@ -1,94 +1,14 @@
-# Draw the combat viewport in the same box area
-function Draw-CombatViewport {
-    param($enemyArt, $enemyName, $boxWidth, $boxHeight)
-    [System.Console]::SetCursorPosition(0, 0)
-    Write-Host ("+" + ("-" * $boxWidth) + "+") -ForegroundColor Yellow
-    Write-Host ("Enemy: $enemyName") -ForegroundColor Red
-    $artHeight = $enemyArt.Count
-    $artWidth = ($enemyArt | Measure-Object -Property Length -Maximum).Maximum
-    $startY = [math]::Max(0, [math]::Floor(($boxHeight - $artHeight) / 2))
-    $startX = [math]::Max(0, [math]::Floor(($boxWidth - $artWidth) / 2))
-    for ($y = 0; $y -lt $boxHeight; $y++) {
-        $row = "|"
-        if ($y -ge $startY -and $y -lt ($startY + $artHeight)) {
-            $artLine = $enemyArt[$y - $startY]
-            $padLeft = " " * $startX
-            $padRight = " " * ($boxWidth - $startX - $artLine.Length)
-            $row += $padLeft + $artLine + $padRight
-        } else {
-            $row += " " * $boxWidth
-        }
-        $row += "|"
-        Write-Host $row -ForegroundColor DarkGray
-    }
-    Write-Host ("+" + ("-" * $boxWidth) + "+") -ForegroundColor Yellow
-}
+# =============================================================================
+# JRPG Display System - Main Controller
+# =============================================================================
 
-# Function to display combat messages in a fixed area
-function Write-CombatMessage {
-    param($Message, $Color = "White", $CurrentTurn = "")
-    
-    # Ultra-simple approach: just write the message without any positioning
-    # This prevents scrolling completely
-    if ($CurrentTurn -ne "") {
-        Write-Host ">>> $CurrentTurn <<< $Message" -ForegroundColor $Color
-    } else {
-        Write-Host $Message -ForegroundColor $Color
-    }
-}
-
-# Function to create turn order based on Speed stats
-function New-TurnOrder {
-    param($Player, $Enemy)
-    
-    # Create combatants array with speed and type info
-    $combatants = @()
-    
-    # Add player to combatants
-    $combatants += @{
-        Name = $Player.Name
-        Speed = $Player.Speed
-        Type = "Player"
-        Entity = $Player
-    }
-    
-    # Add enemy to combatants  
-    $combatants += @{
-        Name = $Enemy.Name
-        Speed = $Enemy.Speed
-        Type = "Enemy"
-        Entity = $Enemy
-    }
-    
-    # Sort by Speed (highest first), with random tiebreaker
-    $turnOrder = $combatants | Sort-Object { $_.Speed + (Get-Random -Minimum 0.0 -Maximum 1.0) } -Descending
-    
-    return $turnOrder
-}
-
-# Function to display turn order to player
-function Show-TurnOrder {
-    param($TurnOrder, $CurrentTurnIndex)
-    
-    $orderText = "Turn Order: "
-    for ($i = 0; $i -lt $TurnOrder.Count; $i++) {
-        $combatant = $TurnOrder[$i]
-        if ($i -eq $CurrentTurnIndex) {
-            $orderText += "[$($combatant.Name)]"
-        } else {
-            $orderText += "$($combatant.Name)"
-        }
-        if ($i -lt $TurnOrder.Count - 1) {
-            $orderText += " → "
-        }
-    }
-    
-    # Simple approach - just display the turn order
-    Write-Host $orderText -ForegroundColor Cyan
-}
-# Set console output encoding to UTF-8 for Unicode support
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
+# Import required modules
+. "$PSScriptRoot\CombatDisplay.ps1"
+. "$PSScriptRoot\TurnOrder.ps1"
+. "$PSScriptRoot\WaterAnimation.ps1"
+. "$PSScriptRoot\ViewportRenderer.ps1"
+. "$PSScriptRoot\SaveSystem.ps1"
+. "$PSScriptRoot\MapManager.ps1"
 # Import transition effects
 . "$PSScriptRoot\Transitions.ps1"
 
@@ -101,6 +21,7 @@ $TransitionEffects = @{
 
 # Pick transition type (change to "flash" or "fade" to try others)
 $ChosenTransition = "flash"
+
 # ==============================
 # JRPG Real-Time Movement Demo (Real-Time Updates)
 # ==============================
@@ -119,508 +40,14 @@ $ChosenTransition = "flash"
 $boxWidth = 50
 $boxHeight = 20
 
-# =============================================================================
-# WATER ANIMATION SYSTEM (EASILY REMOVABLE - MULTIPLE RENDERING OPTIONS)
-# =============================================================================
-
-# *** WATER ANIMATION CONTROL ***
-$global:EnableWaterAnimation = $true
-
-# *** RENDERING METHOD SELECTION ***
-# Options: "ANSI", "CURSOR", "NONE"
-# - "ANSI"   = Fast ANSI escape sequences (recommended for performance)
-# - "CURSOR" = Original cursor positioning method (slower but more compatible)
-# - "NONE"   = No water animation at all (fastest, static blue water)
-$global:WaterRenderMethod = "ANSI"
-
-# EASY REMOVAL: To completely disable water effects:
-# $global:EnableWaterAnimation = $false
-
-# EASY FALLBACK: If ANSI doesn't work well:
-# $global:WaterRenderMethod = "CURSOR"
-
-# EASY DISABLE: For maximum performance:
-# $global:WaterRenderMethod = "NONE"
-
-# Water animation configuration - simple frame counter
-$global:WaterFrame = 0
-
-# ANSI Color codes for high-performance rendering (using [char]27 for better compatibility)
-$global:WaterANSIColors = @{
-    "DarkBlue" = "$([char]27)[34m"
-    "Blue"     = "$([char]27)[94m"  # Bright blue
-    "DarkCyan" = "$([char]27)[36m"
-    "Cyan"     = "$([char]27)[96m"  # Bright cyan
-    "Reset"    = "$([char]27)[0m"
-}
-
-# Function to get animated water color (backwards compatible)
-function Get-WaterColor {
-    param([int]$X, [int]$Y, [int]$Frame)
-    
-    if (-not $global:EnableWaterAnimation -or $global:WaterRenderMethod -eq "NONE") {
-        return "DarkBlue"  # Static water color when disabled
-    }
-    
-    # Create wave-like color pattern
-    $offset = ($X + $Y + $Frame) % 4
-    switch ($offset) {
-        0 { return "DarkBlue" }
-        1 { return "Blue" }
-        2 { return "DarkCyan" }
-        3 { return "Cyan" }
-    }
-}
-
-# Function to get ANSI color code for water
-function Get-WaterANSIColor {
-    param([int]$X, [int]$Y, [int]$Frame)
-    
-    if (-not $global:EnableWaterAnimation -or $global:WaterRenderMethod -eq "NONE") {
-        return $global:WaterANSIColors["DarkBlue"]
-    }
-    
-    # Create wave-like color pattern
-    $offset = ($X + $Y + $Frame) % 4
-    switch ($offset) {
-        0 { return $global:WaterANSIColors["DarkBlue"] }
-        1 { return $global:WaterANSIColors["Blue"] }
-        2 { return $global:WaterANSIColors["DarkCyan"] }
-        3 { return $global:WaterANSIColors["Cyan"] }
-    }
-}
-
-# =============================================================================
-# PHASE 1.4 COMPREHENSIVE SAVE SYSTEM
-# =============================================================================
-
-# Save system configuration
-$AutoSaveEnabled = $true
-$MaxSaveSlots = 5
-$SaveDirectory = "$PSScriptRoot/saves"
-
-# Ensure save directory exists
-if (-not (Test-Path $SaveDirectory)) {
-    New-Item -Path $SaveDirectory -ItemType Directory -Force | Out-Null
-}
-
-# Default save paths
-$AutoSaveFilePath = "$SaveDirectory/autosave.json"
-$QuickSaveFilePath = "$SaveDirectory/quicksave.json"
-
-# Default comprehensive save state structure
-$SaveState = @{
-    GameInfo = @{
-        Version = "1.4"
-        SaveTime = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-        PlayTime = 0
-        GameStarted = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    }
-    Player = @{
-        # Core Stats
-        XP = 0
-        Level = 1
-        MonstersDefeated = 0
-        
-        # Health/Magic
-        HP = 30
-        MaxHP = 30
-        MP = 5
-        MaxMP = 5
-        
-        # Equipment
-        Weapon = "Axe"
-        Armor = "Leather Armor"
-        
-        # Position (for map system)
-        X = 0
-        Y = 0
-        CurrentMap = "StartingArea"
-        
-        # Progress Tracking
-        QuestsCompleted = @()
-        NPCsSpokenTo = @()
-        ItemsCollected = @()
-        AreasDiscovered = @()
-    }
-    Party = @{
-        Members = @()  # Array of party member objects
-        Formation = "Diamond"  # Battle formation (for future use)
-        Leader = 0  # Index of party leader
-    }
-    Monsters = @{}
-    GameEvents = @{
-        LastBattleWon = $null
-        LastLevelUp = $null
-        LastItemFound = $null
-        LastNPCTalk = $null
-    }
-}
-
-# Initialize game start time
-$Global:GameStartTime = Get-Date
-
-# Load auto-save if it exists
-if (Test-Path $AutoSaveFilePath) {
-    try {
-        $loadedData = Get-Content $AutoSaveFilePath | ConvertFrom-Json -ErrorAction Stop
-        
-        # Merge loaded data with default structure (handles version compatibility)
-        $SaveState.GameInfo.Version = if ($loadedData.GameInfo.Version) { $loadedData.GameInfo.Version } else { "1.0" }
-        $SaveState.GameInfo.SaveTime = if ($loadedData.GameInfo.SaveTime) { $loadedData.GameInfo.SaveTime } else { (Get-Date).ToString("yyyy-MM-dd HH:mm:ss") }
-        $SaveState.GameInfo.PlayTime = if ($loadedData.GameInfo.PlayTime) { $loadedData.GameInfo.PlayTime } else { 0 }
-        $SaveState.GameInfo.GameStarted = if ($loadedData.GameInfo.GameStarted) { $loadedData.GameInfo.GameStarted } else { (Get-Date).ToString("yyyy-MM-dd HH:mm:ss") }
-        
-        # Load player data
-        if ($loadedData.Player) {
-            $SaveState.Player.XP = if ($loadedData.Player.XP) { $loadedData.Player.XP } else { 0 }
-            $SaveState.Player.Level = if ($loadedData.Player.Level) { $loadedData.Player.Level } else { 1 }
-            $SaveState.Player.MonstersDefeated = if ($loadedData.Player.MonstersDefeated) { $loadedData.Player.MonstersDefeated } else { 0 }
-            $SaveState.Player.HP = if ($loadedData.Player.HP) { $loadedData.Player.HP } else { 30 }
-            $SaveState.Player.MaxHP = if ($loadedData.Player.MaxHP) { $loadedData.Player.MaxHP } else { 30 }
-            $SaveState.Player.MP = if ($loadedData.Player.MP) { $loadedData.Player.MP } else { 5 }
-            $SaveState.Player.MaxMP = if ($loadedData.Player.MaxMP) { $loadedData.Player.MaxMP } else { 5 }
-            $SaveState.Player.Weapon = if ($loadedData.Player.Weapon) { $loadedData.Player.Weapon } else { "Axe" }
-            $SaveState.Player.Armor = if ($loadedData.Player.Armor) { $loadedData.Player.Armor } else { "Leather Armor" }
-            $SaveState.Player.X = if ($loadedData.Player.X) { $loadedData.Player.X } else { 0 }
-            $SaveState.Player.Y = if ($loadedData.Player.Y) { $loadedData.Player.Y } else { 0 }
-            $SaveState.Player.CurrentMap = if ($loadedData.Player.CurrentMap) { $loadedData.Player.CurrentMap } else { "StartingArea" }
-            
-            # Load arrays safely
-            $SaveState.Player.QuestsCompleted = if ($loadedData.Player.QuestsCompleted) { $loadedData.Player.QuestsCompleted } else { @() }
-            $SaveState.Player.NPCsSpokenTo = if ($loadedData.Player.NPCsSpokenTo) { $loadedData.Player.NPCsSpokenTo } else { @() }
-            $SaveState.Player.ItemsCollected = if ($loadedData.Player.ItemsCollected) { $loadedData.Player.ItemsCollected } else { @() }
-            $SaveState.Player.AreasDiscovered = if ($loadedData.Player.AreasDiscovered) { $loadedData.Player.AreasDiscovered } else { @() }
-        }
-        
-        # Load party data
-        if ($loadedData.Party) {
-            $SaveState.Party.Members = if ($loadedData.Party.Members) { $loadedData.Party.Members } else { @() }
-            $SaveState.Party.Formation = if ($loadedData.Party.Formation) { $loadedData.Party.Formation } else { "Diamond" }
-            $SaveState.Party.Leader = if ($loadedData.Party.Leader) { $loadedData.Party.Leader } else { 0 }
-        }
-        
-        # Load monsters data
-        if ($loadedData.Monsters) {
-            $loadedData.Monsters.PSObject.Properties | ForEach-Object {
-                $SaveState.Monsters[$_.Name] = $_.Value
-            }
-        }
-        
-        # Load game events
-        if ($loadedData.GameEvents) {
-            $SaveState.GameEvents.LastBattleWon = $loadedData.GameEvents.LastBattleWon
-            $SaveState.GameEvents.LastLevelUp = $loadedData.GameEvents.LastLevelUp
-            $SaveState.GameEvents.LastItemFound = $loadedData.GameEvents.LastItemFound
-            $SaveState.GameEvents.LastNPCTalk = $loadedData.GameEvents.LastNPCTalk
-        }
-        
-        Write-Host "Auto-save loaded successfully!" -ForegroundColor Green
-    } catch {
-        Write-Host "Failed to load auto-save file. Using defaults." -ForegroundColor Yellow
-    }
-}
+# Set console output encoding to UTF-8 for Unicode support
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 # =============================================================================
 # PARTY INITIALIZATION (after save system loads)
 # =============================================================================
 
 # Party initialization will happen after PartySystem.ps1 is loaded
-
-# Set global SaveState for the party system
-$global:SaveState = $SaveState
-
-# =============================================================================
-# SAVE SYSTEM FUNCTIONS
-# =============================================================================
-
-# Auto-save function (called automatically during gameplay)
-function AutoSave-GameState {
-    if (-not $AutoSaveEnabled) { return }
-    
-    # Update save metadata
-    $SaveState.GameInfo.SaveTime = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    $SaveState.GameInfo.PlayTime = ((Get-Date) - $Global:GameStartTime).TotalMinutes
-    
-    try {
-        $SaveState | ConvertTo-Json -Depth 10 | Set-Content -Path $AutoSaveFilePath
-        Write-Host "[AUTO-SAVED]" -ForegroundColor DarkGreen -NoNewline
-        Write-Host " " -NoNewline  # Space for formatting
-    } catch {
-        Write-Host "[AUTO-SAVE FAILED]" -ForegroundColor DarkRed -NoNewline
-        Write-Host " " -NoNewline
-    }
-}
-
-# Manual quick save function
-function QuickSave-GameState {
-    # Update save metadata
-    $SaveState.GameInfo.SaveTime = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    $SaveState.GameInfo.PlayTime = ((Get-Date) - $Global:GameStartTime).TotalMinutes
-    
-    try {
-        $SaveState | ConvertTo-Json -Depth 10 | Set-Content -Path $QuickSaveFilePath
-        Write-Host "Game quick-saved successfully!" -ForegroundColor Cyan
-    } catch {
-        Write-Host "Quick save failed!" -ForegroundColor Red
-    }
-}
-
-# Manual save to specific slot
-function Save-GameToSlot {
-    param([int]$SlotNumber)
-    
-    if ($SlotNumber -lt 1 -or $SlotNumber -gt $MaxSaveSlots) {
-        Write-Host "Invalid save slot. Use 1-$MaxSaveSlots." -ForegroundColor Red
-        return
-    }
-    
-    $SlotFilePath = "$SaveDirectory/save_slot_$SlotNumber.json"
-    
-    # Update save metadata
-    $SaveState.GameInfo.SaveTime = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    $SaveState.GameInfo.PlayTime = ((Get-Date) - $Global:GameStartTime).TotalMinutes
-    
-    try {
-        $SaveState | ConvertTo-Json -Depth 10 | Set-Content -Path $SlotFilePath
-        Write-Host "Game saved to Slot $SlotNumber successfully!" -ForegroundColor Green
-    } catch {
-        Write-Host "Save to Slot $SlotNumber failed!" -ForegroundColor Red
-    }
-}
-
-# Load from specific slot
-function Load-GameFromSlot {
-    param([int]$SlotNumber)
-    
-    if ($SlotNumber -lt 1 -or $SlotNumber -gt $MaxSaveSlots) {
-        Write-Host "Invalid save slot. Use 1-$MaxSaveSlots." -ForegroundColor Red
-        return $false
-    }
-    
-    $SlotFilePath = "$SaveDirectory/save_slot_$SlotNumber.json"
-    
-    if (-not (Test-Path $SlotFilePath)) {
-        Write-Host "Save Slot $SlotNumber is empty." -ForegroundColor Yellow
-        return $false
-    }
-    
-    try {
-        $loadedData = Get-Content $SlotFilePath | ConvertFrom-Json -ErrorAction Stop
-        
-        # TODO: Implement full state restoration (would need to update player object)
-        Write-Host "Save file loaded from Slot $SlotNumber!" -ForegroundColor Green
-        Write-Host "Note: Full state restoration will be implemented when needed." -ForegroundColor Yellow
-        return $true
-    } catch {
-        Write-Host "Failed to load from Slot $SlotNumber." -ForegroundColor Red
-        return $false
-    }
-}
-
-# Show all save slots
-function Show-SaveSlots {
-    Write-Host "`n=== SAVE SLOTS ===" -ForegroundColor Cyan
-    
-    # Check auto-save
-    if (Test-Path $AutoSaveFilePath) {
-        $autoSaveInfo = Get-Content $AutoSaveFilePath | ConvertFrom-Json
-        Write-Host "AUTO: Level $($autoSaveInfo.Player.Level) - $($autoSaveInfo.GameInfo.SaveTime)" -ForegroundColor Green
-    } else {
-        Write-Host "AUTO: [Empty]" -ForegroundColor DarkGray
-    }
-    
-    # Check quick save
-    if (Test-Path $QuickSaveFilePath) {
-        $quickSaveInfo = Get-Content $QuickSaveFilePath | ConvertFrom-Json
-        Write-Host "QUICK: Level $($quickSaveInfo.Player.Level) - $($quickSaveInfo.GameInfo.SaveTime)" -ForegroundColor Cyan
-    } else {
-        Write-Host "QUICK: [Empty]" -ForegroundColor DarkGray
-    }
-    
-    # Check manual save slots
-    for ($i = 1; $i -le $MaxSaveSlots; $i++) {
-        $SlotFilePath = "$SaveDirectory/save_slot_$i.json"
-        if (Test-Path $SlotFilePath) {
-            $slotInfo = Get-Content $SlotFilePath | ConvertFrom-Json
-            Write-Host "SLOT $i`: Level $($slotInfo.Player.Level) - $($slotInfo.GameInfo.SaveTime)" -ForegroundColor White
-        } else {
-            Write-Host "SLOT $i`: [Empty]" -ForegroundColor DarkGray
-        }
-    }
-    Write-Host "=================" -ForegroundColor Cyan
-}
-
-# Interactive save menu
-function Show-SaveMenu {
-    Clear-Host
-    Write-Host "=== SAVE SYSTEM ===" -ForegroundColor Cyan
-    Write-Host "F5  = Quick Save" -ForegroundColor Yellow
-    Write-Host "1-5 = Save to Slot" -ForegroundColor Yellow
-    Write-Host "Q   = Quick Load" -ForegroundColor Green
-    Write-Host "L   = Load from Slot" -ForegroundColor Green
-    Write-Host "V   = View All Save Slots" -ForegroundColor White
-    Write-Host "ESC = Return to Game" -ForegroundColor Gray
-    Write-Host "===================" -ForegroundColor Cyan
-    
-    while ($true) {
-        $input = [System.Console]::ReadKey($true)
-        
-        switch ($input.Key) {
-            "F5" { 
-                QuickSave-GameState
-                Start-Sleep -Milliseconds 1000
-                return 
-            }
-            "D1" { Save-GameToSlot 1; Start-Sleep -Milliseconds 1000; return }
-            "D2" { Save-GameToSlot 2; Start-Sleep -Milliseconds 1000; return }
-            "D3" { Save-GameToSlot 3; Start-Sleep -Milliseconds 1000; return }
-            "D4" { Save-GameToSlot 4; Start-Sleep -Milliseconds 1000; return }
-            "D5" { Save-GameToSlot 5; Start-Sleep -Milliseconds 1000; return }
-            "Q" {
-                if (Test-Path $QuickSaveFilePath) {
-                    Write-Host "Quick save loaded!" -ForegroundColor Green
-                    # TODO: Implement full game state restoration
-                } else {
-                    Write-Host "No quick save found!" -ForegroundColor Red
-                }
-                Start-Sleep -Milliseconds 1000
-                return
-            }
-            "L" {
-                Write-Host "Enter slot number (1-5): " -NoNewline
-                $slotInput = [System.Console]::ReadKey($true)
-                $slotNum = $null
-                if ([int]::TryParse($slotInput.KeyChar, [ref]$slotNum) -and $slotNum -ge 1 -and $slotNum -le 5) {
-                    Load-GameFromSlot $slotNum
-                } else {
-                    Write-Host "Invalid slot number!" -ForegroundColor Red
-                }
-                Start-Sleep -Milliseconds 1000
-                return
-            }
-            "V" {
-                Show-SaveSlots
-                Write-Host "`nPress any key to continue..." -ForegroundColor Gray
-                [System.Console]::ReadKey($true) | Out-Null
-                Show-SaveMenu
-                return
-            }
-            "Escape" { return }
-        }
-    }
-}
-
-# Legacy function for backward compatibility
-function Save-GameState {
-    AutoSave-GameState
-}
-
-# =============================================================================
-# AUTO-SAVE TRIGGER FUNCTIONS
-# =============================================================================
-
-function Trigger-BattleVictoryAutoSave {
-    param($enemyName, $xpGained)
-    $SaveState.GameEvents.LastBattleWon = @{
-        Enemy = $enemyName
-        XPGained = $xpGained
-        Time = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    }
-    AutoSave-GameState
-}
-
-function Trigger-LevelUpAutoSave {
-    param($newLevel)
-    $SaveState.GameEvents.LastLevelUp = @{
-        Level = $newLevel
-        Time = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    }
-    AutoSave-GameState
-}
-
-function Trigger-ItemFoundAutoSave {
-    param($itemName)
-    if ($SaveState.Player.ItemsCollected -notcontains $itemName) {
-        $SaveState.Player.ItemsCollected += $itemName
-    }
-    $SaveState.GameEvents.LastItemFound = @{
-        Item = $itemName
-        Time = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    }
-    AutoSave-GameState
-}
-
-function Trigger-NPCTalkAutoSave {
-    param($npcName)
-    if ($SaveState.Player.NPCsSpokenTo -notcontains $npcName) {
-        $SaveState.Player.NPCsSpokenTo += $npcName
-    }
-    $SaveState.GameEvents.LastNPCTalk = @{
-        NPC = $npcName
-        Time = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    }
-    AutoSave-GameState
-}
-
-function Trigger-MapTransitionAutoSave {
-    param($newMap, $x, $y)
-    $SaveState.Player.CurrentMap = $newMap
-    $SaveState.Player.X = $x
-    $SaveState.Player.Y = $y
-    
-    if ($SaveState.Player.AreasDiscovered -notcontains $newMap) {
-        $SaveState.Player.AreasDiscovered += $newMap
-    }
-    
-    AutoSave-GameState
-}
-
-# =============================================================================
-# PLAYER SYNCHRONIZATION FUNCTIONS
-# =============================================================================
-
-# Sync save state player data with the actual Player object
-function Sync-PlayerFromSaveState {
-    param($PlayerObject)
-    
-    # Update Player object with saved data
-    $PlayerObject.XP = $SaveState.Player.XP
-    $PlayerObject.Level = $SaveState.Player.Level
-    $PlayerObject.HP = $SaveState.Player.HP
-    $PlayerObject.MaxHP = $SaveState.Player.MaxHP
-    $PlayerObject.MP = $SaveState.Player.MP
-    $PlayerObject.MaxMP = $SaveState.Player.MaxMP
-    $PlayerObject.Equipped.Weapon = $SaveState.Player.Weapon
-    $PlayerObject.Equipped.Armor = $SaveState.Player.Armor
-    
-    return $PlayerObject
-}
-
-# Update save state from Player object changes
-function Update-SaveStateFromPlayer {
-    param($PlayerObject)
-    
-    $SaveState.Player.XP = $PlayerObject.XP
-    $SaveState.Player.Level = $PlayerObject.Level
-    $SaveState.Player.HP = $PlayerObject.HP
-    $SaveState.Player.MaxHP = $PlayerObject.MaxHP
-    $SaveState.Player.MP = $PlayerObject.MP
-    $SaveState.Player.MaxMP = $PlayerObject.MaxMP
-    $SaveState.Player.Weapon = $PlayerObject.Equipped.Weapon
-    $SaveState.Player.Armor = $PlayerObject.Equipped.Armor
-}
-
-# Update save state from party
-function Update-SaveStateFromParty {
-    param([array]$PartyArray)
-    
-    if ($PartyArray -and $PartyArray.Count -gt 0) {
-        $SaveState.Party.Members = ConvertTo-PartySaveData $PartyArray
-        # Leader is always the first party member for now
-        $SaveState.Party.Leader = 0
-    }
-}
 
 # Set initial player position (centered, inside box)
 $playerX = [math]::Floor($boxWidth / 2)
@@ -659,291 +86,16 @@ Read-Host "Press Enter to continue..."
 # Clear screen before starting the game
 Clear-Host
 
-# Registry of all maps by name
-$Maps = @{
-    "Town"     = $TownMap
-    "Dungeon"  = $DungeonMap
-    "DungeonMap2" = $DungeonMap2
-    "RandomizedDungeon" = $global:RandomizedDungeon
-    # Add more maps here, e.g. "Shop" = $ShopMap
+# Start in town
+$CurrentMapName = "Town"
+$currentMap = $global:Maps[$CurrentMapName]
+
+# Verify map loaded correctly
+if (-not $currentMap) {
+    Write-Host "ERROR: Could not load map '$CurrentMapName'. Please check Maps.ps1 and MapManager.ps1" -ForegroundColor Red
+    Read-Host "Press Enter to exit..."
+    exit 1
 }
-
-
-# Helper: Print coordinates of all '+' doors in each map (run once to update DoorRegistry)
-function PrintDoorCoords {
-    param($map, $mapName)
-    for ($y = 0; $y -lt $map.Count; $y++) {
-        $x = $map[$y].IndexOf('+')
-        if ($x -ge 0) { Write-Host "$mapName,$x,$y" }
-    }
-}
-# Uncomment to print door coordinates:
-# PrintDoorCoords $TownMap "Town"
-# PrintDoorCoords $DungeonMap "Dungeon"
-
-# Door registry: (MapName,X,Y) => @{ Map = "DestinationMapName"; X = entryX; Y = entryY }
-$DoorRegistry = @{
-    # Use the actual coordinates found by PrintDoorCoords
-    "Town,21,29"    = @{ Map = "Dungeon"; X = 21; Y = 29 }
-    "Dungeon,21,29" = @{ Map = "Town";    X = 21; Y = 29 }
-    "Dungeon,42,24" = @{ Map = "DungeonMap2";    X = 42; Y = 24 }
-    "DungeonMap2,42,10" = @{ Map = "Dungeon";    X = 42; Y = 24 }
-    # Add more doors for other maps here
-}
-
-# Add randomized dungeon door registry entry after the dungeon is generated
-if ($global:RandomDungeonEntrance) {
-    $DoorRegistry["RandomizedDungeon,$($global:RandomDungeonEntrance.X),$($global:RandomDungeonEntrance.Y)"] = @{ Map = "Town"; X = 70; Y = 26 }
-}
-
-# Function to draw the current viewport of the map
-function Draw-Viewport {
-    param($map, $playerX, $playerY, $boxWidth, $boxHeight)
-    # Calculate viewport origin so player is centered when possible
-    $mapWidth = $map[0].Length
-    $mapHeight = $map.Count
-    $viewX = [math]::Max(0, [math]::Min($playerX - [math]::Floor($boxWidth/2), $mapWidth - $boxWidth))
-    $viewY = [math]::Max(0, [math]::Min($playerY - [math]::Floor($boxHeight/2), $mapHeight - $boxHeight))
-    
-    # Get party positions for rendering (if party system is loaded)
-    $partyPositions = @{}
-    if ($global:Party) {
-        $partyPositions = Get-PartyPositions $global:Party
-    }
-    
-    # Choose rendering method based on water animation settings
-    if ($global:EnableWaterAnimation -and $global:WaterRenderMethod -eq "ANSI") {
-        # High-performance ANSI rendering with embedded water colors
-        Draw-ViewportWithANSI $map $playerX $playerY $boxWidth $boxHeight $viewX $viewY $partyPositions
-    } else {
-        # Traditional rendering (backwards compatible)
-        Draw-ViewportTraditional $map $playerX $playerY $boxWidth $boxHeight $viewX $viewY $partyPositions
-    }
-}
-
-# High-performance ANSI rendering with embedded water colors
-function Draw-ViewportWithANSI {
-    param($map, $playerX, $playerY, $boxWidth, $boxHeight, $viewX, $viewY, $partyPositions)
-    
-    # Ultra-fast rendering using StringBuilder with embedded ANSI color codes
-    $output = [System.Text.StringBuilder]::new(8192)  # Larger buffer for ANSI codes
-    
-    # Build header
-    [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
-    [void]$output.AppendLine("Map: $CurrentMapName | Player: ($playerX,$playerY)")
-    
-    # Pre-build all viewport rows with embedded ANSI colors
-    for ($y = 0; $y -lt $boxHeight; $y++) {
-        [void]$output.Append("|")
-        
-        for ($x = 0; $x -lt $boxWidth; $x++) {
-            $worldX = $x + $viewX
-            $worldY = $y + $viewY
-            $mapChar = $map[$viewY + $y][$viewX + $x]
-            
-            # Determine what character to display
-            $displayChar = $mapChar
-            $partyMember = $partyPositions["$worldX,$worldY"]
-            
-            if ($partyMember) {
-                $displayChar = $partyMember.Symbol
-            } elseif ($worldX -eq $playerX -and $worldY -eq $playerY) {
-                $displayChar = $playerChar
-            } else {
-                $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
-                if ($npcChar) {
-                    $displayChar = $npcChar.Char
-                }
-            }
-            
-            # Apply colors based on tile type and zones
-            if ($mapChar -eq '~' -and -not $partyMember) {
-                # Water tiles get special animation treatment
-                $ansiColor = Get-WaterANSIColor $worldX $worldY $global:WaterFrame
-                [void]$output.Append("$ansiColor$displayChar$($global:WaterANSIColors['Reset'])")
-            } elseif ($global:EnableColorZones -and -not $partyMember -and $worldX -ne $playerX -and $worldY -ne $playerY -and -not $npcChar) {
-                # Regular tiles get zone-based coloring (ONLY if color zones enabled)
-                $tileColor = Get-TileANSIColor $CurrentMapName $worldX $worldY $mapChar
-                if ($tileColor) {
-                    [void]$output.Append("$tileColor$displayChar$($global:WaterANSIColors['Reset'])")
-                } else {
-                    [void]$output.Append($displayChar)
-                }
-            } else {
-                [void]$output.Append($displayChar)
-            }
-        }
-        
-        [void]$output.AppendLine("|")
-    }
-    
-    [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
-    [void]$output.AppendLine("Use Arrow Keys or WASD to move. Press Q to quit. Step on + to change maps.")
-    [void]$output.AppendLine("Save: F5=Quick Save   F9=Save Menu   Auto-saves after battles!")
-    
-    # Single high-performance output with embedded ANSI colors
-    [System.Console]::SetCursorPosition(0, 0)
-    [System.Console]::Write($output.ToString())
-    [System.Console]::Out.Flush()
-}
-
-# Traditional rendering method (backwards compatible)
-function Draw-ViewportTraditional {
-    param($map, $playerX, $playerY, $boxWidth, $boxHeight, $viewX, $viewY, $partyPositions)
-    
-    # Traditional StringBuilder approach (same as original)
-    $output = [System.Text.StringBuilder]::new(4096)
-    
-    # Build header
-    [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
-    [void]$output.AppendLine("Map: $CurrentMapName | Player: ($playerX,$playerY)")
-    
-    # Pre-build all viewport rows
-    for ($y = 0; $y -lt $boxHeight; $y++) {
-        [void]$output.Append("|")
-        
-        for ($x = 0; $x -lt $boxWidth; $x++) {
-            $worldX = $x + $viewX
-            $worldY = $y + $viewY
-            $mapChar = $map[$viewY + $y][$viewX + $x]
-            
-            # Determine what character to display
-            $displayChar = $mapChar
-            $partyMember = $partyPositions["$worldX,$worldY"]
-            if ($partyMember) {
-                $displayChar = $partyMember.Symbol
-            } elseif ($worldX -eq $playerX -and $worldY -eq $playerY) {
-                $displayChar = $playerChar
-            } else {
-                $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
-                if ($npcChar) {
-                    $displayChar = $npcChar.Char
-                }
-            }
-            
-            [void]$output.Append($displayChar)
-        }
-        
-        [void]$output.AppendLine("|")
-    }
-    
-    [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
-    [void]$output.AppendLine("Use Arrow Keys or WASD to move. Press Q to quit. Step on + to change maps.")
-    [void]$output.AppendLine("Save: F5=Quick Save   F9=Save Menu   Auto-saves after battles!")
-    
-    # Compatible console positioning and output
-    [System.Console]::SetCursorPosition(0, 0)
-    [System.Console]::Write($output.ToString())
-    
-    # Apply zone-based coloring using individual positioning (for backwards compatibility)
-    if ($global:EnableColorZones -and $global:WaterRenderMethod -eq "CURSOR") {
-        # Apply colors to zone tiles using individual cursor positioning (ONLY if zones enabled)
-        $mapHeight = $map.Count
-        $mapWidth = if ($mapHeight -gt 0) { $map[0].Length } else { 0 }
-        
-        try {
-            for ($y = 0; $y -lt $boxHeight; $y++) {
-                for ($x = 0; $x -lt $boxWidth; $x++) {
-                    $worldX = $x + $viewX
-                    $worldY = $y + $viewY
-                    
-                    # Check if this position is safe to access
-                    if ($worldY -lt $mapHeight -and $worldX -lt $map[$worldY].Length) {
-                        $mapChar = $map[$worldY][$worldX]
-                        $partyMember = $partyPositions["$worldX,$worldY"]
-                        $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
-                        
-                        # Only color tiles that aren't covered by player, party, or NPCs
-                        if (-not $partyMember -and $worldX -ne $playerX -and $worldY -ne $playerY -and -not $npcChar) {
-                            $color = Get-TileColor $CurrentMapName $worldX $worldY $mapChar
-                            
-                            if ($color) {
-                                # Safe cursor positioning with bounds checking
-                                $cursorX = $x + 1
-                                $cursorY = $y + 2
-                                if ($cursorX -lt [System.Console]::BufferWidth -and $cursorY -lt [System.Console]::BufferHeight) {
-                                    [System.Console]::SetCursorPosition($cursorX, $cursorY)
-                                    Write-Host $mapChar -ForegroundColor $color -NoNewline
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } catch {
-            # If coloring fails, continue without colors
-            Write-Host "Zone coloring error - continuing without colors" -ForegroundColor DarkYellow
-        }
-    }
-    
-    # Water animation rendering using individual positioning (if needed)
-    if ($global:EnableWaterAnimation -and $global:WaterRenderMethod -eq "CURSOR") {
-        Render-WaterAnimationSafe $map $playerX $playerY $boxWidth $boxHeight $partyPositions
-    }
-    
-    [System.Console]::Out.Flush()
-}
-
-# Safe water animation rendering using individual cursor positioning (LEGACY - for compatibility)
-function Render-WaterAnimationSafe {
-    param($map, $playerX, $playerY, $boxWidth, $boxHeight, $partyPositions)
-    
-    # Only run if specifically set to CURSOR method
-    if (-not $global:EnableWaterAnimation -or $global:WaterRenderMethod -ne "CURSOR") { 
-        return 
-    }
-    
-    $mapHeight = $map.Count
-    $mapWidth = if ($mapHeight -gt 0) { $map[0].Length } else { 0 }
-    $viewX = [math]::Max(0, [math]::Min($playerX - [math]::Floor($boxWidth/2), $mapWidth - $boxWidth))
-    $viewY = [math]::Max(0, [math]::Min($playerY - [math]::Floor($boxHeight/2), $mapHeight - $boxHeight))
-    
-    # Update ALL water tiles (legacy method)
-    try {
-        for ($y = 0; $y -lt $boxHeight; $y++) {
-            for ($x = 0; $x -lt $boxWidth; $x++) {
-                $worldX = $x + $viewX
-                $worldY = $y + $viewY
-                
-                # Check if this position has water and is safe to access
-                if ($worldY -lt $mapHeight -and $worldX -lt $map[$worldY].Length) {
-                    $mapChar = $map[$worldY][$worldX]
-                    
-                    # Only render water tiles, skip if party member is on this tile
-                    if ($mapChar -eq '~' -and -not $partyPositions["$worldX,$worldY"]) {
-                        $color = Get-WaterColor $worldX $worldY $global:WaterFrame
-                        
-                        # Safe cursor positioning with bounds checking
-                        $cursorX = $x + 1
-                        $cursorY = $y + 2
-                        if ($cursorX -lt [System.Console]::BufferWidth -and $cursorY -lt [System.Console]::BufferHeight) {
-                            [System.Console]::SetCursorPosition($cursorX, $cursorY)
-                            Write-Host '~' -ForegroundColor $color -NoNewline
-                        }
-                    }
-                }
-            }
-        }
-    } catch {
-        # If water animation fails, fall back to NONE method
-        Write-Host "Water animation error - falling back to static water" -ForegroundColor DarkYellow
-        $global:WaterRenderMethod = "NONE"
-    }
-}
-
-# Move cursor to a specific position inside the box
-function Set-CursorInBox {
-    param($x, $y)
-    # Set cursor position using .NET Console API (works in most Windows terminals)
-    # The play area starts at row 1, col 1 (inside the box border)
-    $row = $y + 1  # .NET is 0-based, box border is at row 0
-    $col = $x + 1  # .NET is 0-based, box border is at col 0
-    [System.Console]::SetCursorPosition($col, $row)
-}
-
- # Start in town
- $CurrentMapName = "Town"
- $currentMap = $Maps[$CurrentMapName]
  
  # Initialize party positions if party exists
  if ($global:Party) {
@@ -1469,7 +621,7 @@ try {
             }
 
             # Collision: only move if not wall and player actually pressed a movement key
-            if ($moved -and $currentMap[$newY][$newX] -ne '#') {
+            if ($moved -and $currentMap -and $currentMap[$newY] -and $currentMap[$newY][$newX] -ne '#') {
                 $playerX = $newX
                 $playerY = $newY
                 
@@ -1497,13 +649,13 @@ try {
             }
 
             # Map switching: step on a door symbol ('+')
-            if ($currentMap[$playerY][$playerX] -eq '+') {
+            if ($currentMap -and $currentMap[$playerY] -and $currentMap[$playerY][$playerX] -eq '+') {
                 $key = "$CurrentMapName,$playerX,$playerY"
-                if ($DoorRegistry.ContainsKey($key)) {
+                if ($global:DoorRegistry.ContainsKey($key)) {
                     & $TransitionEffects[$ChosenTransition] $boxWidth $boxHeight
-                    $dest = $DoorRegistry[$key]
+                    $dest = $global:DoorRegistry[$key]
                     $CurrentMapName = $dest.Map
-                    $currentMap = $Maps[$CurrentMapName]
+                    $currentMap = $global:Maps[$CurrentMapName]
                     $playerX = $dest.X
                     $playerY = $dest.Y
                     
@@ -1515,22 +667,22 @@ try {
             }
 
             # Randomized dungeon entrance: step on 'R' symbol
-            if ($currentMap[$playerY][$playerX] -eq 'R') {
+            if ($currentMap -and $currentMap[$playerY] -and $currentMap[$playerY][$playerX] -eq 'R') {
                 Write-Host "Entering the randomized dungeon..." -ForegroundColor Green
                 Start-Sleep -Milliseconds 500
                 
                 # Generate a new randomized dungeon each time
                 $global:RandomizedDungeon = New-RandomizedDungeon
-                $Maps["RandomizedDungeon"] = $global:RandomizedDungeon
+                $global:Maps["RandomizedDungeon"] = $global:RandomizedDungeon
                 
                 # Add door registry entry for exiting the dungeon
                 $exitKey = "RandomizedDungeon,$($global:RandomDungeonEntrance.X),$($global:RandomDungeonEntrance.Y)"
-                $DoorRegistry[$exitKey] = @{ Map = "Town"; X = 70; Y = 26 }
+                $global:DoorRegistry[$exitKey] = @{ Map = "Town"; X = 70; Y = 26 }
                 
                 # Transition to the dungeon
                 & $TransitionEffects[$ChosenTransition] $boxWidth $boxHeight
                 $CurrentMapName = "RandomizedDungeon"
-                $currentMap = $Maps[$CurrentMapName]
+                $currentMap = $global:Maps[$CurrentMapName]
                 $playerX = $global:RandomDungeonEntrance.X
                 $playerY = $global:RandomDungeonEntrance.Y
                 
