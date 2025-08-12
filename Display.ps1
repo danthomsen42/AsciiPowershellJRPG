@@ -636,7 +636,7 @@ $playerChar = "@"
 . "$PSScriptRoot\Maps.ps1"
 
 # Load color zones
-. "$PSScriptRoot\ColorZones.ps1"
+#. "$PSScriptRoot\ColorZones.ps1"
 
 # Load enemies
 . "$PSScriptRoot\Enemies.ps1"
