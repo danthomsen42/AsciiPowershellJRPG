@@ -11,6 +11,8 @@
 . "$PSScriptRoot\MapManager.ps1"
 # Import transition effects
 . "$PSScriptRoot\Transitions.ps1"
+# Import ONLY the simple color system (fast!)
+. "$PSScriptRoot\SimpleColors.ps1"
 
 # Hashtable of available transitions
 $TransitionEffects = @{
@@ -43,6 +45,35 @@ $boxHeight = 20
 # Set console output encoding to UTF-8 for Unicode support
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+# Enable color zones (start small - just one green dot!)
+# Color system configuration (using new simple system)
+$global:EnableColorZones = $true  # Enable limited colors
+
+# ============================================================================
+# EXPERIMENTAL COLOR SETUP (for testing with fast rendering)
+# ============================================================================
+
+# Initialize the simple color system and add some colorful examples
+Initialize-SimpleColors
+
+# Example 1: Single green dot (1x1 rectangle)
+Add-SimpleColorRectangle "Town" 32 18 1 1 "Green"
+
+# Example 2: Small red rectangle (2x2)
+Add-SimpleColorRectangle "Town" 28 16 2 2 "Red"
+
+# Example 3: Blue horizontal line (4x1)
+Add-SimpleColorRectangle "Town" 25 22 4 1 "Blue"
+
+# Example 4: Yellow vertical line (1x3)
+Add-SimpleColorRectangle "Town" 35 19 1 3 "Yellow"
+
+# Example 5: Cyan square (3x3)
+Add-SimpleColorRectangle "Town" 26 24 3 3 "Cyan"
+
+Write-Host "Added colorful rectangles around player area!" -ForegroundColor Yellow
+Write-Host "Green dot at (32,18), Red 2x2 at (28,16), Blue line at (25,22), Yellow line at (35,19), Cyan 3x3 at (26,24)" -ForegroundColor Gray
+
 # =============================================================================
 # PARTY INITIALIZATION (after save system loads)
 # =============================================================================
@@ -62,8 +93,8 @@ $playerChar = "@"
 # Load maps
 . "$PSScriptRoot\Maps.ps1"
 
-# Load color zones
-#. "$PSScriptRoot\ColorZones.ps1"
+# NEW: Use IntegratedColors.ps1 only - no ColorZones.ps1!
+# (IntegratedColors.ps1 is already loaded above)
 
 # Load enemies
 . "$PSScriptRoot\Enemies.ps1"

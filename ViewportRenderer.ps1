@@ -15,12 +15,12 @@ function Draw-Viewport {
         $partyPositions = Get-PartyPositions $global:Party
     }
     
-    # Choose rendering method based on water animation settings
+    # Choose rendering method
     if ($global:EnableWaterAnimation -and $global:WaterRenderMethod -eq "ANSI") {
         # High-performance ANSI rendering with embedded water colors
         Draw-ViewportWithANSI $map $playerX $playerY $boxWidth $boxHeight $viewX $viewY $partyPositions
     } else {
-        # Traditional rendering (backwards compatible)
+        # Traditional rendering (fast and compatible)
         Draw-ViewportTraditional $map $playerX $playerY $boxWidth $boxHeight $viewX $viewY $partyPositions
     }
 }
@@ -60,20 +60,13 @@ function Draw-ViewportWithANSI {
                 }
             }
             
-            # Apply colors based on tile type and zones
+            # No inline coloring - render normally for speed
             if ($mapChar -eq '~' -and -not $partyMember) {
                 # Water tiles get special animation treatment
                 $ansiColor = Get-WaterANSIColor $worldX $worldY $global:WaterFrame
                 [void]$output.Append("$ansiColor$displayChar$($global:WaterANSIColors['Reset'])")
-            } elseif ($global:EnableColorZones -and -not $partyMember -and $worldX -ne $playerX -and $worldY -ne $playerY -and -not $npcChar) {
-                # Regular tiles get zone-based coloring (ONLY if color zones enabled)
-                $tileColor = Get-TileANSIColor $CurrentMapName $worldX $worldY $mapChar
-                if ($tileColor) {
-                    [void]$output.Append("$tileColor$displayChar$($global:WaterANSIColors['Reset'])")
-                } else {
-                    [void]$output.Append($displayChar)
-                }
             } else {
+                # Regular tiles - no color processing during main rendering
                 [void]$output.Append($displayChar)
             }
         }
@@ -81,14 +74,15 @@ function Draw-ViewportWithANSI {
         [void]$output.AppendLine("|")
     }
     
-    [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
-    [void]$output.AppendLine("Use Arrow Keys or WASD to move. Press Q to quit. Step on + to change maps.")
-    [void]$output.AppendLine("Save: F5=Quick Save   F9=Save Menu   Auto-saves after battles!")
-    
-    # Single high-performance output with embedded ANSI colors
+    # Single high-performance output (no embedded colors for main rendering)
     [System.Console]::SetCursorPosition(0, 0)
     [System.Console]::Write($output.ToString())
     [System.Console]::Out.Flush()
+    
+    # Apply colors ONLY to specific positions (super fast!)
+    if ($global:EnableColorZones) {
+        Apply-SimpleColors $CurrentMapName $viewX $viewY $boxWidth $boxHeight $playerX $playerY $partyPositions
+    }
 }
 
 # Traditional rendering method (backwards compatible)
@@ -111,21 +105,25 @@ function Draw-ViewportTraditional {
             $worldY = $y + $viewY
             $mapChar = $map[$viewY + $y][$viewX + $x]
             
-            # Determine what character to display
+            # Determine what character to display and apply integrated colors
             $displayChar = $mapChar
             $partyMember = $partyPositions["$worldX,$worldY"]
             if ($partyMember) {
                 $displayChar = $partyMember.Symbol
+                [void]$output.Append($displayChar)
             } elseif ($worldX -eq $playerX -and $worldY -eq $playerY) {
                 $displayChar = $playerChar
+                [void]$output.Append($displayChar)
             } else {
                 $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
                 if ($npcChar) {
                     $displayChar = $npcChar.Char
+                    [void]$output.Append($displayChar)
+                } else {
+                    # Regular tiles - no color processing during main rendering
+                    [void]$output.Append($displayChar)
                 }
             }
-            
-            [void]$output.Append($displayChar)
         }
         
         [void]$output.AppendLine("|")
@@ -135,49 +133,14 @@ function Draw-ViewportTraditional {
     [void]$output.AppendLine("Use Arrow Keys or WASD to move. Press Q to quit. Step on + to change maps.")
     [void]$output.AppendLine("Save: F5=Quick Save   F9=Save Menu   Auto-saves after battles!")
     
-    # Compatible console positioning and output
+    # Compatible console positioning and output (fast!)
     [System.Console]::SetCursorPosition(0, 0)
     [System.Console]::Write($output.ToString())
+    [System.Console]::Out.Flush()
     
-    # Apply zone-based coloring using individual positioning (for backwards compatibility)
-    if ($global:EnableColorZones -and $global:WaterRenderMethod -eq "CURSOR") {
-        # Apply colors to zone tiles using individual cursor positioning (ONLY if zones enabled)
-        $mapHeight = $map.Count
-        $mapWidth = if ($mapHeight -gt 0) { $map[0].Length } else { 0 }
-        
-        try {
-            for ($y = 0; $y -lt $boxHeight; $y++) {
-                for ($x = 0; $x -lt $boxWidth; $x++) {
-                    $worldX = $x + $viewX
-                    $worldY = $y + $viewY
-                    
-                    # Check if this position is safe to access
-                    if ($worldY -lt $mapHeight -and $worldX -lt $map[$worldY].Length) {
-                        $mapChar = $map[$worldY][$worldX]
-                        $partyMember = $partyPositions["$worldX,$worldY"]
-                        $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
-                        
-                        # Only color tiles that aren't covered by player, party, or NPCs
-                        if (-not $partyMember -and $worldX -ne $playerX -and $worldY -ne $playerY -and -not $npcChar) {
-                            $color = Get-TileColor $CurrentMapName $worldX $worldY $mapChar
-                            
-                            if ($color) {
-                                # Safe cursor positioning with bounds checking
-                                $cursorX = $x + 1
-                                $cursorY = $y + 2
-                                if ($cursorX -lt [System.Console]::BufferWidth -and $cursorY -lt [System.Console]::BufferHeight) {
-                                    [System.Console]::SetCursorPosition($cursorX, $cursorY)
-                                    Write-Host $mapChar -ForegroundColor $color -NoNewline
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } catch {
-            # If coloring fails, continue without colors
-            Write-Host "Zone coloring error - continuing without colors" -ForegroundColor DarkYellow
-        }
+    # Apply colors ONLY to specific positions (super fast!)
+    if ($global:EnableColorZones) {
+        Apply-SimpleColors $CurrentMapName $viewX $viewY $boxWidth $boxHeight $playerX $playerY $partyPositions
     }
     
     # Water animation rendering using individual positioning (if needed)
