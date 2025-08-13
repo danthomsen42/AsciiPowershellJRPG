@@ -154,15 +154,29 @@ try {
                 $Player = Sync-PlayerFromSaveState $Player
                 
                 . "$PSScriptRoot\Enemies.ps1"
-                # Select enemy list based on current map
-                if ($CurrentMapName -eq "Dungeon") {
-                    $enemy = (Get-Random -InputObject $DungeonEnemyList).Clone()
+                # Multi-Enemy Selection Logic (1, 2, or 3 enemies max)
+                $enemies = @()
+                $enemyCount = Get-Random -Minimum 1 -Maximum 4  # 1-3 enemies
+                
+                # Select enemy pool based on current map
+                $enemyPool = if ($CurrentMapName -eq "Dungeon") {
+                    $DungeonEnemyList
                 } elseif ($CurrentMapName -eq "DungeonMap2") {
-                    $enemy = (Get-Random -InputObject @($enemy2, $enemy3)).Clone()
+                    @($enemy2, $enemy3)
                 } else {
-                    $enemy = (Get-Random -InputObject $DungeonEnemyList).Clone()
+                    $DungeonEnemyList
                 }
-                $player = $Player.Clone()
+                
+                # Create enemy group
+                for ($i = 0; $i -lt $enemyCount; $i++) {
+                    $selectedEnemy = (Get-Random -InputObject $enemyPool).Clone()
+                    # Give each enemy a unique identifier for targeting
+                    $selectedEnemy.Name = "$($selectedEnemy.Name) $($i + 1)"
+                    $enemies += $selectedEnemy
+                }
+                
+                # Keep legacy variables for compatibility (using first enemy)
+                $enemy = $enemies[0]
                 $EnemyName = $enemy.Name
                 $enemyArt = $enemy.Art
 
@@ -183,8 +197,8 @@ try {
                 }
                 Start-Sleep -Milliseconds 500
                 
-                # Create turn order for party vs enemy (wrap enemy in array)
-                $turnOrder = New-PartyTurnOrder $Party @($enemy)
+                # Create turn order for party vs enemies
+                $turnOrder = New-PartyTurnOrder $Party $enemies
                 $currentTurnIndex = 0
                 $maxTurns = 100  # Prevent infinite loops
                 $turnCount = 0
@@ -196,8 +210,12 @@ try {
                     # Clear screen only once per turn to reset everything cleanly
                     [System.Console]::Clear()
                     
-                    # Redraw the essential combat interface (static elements)
-                    Draw-CombatViewport $enemyArt $EnemyName $boxWidth $boxHeight
+                    # Redraw the combat interface (multi-enemy version)
+                    if ($enemies.Count -gt 1) {
+                        Draw-MultiEnemyCombatViewport $enemies $boxWidth $boxHeight
+                    } else {
+                        Draw-CombatViewport $enemyArt $EnemyName $boxWidth $boxHeight
+                    }
                     Write-Host "Combat Controls: A=Attack   D=Defend   S=Spells   I=Items   R=Run" -ForegroundColor Cyan
                     
                     # Display party status
@@ -214,15 +232,19 @@ try {
                         Write-Host ("  $($member.Name) ($($member.Class)): HP $hpStr/$maxHPStr MP $mpStr/$maxMPStr$status") -ForegroundColor White
                     }
                     
-                    # Display enemy status
-                    $enemyHPDisplay = [math]::Max(0, $enemy.HP)
-                    $enemyMPDisplay = [math]::Max(0, $enemy.MP)
-                    $enemyHPStr = $enemyHPDisplay.ToString().PadRight(4)
-                    $enemyMaxHPStr = $enemy.MaxHP.ToString().PadRight(4)
-                    $enemyMPStr = $enemyMPDisplay.ToString().PadRight(4)
-                    $enemyMaxMPStr = $enemy.MaxMP.ToString().PadRight(4)
-                    
-                    Write-Host ("`nEnemy  HP: $enemyHPStr/$enemyMaxHPStr   MP: $enemyMPStr/$enemyMaxMPStr") -ForegroundColor Yellow
+                    # Display enemy status (all enemies)
+                    Write-Host "`nEnemy Status:" -ForegroundColor Yellow
+                    foreach ($enemyObj in $enemies) {
+                        $enemyHPDisplay = [math]::Max(0, $enemyObj.HP)
+                        $enemyMPDisplay = [math]::Max(0, $enemyObj.MP)
+                        $enemyHPStr = $enemyHPDisplay.ToString().PadRight(4)
+                        $enemyMaxHPStr = $enemyObj.MaxHP.ToString().PadRight(4)
+                        $enemyMPStr = $enemyMPDisplay.ToString().PadRight(4)
+                        $enemyMaxMPStr = $enemyObj.MaxMP.ToString().PadRight(4)
+                        
+                        $status = if ($enemyObj.HP -le 0) { " [KO]" } else { "" }
+                        Write-Host ("  $($enemyObj.Name): HP $enemyHPStr/$enemyMaxHPStr   MP $enemyMPStr/$enemyMaxMPStr$status") -ForegroundColor White
+                    }
                     
                     # Show turn order
                     Show-PartyTurnOrder $turnOrder $currentTurnIndex
@@ -241,11 +263,30 @@ try {
                         
                         # Process party member action
                         if ($input.Key -eq "A") {
-                            # Attack action
-                            $damage = [math]::Max(1, $currentMember.Attack - $enemy.Defense)
-                            $enemy.HP -= $damage
-                            Write-CombatMessage "$($currentMember.Name) attacks $EnemyName for $damage damage!" "Yellow"
-                            Start-Sleep -Milliseconds 1200
+                            # Attack action with target selection
+                            $aliveEnemies = $enemies | Where-Object { $_.HP -gt 0 }
+                            if ($aliveEnemies.Count -eq 0) {
+                                Write-CombatMessage "No enemies to attack!" "Red"
+                                Start-Sleep -Milliseconds 1200
+                                continue
+                            }
+                            
+                            $target = if ($aliveEnemies.Count -eq 1) {
+                                $aliveEnemies[0]  # Auto-select if only one enemy alive
+                            } else {
+                                Show-EnemyTargetSelection $enemies
+                            }
+                            
+                            if ($target) {
+                                $damage = [math]::Max(1, $currentMember.Attack - $target.Defense)
+                                $target.HP -= $damage
+                                Write-CombatMessage "$($currentMember.Name) attacks $($target.Name) for $damage damage!" "Yellow"
+                                Start-Sleep -Milliseconds 1200
+                            } else {
+                                Write-CombatMessage "Attack cancelled." "Gray"
+                                Start-Sleep -Milliseconds 800
+                                continue
+                            }
                             
                         } elseif ($input.Key -eq "D") {
                             # Defend action - reduces incoming damage next turn
@@ -332,9 +373,33 @@ try {
                                 $currentMember.MP -= $selectedSpell.MP
                                 
                                 if ($selectedSpell.Type -eq "Attack") {
-                                    $spellDamage = $selectedSpell.Power + [math]::Floor($currentMember.Attack / 2)
-                                    $enemy.HP -= $spellDamage
-                                    Write-CombatMessage "$($currentMember.Name) casts $($selectedSpell.Name) for $spellDamage damage!" "Magenta"
+                                    # Attack spell with target selection
+                                    $aliveEnemies = $enemies | Where-Object { $_.HP -gt 0 }
+                                    if ($aliveEnemies.Count -eq 0) {
+                                        Write-CombatMessage "No enemies to target!" "Red"
+                                        # Refund MP since spell couldn't be cast
+                                        $currentMember.MP += $selectedSpell.MP
+                                        Start-Sleep -Milliseconds 1200
+                                        continue
+                                    }
+                                    
+                                    $target = if ($aliveEnemies.Count -eq 1) {
+                                        $aliveEnemies[0]  # Auto-select if only one enemy alive
+                                    } else {
+                                        Show-EnemyTargetSelection $enemies
+                                    }
+                                    
+                                    if ($target) {
+                                        $spellDamage = $selectedSpell.Power + [math]::Floor($currentMember.Attack / 2)
+                                        $target.HP -= $spellDamage
+                                        Write-CombatMessage "$($currentMember.Name) casts $($selectedSpell.Name) on $($target.Name) for $spellDamage damage!" "Magenta"
+                                    } else {
+                                        # Refund MP if spell was cancelled
+                                        $currentMember.MP += $selectedSpell.MP
+                                        Write-CombatMessage "Spell cancelled." "Gray"
+                                        Start-Sleep -Milliseconds 800
+                                        continue
+                                    }
                                 } elseif ($selectedSpell.Type -eq "Recovery") {
                                     # For healing spells, let party member choose target (simplified to self for now)
                                     $healAmount = [math]::Min($selectedSpell.Power, $currentMember.MaxHP - $currentMember.HP)
@@ -456,34 +521,35 @@ try {
                         
                     } else {
                         # Enemy turn - Enhanced AI with spell casting
+                        $currentEnemy = $currentCombatant.Character
                         . "$PSScriptRoot\Spells.ps1"
                         
                         $enemyAction = "attack"  # Default action
                         $spellToCast = $null
                         
-                        # AI Decision Logic
-                        if ($enemy.Spells.Count -gt 0 -and $enemy.MP -gt 0) {
+                        # AI Decision Logic (Simple AI as requested)
+                        if ($currentEnemy.Spells.Count -gt 0 -and $currentEnemy.MP -gt 0) {
                             # Check available spells
                             $availableSpells = @()
-                            foreach ($spellName in $enemy.Spells) {
+                            foreach ($spellName in $currentEnemy.Spells) {
                                 $spell = $Spells | Where-Object { $_.Name -eq $spellName }
-                                if ($spell -and $enemy.MP -ge $spell.MP) {
+                                if ($spell -and $currentEnemy.MP -ge $spell.MP) {
                                     $availableSpells += $spell
                                 }
                             }
                             
                             if ($availableSpells.Count -gt 0) {
-                                # AI Decision Making
+                                # Simple AI Decision Making
                                 $healingSpells = $availableSpells | Where-Object { $_.Type -eq "Recovery" }
                                 $attackSpells = $availableSpells | Where-Object { $_.Type -eq "Attack" }
                                 
                                 # Healing logic: heal if health is below 40%
-                                if ($healingSpells.Count -gt 0 -and $enemy.HP -le ($enemy.MaxHP * 0.4)) {
+                                if ($healingSpells.Count -gt 0 -and $currentEnemy.HP -le ($currentEnemy.MaxHP * 0.4)) {
                                     $spellToCast = $healingSpells[0]
                                     $enemyAction = "heal"
                                 }
-                                # Attack spell logic: 60% chance to cast attack spell if available
-                                elseif ($attackSpells.Count -gt 0 -and (Get-Random -Minimum 1 -Maximum 101) -le 60) {
+                                # Attack spell logic: 50% chance to cast attack spell if available (simplified)
+                                elseif ($attackSpells.Count -gt 0 -and (Get-Random -Minimum 1 -Maximum 101) -le 50) {
                                     $spellToCast = $attackSpells | Get-Random
                                     $enemyAction = "spell"
                                 }
@@ -493,15 +559,15 @@ try {
                         # Execute enemy action
                         if ($enemyAction -eq "heal" -and $spellToCast) {
                             # Enemy heals itself
-                            $enemy.MP -= $spellToCast.MP
-                            $healAmount = [math]::Min($spellToCast.Power, $enemy.MaxHP - $enemy.HP)
-                            $enemy.HP += $healAmount
-                            Write-CombatMessage "$EnemyName casts $($spellToCast.Name) and recovers $healAmount HP!" "Yellow" "ENEMY TURN"
+                            $currentEnemy.MP -= $spellToCast.MP
+                            $healAmount = [math]::Min($spellToCast.Power, $currentEnemy.MaxHP - $currentEnemy.HP)
+                            $currentEnemy.HP += $healAmount
+                            Write-CombatMessage "$($currentEnemy.Name) casts $($spellToCast.Name) and recovers $healAmount HP!" "Yellow" "ENEMY TURN"
                             
                         } elseif ($enemyAction -eq "spell" -and $spellToCast) {
                             # Enemy casts attack spell - choose random living party member
-                            $enemy.MP -= $spellToCast.MP
-                            $spellDamage = $spellToCast.Power + [math]::Floor($enemy.Attack / 2)
+                            $currentEnemy.MP -= $spellToCast.MP
+                            $spellDamage = $spellToCast.Power + [math]::Floor($currentEnemy.Attack / 2)
                             
                             $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
                             if ($aliveMembers.Count -gt 0) {
@@ -510,9 +576,9 @@ try {
                                 # Apply defense bonus if target defended
                                 if ($partyDefending[$target.Name]) {
                                     $spellDamage = [math]::Max(1, [math]::Floor($spellDamage / 2))
-                                    Write-CombatMessage "$EnemyName casts $($spellToCast.Name) on $($target.Name), but their defense reduces the damage to $spellDamage!" "Blue" "ENEMY TURN"
+                                    Write-CombatMessage "$($currentEnemy.Name) casts $($spellToCast.Name) on $($target.Name), but their defense reduces the damage to $spellDamage!" "Blue" "ENEMY TURN"
                                 } else {
-                                    Write-CombatMessage "$EnemyName casts $($spellToCast.Name) on $($target.Name) for $spellDamage damage!" "Magenta" "ENEMY TURN"
+                                    Write-CombatMessage "$($currentEnemy.Name) casts $($spellToCast.Name) on $($target.Name) for $spellDamage damage!" "Magenta" "ENEMY TURN"
                                 }
                                 
                                 $target.HP -= $spellDamage
@@ -524,14 +590,14 @@ try {
                             $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
                             if ($aliveMembers.Count -gt 0) {
                                 $target = $aliveMembers | Get-Random
-                                $enemyDamage = [math]::Max(1, $enemy.Attack - $target.Defense)
+                                $enemyDamage = [math]::Max(1, $currentEnemy.Attack - $target.Defense)
                                 
                                 # Apply defense bonus if target defended
                                 if ($partyDefending[$target.Name]) {
                                     $enemyDamage = [math]::Max(1, [math]::Floor($enemyDamage / 2))
-                                    Write-CombatMessage "$EnemyName attacks $($target.Name), but their defense reduces the damage to $enemyDamage!" "Blue" "ENEMY TURN"
+                                    Write-CombatMessage "$($currentEnemy.Name) attacks $($target.Name), but their defense reduces the damage to $enemyDamage!" "Blue" "ENEMY TURN"
                                 } else {
-                                    Write-CombatMessage "$EnemyName attacks $($target.Name) for $enemyDamage damage!" "Red" "ENEMY TURN"
+                                    Write-CombatMessage "$($currentEnemy.Name) attacks $($target.Name) for $enemyDamage damage!" "Red" "ENEMY TURN"
                                 }
                                 
                                 $target.HP -= $enemyDamage
@@ -542,31 +608,41 @@ try {
                         Start-Sleep -Milliseconds 2000  # Pause to read the enemy action
                     }
                     
-                    # Check if enemy is defeated
-                    if ($enemy.HP -le 0) {
-                        $xpGained = $enemy.Level * $enemy.BaseXP
+                    # Check if all enemies are defeated
+                    $aliveEnemies = $enemies | Where-Object { $_.HP -gt 0 }
+                    if ($aliveEnemies.Count -eq 0) {
+                        # Calculate total XP from all defeated enemies
+                        $totalXpGained = 0
+                        foreach ($defeatedEnemy in $enemies) {
+                            $totalXpGained += ($defeatedEnemy.Level * $defeatedEnemy.BaseXP)
+                        }
                         
                         # Distribute XP to all living party members
                         $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
-                        $xpPerMember = [math]::Floor($xpGained / $aliveMembers.Count)
+                        $xpPerMember = [math]::Floor($totalXpGained / $aliveMembers.Count)
                         
                         foreach ($member in $aliveMembers) {
                             $member.XP += $xpPerMember
                         }
                         
-                        Write-CombatMessage "$EnemyName defeated! Party gained $xpGained XP total ($xpPerMember each)!" "Green"
+                        $enemyNames = ($enemies | ForEach-Object { $_.Name }) -join ", "
+                        Write-CombatMessage "All enemies defeated! Party gained $totalXpGained XP total ($xpPerMember each)!" "Green"
                         
-                        # Update save state for monster kill (using party leader for global stats)
+                        # Update save state for monster kills (using party leader for global stats)
                         $partyLeader = $Party[0]
                         $SaveState.Player.XP = $partyLeader.XP
-                        $SaveState.Player.MonstersDefeated++
-                        if (-not $SaveState.Monsters.ContainsKey($EnemyName)) {
-                            $SaveState.Monsters[$EnemyName] = 0
+                        
+                        # Track each defeated enemy
+                        foreach ($defeatedEnemy in $enemies) {
+                            $SaveState.Player.MonstersDefeated++
+                            if (-not $SaveState.Monsters.ContainsKey($defeatedEnemy.Name)) {
+                                $SaveState.Monsters[$defeatedEnemy.Name] = 0
+                            }
+                            $SaveState.Monsters[$defeatedEnemy.Name]++
                         }
-                        $SaveState.Monsters[$EnemyName]++
                         
                         # Trigger auto-save for battle victory
-                        Trigger-BattleVictoryAutoSave -enemyName $EnemyName -xpGained $xpGained
+                        Trigger-BattleVictoryAutoSave -enemyName $enemyNames -xpGained $totalXpGained
                         
                         # Update global save state with party data
                         Update-SaveStateFromParty $Party

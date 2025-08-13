@@ -22,7 +22,7 @@ $CharacterClasses = @{
         BaseHP = 35; BaseMP = 5; BaseAttack = 8; BaseDefense = 6; BaseSpeed = 6
         HPGrowth = 3; MPGrowth = 1; AttackGrowth = 2; DefenseGrowth = 2; SpeedGrowth = 1
         StartingWeapon = "Iron Sword"; StartingArmor = "Chain Mail"
-        Spells = @("Power Strike")
+        Spells = @("Power Strike", "Obliterate")
         Description = "Strong melee fighter with high HP and defense"
         Symbol = "[W]"
         MapSymbol = "W"
@@ -31,7 +31,7 @@ $CharacterClasses = @{
         BaseHP = 20; BaseMP = 15; BaseAttack = 4; BaseDefense = 3; BaseSpeed = 7
         HPGrowth = 2; MPGrowth = 3; AttackGrowth = 1; DefenseGrowth = 1; SpeedGrowth = 2
         StartingWeapon = "Oak Staff"; StartingArmor = "Cloth Robes"
-        Spells = @("Fire", "Ice", "Magic Missile")
+        Spells = @("Fire", "Ice", "Magic Missile", "Obliterate")
         Description = "Powerful spell caster with high MP"
         Symbol = "[M]"
         MapSymbol = "M"
@@ -40,7 +40,7 @@ $CharacterClasses = @{
         BaseHP = 25; BaseMP = 12; BaseAttack = 5; BaseDefense = 4; BaseSpeed = 5
         HPGrowth = 2; MPGrowth = 2; AttackGrowth = 1; DefenseGrowth = 2; SpeedGrowth = 1
         StartingWeapon = "Blessed Mace"; StartingArmor = "Holy Vestments"
-        Spells = @("Heal", "Cure", "Protect")
+        Spells = @("Heal", "Cure", "Protect", "Obliterate")
         Description = "Support specialist with healing magic"
         Symbol = "[H]"
         MapSymbol = "H"
@@ -49,7 +49,7 @@ $CharacterClasses = @{
         BaseHP = 28; BaseMP = 7; BaseAttack = 7; BaseDefense = 4; BaseSpeed = 9
         HPGrowth = 2; MPGrowth = 1; AttackGrowth = 2; DefenseGrowth = 1; SpeedGrowth = 2
         StartingWeapon = "Silver Dagger"; StartingArmor = "Leather Armor"
-        Spells = @("Backstab", "Poison Strike")
+        Spells = @("Backstab", "Poison Strike", "Obliterate")
         Description = "Fast attacker with critical hit potential"
         Symbol = "[R]"
         MapSymbol = "R"

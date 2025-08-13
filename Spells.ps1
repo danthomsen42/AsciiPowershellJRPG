@@ -5,5 +5,6 @@ $Spells = @(
     @{ Name = "Ice"; MP = 2; Power = 4; Type = "Attack"; Description = "A freezing ice shard that pierces foes" },
     @{ Name = "Lightning"; MP = 4; Power = 7; Type = "Attack"; Description = "An electrifying bolt from the sky" },
     @{ Name = "Shield"; MP = 3; Power = 3; Type = "Defense"; Description = "Creates a magical barrier" },
-    @{ Name = "Drain"; MP = 3; Power = 4; Type = "Drain"; Description = "Steals health from the enemy" }
+    @{ Name = "Drain"; MP = 3; Power = 4; Type = "Drain"; Description = "Steals health from the enemy" },
+    @{ Name = "Obliterate"; MP = 1; Power = 1000; Type = "Attack"; Description = "TESTING SPELL - Instant kill attack" }
 )

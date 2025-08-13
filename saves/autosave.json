@@ -1,15 +1,15 @@
 {
     "GameInfo":  {
                      "GameStarted":  "2025-08-04 14:46:12",
-                     "PlayTime":  0.52958279833333333,
+                     "PlayTime":  1.4795118183333333,
                      "Version":  "1.4",
-                     "SaveTime":  "2025-08-12 12:37:34"
+                     "SaveTime":  "2025-08-12 17:04:00"
                  },
     "GameEvents":  {
                        "LastBattleWon":  {
-                                             "XPGained":  20,
-                                             "Time":  "2025-08-12 12:37:34",
-                                             "Enemy":  "Test4"
+                                             "XPGained":  30,
+                                             "Time":  "2025-08-12 17:04:00",
+                                             "Enemy":  "Test 1, Test 2, Test4 3"
                                          },
                        "LastItemFound":  null,
                        "LastLevelUp":  null,
@@ -19,12 +19,12 @@
                    "MP":  5,
                    "ItemsCollected":  null,
                    "MaxMP":  5,
-                   "MonstersDefeated":  7,
+                   "MonstersDefeated":  11,
                    "HP":  30,
                    "AreasDiscovered":  null,
                    "CurrentMap":  "Dungeon",
                    "NPCsSpokenTo":  null,
-                   "XP":  5,
+                   "XP":  12,
                    "Y":  29,
                    "QuestsCompleted":  null,
                    "Armor":  "Leather Armor",
@@ -35,12 +35,142 @@
                },
     "Monsters":  {
                      "Test2":  1,
+                     "Test4 3":  1,
+                     "Test 2":  1,
                      "Test":  3,
-                     "Test4":  3
+                     "Test4":  3,
+                     "Test 1":  1,
+                     "Test4 1":  1
                  },
     "Party":  {
                   "Formation":  "Diamond",
                   "Leader":  0,
-                  "Members":  null
+                  "Members":  [
+                                  {
+                                      "Class":  "Warrior",
+                                      "MaxHP":  35,
+                                      "Level":  1,
+                                      "IsAlive":  true,
+                                      "Spells":  [
+                                                     "Power Strike",
+                                                     "Obliterate"
+                                                 ],
+                                      "Name":  "Gareth",
+                                      "Speed":  6,
+                                      "MaxMP":  5,
+                                      "Defense":  6,
+                                      "MP":  5,
+                                      "HP":  35,
+                                      "XP":  5,
+                                      "Attack":  8,
+                                      "Inventory":  [
+
+                                                    ],
+                                      "Equipped":  {
+                                                       "Armor":  "Chain Mail",
+                                                       "Accessory":  null,
+                                                       "Weapon":  "Iron Sword"
+                                                   },
+                                      "Position":  {
+                                                       "Y":  29,
+                                                       "X":  41
+                                                   }
+                                  },
+                                  {
+                                      "Class":  "Mage",
+                                      "MaxHP":  20,
+                                      "Level":  1,
+                                      "IsAlive":  true,
+                                      "Spells":  [
+                                                     "Fire",
+                                                     "Ice",
+                                                     "Magic Missile",
+                                                     "Obliterate"
+                                                 ],
+                                      "Name":  "Mystara",
+                                      "Speed":  7,
+                                      "MaxMP":  15,
+                                      "Defense":  3,
+                                      "MP":  15,
+                                      "HP":  20,
+                                      "XP":  5,
+                                      "Attack":  4,
+                                      "Inventory":  [
+
+                                                    ],
+                                      "Equipped":  {
+                                                       "Armor":  "Cloth Robes",
+                                                       "Accessory":  null,
+                                                       "Weapon":  "Oak Staff"
+                                                   },
+                                      "Position":  {
+                                                       "Y":  29,
+                                                       "X":  43
+                                                   }
+                                  },
+                                  {
+                                      "Class":  "Healer",
+                                      "MaxHP":  25,
+                                      "Level":  1,
+                                      "IsAlive":  true,
+                                      "Spells":  [
+                                                     "Heal",
+                                                     "Cure",
+                                                     "Protect",
+                                                     "Obliterate"
+                                                 ],
+                                      "Name":  "Celeste",
+                                      "Speed":  5,
+                                      "MaxMP":  12,
+                                      "Defense":  4,
+                                      "MP":  12,
+                                      "HP":  25,
+                                      "XP":  5,
+                                      "Attack":  5,
+                                      "Inventory":  [
+
+                                                    ],
+                                      "Equipped":  {
+                                                       "Armor":  "Holy Vestments",
+                                                       "Accessory":  null,
+                                                       "Weapon":  "Blessed Mace"
+                                                   },
+                                      "Position":  {
+                                                       "Y":  29,
+                                                       "X":  45
+                                                   }
+                                  },
+                                  {
+                                      "Class":  "Rogue",
+                                      "MaxHP":  28,
+                                      "Level":  1,
+                                      "IsAlive":  true,
+                                      "Spells":  [
+                                                     "Backstab",
+                                                     "Poison Strike",
+                                                     "Obliterate"
+                                                 ],
+                                      "Name":  "Raven",
+                                      "Speed":  9,
+                                      "MaxMP":  7,
+                                      "Defense":  4,
+                                      "MP":  6,
+                                      "HP":  28,
+                                      "XP":  5,
+                                      "Attack":  7,
+                                      "Inventory":  [
+
+                                                    ],
+                                      "Equipped":  {
+                                                       "Armor":  "Leather Armor",
+                                                       "Accessory":  null,
+                                                       "Weapon":  "Silver Dagger"
+                                                   },
+                                      "Position":  {
+                                                       "Y":  29,
+                                                       "X":  47
+                                                   }
+                                  }
+                              ]
               }
 }
