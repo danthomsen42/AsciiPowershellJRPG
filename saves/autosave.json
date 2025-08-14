@@ -1,9 +1,9 @@
 {
     "GameInfo":  {
                      "GameStarted":  "2025-08-04 14:46:12",
-                     "PlayTime":  1.4795118183333333,
+                     "PlayTime":  0.39970010833333336,
                      "Version":  "1.4",
-                     "SaveTime":  "2025-08-12 17:04:00"
+                     "SaveTime":  "2025-08-13 19:25:22"
                  },
     "GameEvents":  {
                        "LastBattleWon":  {
@@ -36,11 +36,12 @@
     "Monsters":  {
                      "Test2":  1,
                      "Test4 3":  1,
+                     "Test4 1":  1,
                      "Test 2":  1,
                      "Test":  3,
                      "Test4":  3,
-                     "Test 1":  1,
-                     "Test4 1":  1
+                     "Test2 1":  0,
+                     "Test 1":  1
                  },
     "Party":  {
                   "Formation":  "Diamond",
@@ -73,7 +74,7 @@
                                                    },
                                       "Position":  {
                                                        "Y":  29,
-                                                       "X":  41
+                                                       "X":  29
                                                    }
                                   },
                                   {
@@ -105,7 +106,7 @@
                                                    },
                                       "Position":  {
                                                        "Y":  29,
-                                                       "X":  43
+                                                       "X":  27
                                                    }
                                   },
                                   {
@@ -137,7 +138,7 @@
                                                    },
                                       "Position":  {
                                                        "Y":  29,
-                                                       "X":  45
+                                                       "X":  25
                                                    }
                                   },
                                   {
@@ -168,7 +169,7 @@
                                                    },
                                       "Position":  {
                                                        "Y":  29,
-                                                       "X":  47
+                                                       "X":  23
                                                    }
                                   }
                               ]

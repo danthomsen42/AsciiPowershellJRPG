@@ -13,6 +13,8 @@
 . "$PSScriptRoot\Transitions.ps1"
 # Import ONLY the simple color system (fast!)
 . "$PSScriptRoot\SimpleColors.ps1"
+# Import character coloring system (performance-optimized)
+. "$PSScriptRoot\CharacterColors.ps1"
 
 # Hashtable of available transitions
 $TransitionEffects = @{
@@ -39,15 +41,15 @@ $ChosenTransition = "flash"
 # Remove stray output (True True) and unnecessary code
 
 # Set box dimensions
-$boxWidth = 50
-$boxHeight = 20
+$boxWidth = 80
+$boxHeight = 25
 
 # Set console output encoding to UTF-8 for Unicode support
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 # Enable color zones (start small - just one green dot!)
 # Color system configuration (using new simple system)
-$global:EnableColorZones = $true  # Enable limited colors
+$global:EnableColorZones = $false  # Enable limited colors
 
 # ============================================================================
 # EXPERIMENTAL COLOR SETUP (for testing with fast rendering)
