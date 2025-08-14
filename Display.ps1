@@ -15,6 +15,125 @@
 . "$PSScriptRoot\SimpleColors.ps1"
 # Import character coloring system (performance-optimized)
 . "$PSScriptRoot\CharacterColors.ps1"
+# Import enhanced enemy and battle systems
+. "$PSScriptRoot\NewEnemies.ps1"
+. "$PSScriptRoot\EnhancedCombatDisplay.ps1"
+# Note: CleanArrowTargeting functions are now defined directly below
+
+# Enhanced enemy array cleanup function - ensures it's always available
+function Clean-EnemyArray {
+    param($enemies)
+    
+    if (-not $enemies -or $enemies.Count -eq 0) {
+        return @()
+    }
+    
+    # Create new clean array with only living enemies
+    $cleanEnemies = @()
+    foreach ($enemy in $enemies) {
+        if ($null -ne $enemy -and $null -ne $enemy.HP -and $enemy.HP -gt 0) {
+            $cleanEnemies += $enemy
+        }
+    }
+    
+    return $cleanEnemies
+}
+
+# Clean battle targeting function - ensures it's always available
+function Show-CleanBattleTargeting {
+    param($enemies, $boxWidth, $boxHeight)
+    
+    # Filter to only alive enemies
+    $aliveEnemies = @($enemies | Where-Object { $null -ne $_ -and $_.HP -gt 0 })
+    
+    if ($aliveEnemies.Count -eq 0) {
+        Write-Host "No enemies to target!" -ForegroundColor Red
+        Start-Sleep -Milliseconds 1500
+        return $null
+    }
+    
+    # Always show targeting interface, even for single enemy
+    $selectedIndex = 0
+    $maxIndex = $aliveEnemies.Count - 1
+    
+    while ($true) {
+        # Clear and redraw battle with ONLY arrow indicator
+        [System.Console]::Clear()
+        Draw-EnhancedCombatViewport $aliveEnemies $boxWidth $boxHeight
+        Add-CleanTargetingArrow $aliveEnemies $aliveEnemies[$selectedIndex] $boxWidth $boxHeight
+        
+        # All text stays BELOW the battle area
+        [System.Console]::SetCursorPosition(0, $boxHeight + 2)
+        Write-Host ""
+        Write-Host "=== SELECT TARGET ===" -ForegroundColor Yellow
+        Write-Host "Use Left/Right Arrow Keys or A/D to select, Enter to confirm, Q to cancel" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "Selected: $($aliveEnemies[$selectedIndex].Name) (HP: $($aliveEnemies[$selectedIndex].HP)/$($aliveEnemies[$selectedIndex].MaxHP))" -ForegroundColor Yellow
+        
+        # Get input
+        $keyPressed = [System.Console]::ReadKey($true)
+        
+        switch ($keyPressed.Key) {
+            "LeftArrow"  { 
+                $selectedIndex = [math]::Max(0, $selectedIndex - 1)
+            }
+            "RightArrow" { 
+                $selectedIndex = [math]::Min($maxIndex, $selectedIndex + 1)
+            }
+            "A"          { 
+                $selectedIndex = [math]::Max(0, $selectedIndex - 1)
+            }
+            "D"          { 
+                $selectedIndex = [math]::Min($maxIndex, $selectedIndex + 1)
+            }
+            "Enter"      { 
+                return $aliveEnemies[$selectedIndex] 
+            }
+            "Q"          { 
+                return $null 
+            }
+            "Escape"     { 
+                return $null 
+            }
+        }
+    }
+}
+
+# Add targeting arrow function - ensures it's always available
+function Add-CleanTargetingArrow {
+    param($aliveEnemies, $targetedEnemy, $boxWidth, $boxHeight)
+    
+    # Get layout for ONLY alive enemies
+    $layout = Calculate-BattleLayout $aliveEnemies $boxWidth $boxHeight
+    
+    foreach ($row in $layout.Rows) {
+        for ($i = 0; $i -lt $row.Enemies.Count; $i++) {
+            $enemy = $row.Enemies[$i]
+            
+            # Check if this is the targeted enemy
+            if ($enemy.Name -eq $targetedEnemy.Name -and $enemy.HP -eq $targetedEnemy.HP) {
+                
+                # Calculate enemy center position
+                $enemySpacing = [math]::Floor($boxWidth / $row.Enemies.Count)
+                $enemyCenter = ($i * $enemySpacing) + [math]::Floor($enemySpacing / 2)
+                
+                # Draw ONLY a simple arrow above enemy (within battle area bounds)
+                $arrowY = [math]::Max(2, $row.StartY - 1)
+                
+                try {
+                    if ($arrowY -lt ($boxHeight - 1)) {  # Make sure we stay within battle area
+                        [System.Console]::SetCursorPosition($enemyCenter, $arrowY)
+                        Write-Host "^" -ForegroundColor Red -NoNewline
+                    }
+                } catch {
+                    # If positioning fails, continue silently
+                }
+                
+                return  # Found and marked the target
+            }
+        }
+    }
+}
 
 # Hashtable of available transitions
 $TransitionEffects = @{
@@ -155,27 +274,9 @@ try {
                 # Sync Player object with save state
                 $Player = Sync-PlayerFromSaveState $Player
                 
-                . "$PSScriptRoot\Enemies.ps1"
-                # Multi-Enemy Selection Logic (1, 2, or 3 enemies max)
-                $enemies = @()
-                $enemyCount = Get-Random -Minimum 1 -Maximum 4  # 1-3 enemies
-                
-                # Select enemy pool based on current map
-                $enemyPool = if ($CurrentMapName -eq "Dungeon") {
-                    $DungeonEnemyList
-                } elseif ($CurrentMapName -eq "DungeonMap2") {
-                    @($enemy2, $enemy3)
-                } else {
-                    $DungeonEnemyList
-                }
-                
-                # Create enemy group
-                for ($i = 0; $i -lt $enemyCount; $i++) {
-                    $selectedEnemy = (Get-Random -InputObject $enemyPool).Clone()
-                    # Give each enemy a unique identifier for targeting
-                    $selectedEnemy.Name = "$($selectedEnemy.Name) $($i + 1)"
-                    $enemies += $selectedEnemy
-                }
+                . "$PSScriptRoot\NewEnemies.ps1"
+                # Enhanced Enemy Selection Logic - uses new varied encounter system
+                $enemies = Get-RandomEnemyEncounter $CurrentMapName 3  # Difficulty level 3
                 
                 # Keep legacy variables for compatibility (using first enemy)
                 $enemy = $enemies[0]
@@ -212,12 +313,8 @@ try {
                     # Clear screen only once per turn to reset everything cleanly
                     [System.Console]::Clear()
                     
-                    # Redraw the combat interface (multi-enemy version)
-                    if ($enemies.Count -gt 1) {
-                        Draw-MultiEnemyCombatViewport $enemies $boxWidth $boxHeight
-                    } else {
-                        Draw-CombatViewport $enemyArt $EnemyName $boxWidth $boxHeight
-                    }
+                    # Redraw the combat interface (enhanced version)
+                    Draw-EnhancedCombatViewport $enemies $boxWidth $boxHeight
                     Write-Host "Combat Controls: A=Attack   D=Defend   S=Spells   I=Items   R=Run" -ForegroundColor Cyan
                     
                     # Display party status
@@ -266,23 +363,23 @@ try {
                         # Process party member action
                         if ($input.Key -eq "A") {
                             # Attack action with target selection
-                            $aliveEnemies = $enemies | Where-Object { $_.HP -gt 0 }
+                            $aliveEnemies = Clean-EnemyArray $enemies
                             if ($aliveEnemies.Count -eq 0) {
                                 Write-CombatMessage "No enemies to attack!" "Red"
                                 Start-Sleep -Milliseconds 1200
                                 continue
                             }
                             
-                            $target = if ($aliveEnemies.Count -eq 1) {
-                                $aliveEnemies[0]  # Auto-select if only one enemy alive
-                            } else {
-                                Show-EnemyTargetSelection $enemies
-                            }
+                            $target = Show-CleanBattleTargeting $enemies $boxWidth $boxHeight
                             
                             if ($target) {
                                 $damage = [math]::Max(1, $currentMember.Attack - $target.Defense)
                                 $target.HP -= $damage
                                 Write-CombatMessage "$($currentMember.Name) attacks $($target.Name) for $damage damage!" "Yellow"
+                                
+                                # Clean up dead enemies from the array
+                                $enemies = Clean-EnemyArray $enemies
+                                
                                 Start-Sleep -Milliseconds 1200
                             } else {
                                 Write-CombatMessage "Attack cancelled." "Gray"
@@ -376,7 +473,7 @@ try {
                                 
                                 if ($selectedSpell.Type -eq "Attack") {
                                     # Attack spell with target selection
-                                    $aliveEnemies = $enemies | Where-Object { $_.HP -gt 0 }
+                                    $aliveEnemies = Clean-EnemyArray $enemies
                                     if ($aliveEnemies.Count -eq 0) {
                                         Write-CombatMessage "No enemies to target!" "Red"
                                         # Refund MP since spell couldn't be cast
@@ -385,16 +482,16 @@ try {
                                         continue
                                     }
                                     
-                                    $target = if ($aliveEnemies.Count -eq 1) {
-                                        $aliveEnemies[0]  # Auto-select if only one enemy alive
-                                    } else {
-                                        Show-EnemyTargetSelection $enemies
-                                    }
+                                    $target = Show-CleanBattleTargeting $enemies $boxWidth $boxHeight
                                     
                                     if ($target) {
                                         $spellDamage = $selectedSpell.Power + [math]::Floor($currentMember.Attack / 2)
                                         $target.HP -= $spellDamage
                                         Write-CombatMessage "$($currentMember.Name) casts $($selectedSpell.Name) on $($target.Name) for $spellDamage damage!" "Magenta"
+                                        
+                                        # Clean up dead enemies from the array
+                                        $enemies = Clean-EnemyArray $enemies
+                                        
                                     } else {
                                         # Refund MP if spell was cancelled
                                         $currentMember.MP += $selectedSpell.MP
@@ -571,7 +668,7 @@ try {
                             $currentEnemy.MP -= $spellToCast.MP
                             $spellDamage = $spellToCast.Power + [math]::Floor($currentEnemy.Attack / 2)
                             
-                            $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
+                            $aliveMembers = @($Party | Where-Object { $_.HP -gt 0 })
                             if ($aliveMembers.Count -gt 0) {
                                 $target = $aliveMembers | Get-Random
                                 
@@ -589,7 +686,7 @@ try {
                             
                         } else {
                             # Basic attack - choose random living party member
-                            $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
+                            $aliveMembers = @($Party | Where-Object { $_.HP -gt 0 })
                             if ($aliveMembers.Count -gt 0) {
                                 $target = $aliveMembers | Get-Random
                                 $enemyDamage = [math]::Max(1, $currentEnemy.Attack - $target.Defense)
@@ -611,7 +708,7 @@ try {
                     }
                     
                     # Check if all enemies are defeated
-                    $aliveEnemies = $enemies | Where-Object { $_.HP -gt 0 }
+                    $aliveEnemies = Clean-EnemyArray $enemies
                     if ($aliveEnemies.Count -eq 0) {
                         # Calculate total XP from all defeated enemies
                         $totalXpGained = 0
@@ -620,7 +717,7 @@ try {
                         }
                         
                         # Distribute XP to all living party members
-                        $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
+                        $aliveMembers = @($Party | Where-Object { $_.HP -gt 0 })
                         $xpPerMember = [math]::Floor($totalXpGained / $aliveMembers.Count)
                         
                         foreach ($member in $aliveMembers) {
@@ -662,7 +759,7 @@ try {
                     }
                     
                     # Check if party is defeated (all members at 0 HP)
-                    $aliveMembers = $Party | Where-Object { $_.HP -gt 0 }
+                    $aliveMembers = @($Party | Where-Object { $_.HP -gt 0 })
                     if ($aliveMembers.Count -eq 0) {
                         Write-CombatMessage "Your party was defeated!" "Magenta"
                         Start-Sleep -Milliseconds 2000
