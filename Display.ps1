@@ -208,11 +208,54 @@ $playerY = [math]::Floor($boxHeight / 2)
 # ASCII character for player
 $playerChar = "@"
 
-# Load NPCs (simple version for performance testing)
-. "$PSScriptRoot\NPCs_Simple.ps1"
+# Load Quest System first
+. "$PSScriptRoot\QuestSystem.ps1"
+
+# Load Enhanced NPCs with Quest Integration
+. "$PSScriptRoot\NPCs.ps1"
 
 # Load maps
 . "$PSScriptRoot\Maps.ps1"
+
+# NPC Interaction function
+function Show-NPCInteraction {
+    param($playerX, $playerY)
+    
+    # Check all adjacent positions for NPCs
+    $adjacentPositions = @(
+        @{ X = $playerX - 1; Y = $playerY },     # Left
+        @{ X = $playerX + 1; Y = $playerY },     # Right
+        @{ X = $playerX; Y = $playerY - 1 },     # Up
+        @{ X = $playerX; Y = $playerY + 1 },     # Down
+        @{ X = $playerX; Y = $playerY }          # Same position
+    )
+    
+    $nearbyNPCs = @()
+    foreach ($pos in $adjacentPositions) {
+        $posKey = "$($pos.X),$($pos.Y)"
+        if ($global:NPCPositionLookup.ContainsKey($posKey)) {
+            $nearbyNPCs += $global:NPCPositionLookup[$posKey]
+        }
+    }
+    
+    if ($nearbyNPCs.Count -eq 0) {
+        Write-Host "No one to talk to here." -ForegroundColor Yellow
+        Start-Sleep -Milliseconds 1000
+        return
+    }
+    
+    # If multiple NPCs, let player choose (for future expansion)
+    $npcToTalkTo = $nearbyNPCs[0]
+    
+    # Start dialogue with the NPC
+    $npcData = $global:NPCs | Where-Object { $_.Name -eq $npcToTalkTo.Name } | Select-Object -First 1
+    if ($npcData) {
+        Show-NPCDialogueTree $npcData
+    } else {
+        Write-Host "Error: NPC data not found for $($npcToTalkTo.Name)" -ForegroundColor Red
+        Start-Sleep -Milliseconds 1000
+    }
+}
 
 # NEW: Use IntegratedColors.ps1 only - no ColorZones.ps1!
 # (IntegratedColors.ps1 is already loaded above)
@@ -821,6 +864,8 @@ try {
                     "DownArrow" { $newY = [math]::Min($currentMap.Count - 1, $playerY + 1); $moved = $true }
                     "S"         { $newY = [math]::Min($currentMap.Count - 1, $playerY + 1); $moved = $true }
                     "Q"         { $running = $false }
+                    "J"         { Show-QuestLog }
+                    "E"         { Show-NPCInteraction $playerX $playerY }
                     "F5"        { QuickSave-GameState }
                     "F9"        { Show-SaveMenu }
                 }
@@ -848,9 +893,9 @@ try {
             $npcHere = $global:NPCPositionLookup["$playerX,$playerY"]
             if ($npcHere) {
                 Write-Host "Press E to talk to $($npcHere.Name) ($($npcHere.Char))" -ForegroundColor Yellow
-                $input = [System.Console]::ReadKey($true)
-                if ($input.Key -eq "E") {
-                    Show-NPCDialogue $npcHere
+                $keyInput = [System.Console]::ReadKey($true)
+                if ($keyInput.Key -eq "E") {
+                    Show-NPCDialogueTree $npcHere
                 }
             }
 
