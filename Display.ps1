@@ -827,6 +827,39 @@ try {
                         break
                     }
                     
+                    # BATTLE SAFETY CHECKS - Prevent endless loops
+                    $alivePartyMembers = Get-AlivePartyMembers $Party
+                    $aliveEnemies = Clean-EnemyArray $enemies
+                    
+                    # Safety check 1: No valid turn order
+                    if (-not $turnOrder -or $turnOrder.Count -eq 0) {
+                        Write-CombatMessage "BATTLE ERROR: Invalid turn order detected!" "Red"
+                        Write-CombatMessage "Battle ending..." "Yellow"
+                        $battleMode = $false
+                        $inCombat = $false
+                        continue
+                    }
+                    
+                    # Safety check 2: Party defeated  
+                    if ($alivePartyMembers.Count -eq 0) {
+                        Write-CombatMessage "All party members have been defeated!" "Red"
+                        Write-CombatMessage "GAME OVER" "Red"
+                        Start-Sleep -Milliseconds 2000
+                        $battleMode = $false
+                        $inCombat = $false
+                        continue
+                    }
+                    
+                    # Safety check 3: All enemies defeated
+                    if ($aliveEnemies.Count -eq 0) {
+                        Write-CombatMessage "All enemies defeated!" "Green"
+                        Write-CombatMessage "Victory!" "Yellow"
+                        Start-Sleep -Milliseconds 2000
+                        $battleMode = $false
+                        $inCombat = $false
+                        continue
+                    }
+                    
                     # Advance to next turn
                     $currentTurnIndex = ($currentTurnIndex + 1) % $turnOrder.Count
                     

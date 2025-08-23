@@ -132,6 +132,7 @@ function Get-PartyPositions {
                 Name = $member.Name
                 Class = $member.Class
                 Symbol = $member.MapSymbol
+                Color = $member.Color  # Include individual character color
                 IsLeader = ($Party.IndexOf($member) -eq 0)
             }
         }
@@ -225,7 +226,7 @@ function Get-PartyMember {
 function Get-AlivePartyMembers {
     param([array]$Party)
     
-    return $Party | Where-Object { $_.IsAlive -eq $true }
+    return $Party | Where-Object { $_.HP -gt 0 }
 }
 
 # Check if party is defeated (all members dead)
@@ -474,6 +475,9 @@ function ConvertFrom-PartySaveData {
 # =============================================================================
 
 # Global party variable (will be initialized by Display.ps1)
-$global:Party = $null
+# Only initialize to null if no party already exists (preserve custom character creation)
+if (-not $global:Party) {
+    $global:Party = $null
+}
 
 Write-Host "Party System loaded! Character classes: Warrior, Mage, Healer, Rogue" -ForegroundColor Green

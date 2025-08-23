@@ -164,7 +164,7 @@ function Show-SettingsMenu {
     #>
     
     $currentCategory = 0
-    $categories = @("Graphics", "Audio", "Controls", "Gameplay", "System")
+    $categories = @("Graphics", "Audio", "Controls", "Gameplay", "Party", "System")
     $exitMenu = $false
     
     while (-not $exitMenu) {
@@ -213,6 +213,12 @@ function Show-CategorySettings {
     <#
     Show settings for a specific category
     #>
+    
+    # Special handling for Party management
+    if ($categoryName -eq "Party") {
+        Show-PartyManagementMenu
+        return
+    }
     
     $categorySettings = $global:CurrentSettings[$categoryName]
     $settingNames = @($categorySettings.Keys)
@@ -462,6 +468,187 @@ function Show-ResetConfirmation {
             }
         }
     } while ($true)
+}
+
+# =============================================================================
+# PARTY MANAGEMENT SYSTEM
+# =============================================================================
+
+function Show-PartyManagementMenu {
+    <#
+    Party management interface for reordering party members
+    #>
+    
+    if (-not $global:Party -or $global:Party.Count -eq 0) {
+        Clear-Host
+        Draw-SettingsMenuHeader
+        Write-Host ""
+        Write-Host "No party found! Party management is only available during active gameplay." -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Press any key to return to settings..." -ForegroundColor DarkGray
+        [System.Console]::ReadKey($true) | Out-Null
+        return
+    }
+    
+    $currentSelection = 0
+    $exitMenu = $false
+    $partyBackup = @()
+    
+    # Create backup of party order
+    foreach ($member in $global:Party) {
+        $partyBackup += $member.PSObject.Copy()
+    }
+    
+    while (-not $exitMenu) {
+        Clear-Host
+        Draw-SettingsMenuHeader
+        
+        Write-Host ""
+        Write-Host "Party Management - Reorganize Party Order" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "Current party formation (leader first):" -ForegroundColor Yellow
+        Write-Host ""
+        
+        # Display current party order
+        for ($i = 0; $i -lt $global:Party.Count; $i++) {
+            $member = $global:Party[$i]
+            $prefix = if ($i -eq $currentSelection) { ">" } else { " " }
+            $color = if ($i -eq $currentSelection) { "Yellow" } else { "White" }
+            $leaderText = if ($i -eq 0) { " (LEADER)" } else { "" }
+            $colorText = if ($member.Color) { " [$($member.Color)]" } else { "" }
+            
+            Write-Host "$prefix $($i + 1). $($member.Name) - $($member.Class) [$($member.MapSymbol)]$colorText$leaderText" -ForegroundColor $color
+        }
+        
+        Write-Host ""
+        Write-Host "Formation will be: $($global:PartyFormation -join ' -> ')" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "Controls:" -ForegroundColor DarkGray
+        Write-Host "  Up/Down: Select member" -ForegroundColor DarkGray
+        Write-Host "  Left/Right: Move member up/down in order" -ForegroundColor DarkGray
+        Write-Host "  R: Reset to original order" -ForegroundColor DarkGray
+        Write-Host "  ENTER: Apply changes and exit" -ForegroundColor DarkGray
+        Write-Host "  ESC: Cancel and exit" -ForegroundColor DarkGray
+        
+        # Get input
+        $key = [System.Console]::ReadKey($true)
+        
+        switch ($key.Key) {
+            "UpArrow" {
+                $currentSelection = ($currentSelection - 1 + $global:Party.Count) % $global:Party.Count
+            }
+            "DownArrow" {
+                $currentSelection = ($currentSelection + 1) % $global:Party.Count
+            }
+            "LeftArrow" {
+                # Move selected member up in order (lower index)
+                if ($currentSelection -gt 0) {
+                    $temp = $global:Party[$currentSelection]
+                    $global:Party[$currentSelection] = $global:Party[$currentSelection - 1]
+                    $global:Party[$currentSelection - 1] = $temp
+                    
+                    # Update positions and trail
+                    Update-PartyPositionsAfterReorder
+                    $currentSelection--
+                }
+            }
+            "RightArrow" {
+                # Move selected member down in order (higher index)
+                if ($currentSelection -lt $global:Party.Count - 1) {
+                    $temp = $global:Party[$currentSelection]
+                    $global:Party[$currentSelection] = $global:Party[$currentSelection + 1]
+                    $global:Party[$currentSelection + 1] = $temp
+                    
+                    # Update positions and trail
+                    Update-PartyPositionsAfterReorder
+                    $currentSelection++
+                }
+            }
+            "R" {
+                # Reset to original order
+                $global:Party = @()
+                foreach ($member in $partyBackup) {
+                    $global:Party += $member.PSObject.Copy()
+                }
+                Update-PartyPositionsAfterReorder
+                Write-Host "Party order reset!" -ForegroundColor Green
+                Start-Sleep -Milliseconds 800
+            }
+            "Enter" {
+                # Apply changes and exit
+                Update-PartyPositionsAfterReorder
+                Write-Host "Party reorganized successfully!" -ForegroundColor Green
+                Write-Host "New formation: $($global:PartyFormation -join ' -> ')" -ForegroundColor Cyan
+                Start-Sleep -Milliseconds 1500
+                $exitMenu = $true
+            }
+            "Escape" {
+                # Cancel changes and restore backup
+                $global:Party = @()
+                foreach ($member in $partyBackup) {
+                    $global:Party += $member.PSObject.Copy()
+                }
+                Update-PartyPositionsAfterReorder
+                $exitMenu = $true
+            }
+        }
+    }
+}
+
+function Update-PartyPositionsAfterReorder {
+    <#
+    Update party positions and formation after reordering
+    #>
+    
+    # Update player object to new leader
+    if ($global:Party.Count -gt 0) {
+        $leader = $global:Party[0]
+        $global:Player.Name = $leader.Name
+        $global:Player.Class = $leader.Class
+        $global:Player.HP = $leader.HP
+        $global:Player.MaxHP = $leader.MaxHP
+        $global:Player.Attack = $leader.Attack
+        $global:Player.Defense = $leader.Defense
+        $global:Player.Speed = $leader.Speed
+        $global:Player.MP = $leader.MP
+        $global:Player.MaxMP = $leader.MaxMP
+        $global:Player.Spells = $leader.Spells
+        $global:Player.Equipped = $leader.Equipped
+        $global:Player.ClassData = $leader.ClassData
+    }
+    
+    # Update party formation display
+    $global:PartyFormation = @()
+    for ($i = 0; $i -lt $global:Party.Count; $i++) {
+        $symbol = if ($i -eq 0) { "@" } else { $global:Party[$i].MapSymbol }
+        $global:PartyFormation += $symbol
+    }
+    
+    # Update party positions (preserve current leader position)
+    if ($global:Player -and $global:Player.Position) {
+        $leaderX = $global:Player.Position.X
+        $leaderY = $global:Player.Position.Y
+        
+        # Reinitialize trail with current position
+        $global:PartyTrail = @()
+        for ($i = 0; $i -lt $global:Party.Count * 2; $i++) {
+            $global:PartyTrail += @{ X = $leaderX - $i; Y = $leaderY }
+        }
+        
+        # Position party members using trail
+        for ($i = 0; $i -lt $global:Party.Count; $i++) {
+            $member = $global:Party[$i]
+            if ($i -eq 0) {
+                # Leader stays at current position
+                $member.Position = @{ X = $leaderX; Y = $leaderY }
+            } else {
+                # Other members follow trail
+                $trailIndex = [math]::Min($i * 2, $global:PartyTrail.Count - 1)
+                $trailPos = $global:PartyTrail[$trailIndex]
+                $member.Position = @{ X = $trailPos.X; Y = $trailPos.Y }
+            }
+        }
+    }
 }
 
 # =============================================================================

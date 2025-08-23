@@ -1993,3 +1993,4 @@
 [2025-08-22 22:28:35] STARTUP ERROR: Exception calling "SetCursorPosition" with "2" argument(s): "The value must be greater than or equal to zero and less than the console's buffer size in that dimension.
 Parameter name: top
 Actual value was 28."
+[2025-08-22 23:20:05] The property 'Name' cannot be found on this object. Verify that the property exists and can be set.

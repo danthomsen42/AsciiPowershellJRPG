@@ -8,21 +8,49 @@
 if (Test-Path "$PSScriptRoot\PartySystem.ps1") {
     . "$PSScriptRoot\PartySystem.ps1"
 }
+if (Test-Path "$PSScriptRoot\CharacterCustomization.ps1") {
+    . "$PSScriptRoot\CharacterCustomization.ps1"
+}
 
 # =============================================================================
-# NAME GENERATION SYSTEM
+# NAME GENERATION SYSTEM - Enhanced Gender Diversity
 # =============================================================================
 
 $FantasyNames = @{
-    "Warrior" = @("Gareth", "Thane", "Kael", "Roderick", "Magnus", "Aldric", "Baelor", "Corin", "Drake", "Ewan")
-    "Mage" = @("Lysander", "Elias", "Casper", "Magnus", "Theron", "Zara", "Celeste", "Luna", "Iris", "Nova")
-    "Healer" = @("Seraphina", "Grace", "Hope", "Faith", "Mercy", "Celeste", "Aurora", "Dawn", "Harmony", "Peace")
-    "Rogue" = @("Shadow", "Raven", "Whisper", "Blade", "Swift", "Dash", "Stealth", "Vex", "Zara", "Quinn")
+    "Warrior" = @("Gareth", "Thane", "Kael", "Roderick", "Magnus", "Aldric", "Baelor", "Corin", "Drake", "Ewan", 
+                  "Aria", "Valeria", "Brianna", "Cassandra", "Diana", "Freya", "Gabrielle", "Helena", "Isabella", "Jasmine")
+    "Mage" = @("Lysander", "Elias", "Casper", "Magnus", "Theron", "Zara", "Celeste", "Luna", "Iris", "Nova",
+               "Morgana", "Seraphina", "Evangeline", "Cordelia", "Beatrice", "Ophelia", "Penelope", "Rosalind", "Vivienne", "Zelda")
+    "Healer" = @("Seraphina", "Grace", "Hope", "Faith", "Mercy", "Celeste", "Aurora", "Dawn", "Harmony", "Peace",
+                 "Gabriel", "Michael", "Raphael", "Samuel", "Benjamin", "Nathaniel", "Theodore", "Sebastian", "Alexander", "Christopher")
+    "Rogue" = @("Shadow", "Raven", "Whisper", "Blade", "Swift", "Dash", "Stealth", "Vex", "Zara", "Quinn",
+               "Scarlett", "Raven", "Phoenix", "Storm", "Jade", "Onyx", "Ember", "Frost", "Sage", "Ivy")
 }
 
 $MaleNames = @("Aiden", "Blake", "Cade", "Derek", "Ethan", "Felix", "Gavin", "Hunter", "Ivan", "Jaxon", "Kane", "Liam", "Mason", "Noah", "Owen", "Pierce", "Quinn", "Reid", "Seth", "Trent")
 $FemaleNames = @("Aria", "Belle", "Cora", "Dara", "Eva", "Faye", "Grace", "Hope", "Ivy", "Jade", "Kate", "Luna", "Maya", "Nina", "Olive", "Page", "Quinn", "Rose", "Sage", "Tess")
 $UnisexNames = @("Alex", "Casey", "Drew", "Emery", "Finley", "Gray", "Harper", "Indigo", "Jordan", "Kai", "Logan", "Morgan", "Nova", "Onyx", "Parker", "Quinn", "River", "Sage", "Taylor", "Winter")
+
+# =============================================================================
+# CHARACTER COLOR SYSTEM  
+# =============================================================================
+
+$CharacterColors = @{
+    "Red" = @{ Name = "Red"; Code = "Red"; Symbol = "R" }
+    "Blue" = @{ Name = "Blue"; Code = "Blue"; Symbol = "B" }
+    "Green" = @{ Name = "Green"; Code = "Green"; Symbol = "G" }
+    "Yellow" = @{ Name = "Yellow"; Code = "Yellow"; Symbol = "Y" }
+    "Magenta" = @{ Name = "Magenta"; Code = "Magenta"; Symbol = "M" }
+    "Cyan" = @{ Name = "Cyan"; Code = "Cyan"; Symbol = "C" }
+    "White" = @{ Name = "White"; Code = "White"; Symbol = "W" }
+    "Gray" = @{ Name = "Gray"; Code = "Gray"; Symbol = "G" }
+}
+
+$DefaultColors = @("Red", "Blue", "Green", "Yellow", "Magenta", "Cyan", "White")
+
+function Get-RandomCharacterColor {
+    return $DefaultColors | Get-Random
+}
 
 # =============================================================================
 # STAT ROLLING SYSTEM
@@ -53,12 +81,18 @@ function New-CharacterWithRolledStats {
     param(
         [string]$Name,
         [string]$Class,
-        [int]$Position = 1
+        [int]$Position = 1,
+        [string]$Color = ""
     )
     
     if (-not $CharacterClasses.ContainsKey($Class)) {
         Write-Error "Invalid class: $Class"
         return $null
+    }
+    
+    # Assign random color if not specified
+    if (-not $Color) {
+        $Color = Get-RandomCharacterColor
     }
     
     $classData = $CharacterClasses[$Class]
@@ -88,7 +122,8 @@ function New-CharacterWithRolledStats {
         Name        = $Name
         Class       = $Class
         Level       = 1
-        Position    = $Position
+        Position    = @{ X = 40; Y = 12 }  # Proper position object with coordinates
+        Color       = $Color
         MaxHP       = $rolledHP
         HP          = $rolledHP
         MaxMP       = $rolledMP
@@ -106,6 +141,7 @@ function New-CharacterWithRolledStats {
             Accessory = $null
         }
         ClassData   = $classData
+        MapSymbol   = $classData.MapSymbol
         StatRolls   = 0  # Track number of rerolls
     }
 }
@@ -148,12 +184,18 @@ function New-Character {
     param(
         [string]$Name,
         [string]$Class,
-        [int]$Position = 1  # 1-4 for party position
+        [int]$Position = 1,  # 1-4 for party position
+        [string]$Color = ""  # Character color for display
     )
     
     if (-not $CharacterClasses.ContainsKey($Class)) {
         Write-Error "Invalid class: $Class"
         return $null
+    }
+    
+    # Assign random color if not specified
+    if (-not $Color) {
+        $Color = Get-RandomCharacterColor
     }
     
     $classData = $CharacterClasses[$Class]
@@ -162,7 +204,8 @@ function New-Character {
         Name        = $Name
         Class       = $Class
         Level       = 1
-        Position    = $Position
+        Position    = @{ X = 40; Y = 12 }  # Proper position object with coordinates
+        Color       = $Color
         MaxHP       = $classData.BaseHP
         HP          = $classData.BaseHP
         MaxMP       = $classData.BaseMP
@@ -180,6 +223,7 @@ function New-Character {
             Accessory = $null
         }
         ClassData   = $classData
+        MapSymbol   = $classData.MapSymbol  # Ensure MapSymbol is set
     }
 }
 
@@ -457,6 +501,11 @@ function Create-SingleCharacter {
                     $stage = "NAME"
                 } elseif ($confirmation -eq "EDIT_CLASS") {
                     $stage = "CLASS"
+                } elseif ($confirmation -eq "EDIT_COLOR") {
+                    # Color selection
+                    $newColor = Get-ColorSelection $currentCharacter.Name $currentCharacter.Class
+                    $currentCharacter.Color = $newColor
+                    $stage = "CONFIRM"  # Stay on confirm screen to see the change
                 } else {
                     $stage = "STATS"  # Default back to stats
                 }
@@ -772,12 +821,14 @@ function Show-CharacterConfirmation {
     Write-Host "  CHARACTER DETAILS:" -ForegroundColor Yellow
     Write-Host "    Name: $($Character.Name)" -ForegroundColor White
     Write-Host "    Class: $($Character.Class)" -ForegroundColor White
+    Write-Host "    Color: " -NoNewline -ForegroundColor White
+    Write-Host $Character.Color -ForegroundColor $Character.Color
     Write-Host "    HP: $($Character.MaxHP)  MP: $($Character.MaxMP)  ATK: $($Character.Attack)  DEF: $($Character.Defense)  SPD: $($Character.Speed)" -ForegroundColor Green
     Write-Host "    Equipment: $($Character.Equipped.Weapon), $($Character.Equipped.Armor)" -ForegroundColor Gray
     Write-Host "    Spells: $($Character.Spells -join ', ')" -ForegroundColor Cyan
     Write-Host ""
     
-    Write-Host "  [Y] Confirm character  [C] Change class  [N] Change name  [S] Re-roll stats" -ForegroundColor White
+    Write-Host "  [Y] Confirm  [C] Change class  [N] Change name  [K] Change color  [S] Re-roll stats" -ForegroundColor White
     
     do {
         $key = [Console]::ReadKey($true)
@@ -785,6 +836,7 @@ function Show-CharacterConfirmation {
             "Y" { return "YES" }
             "C" { return "EDIT_CLASS" }
             "N" { return "EDIT_NAME" }
+            "K" { return "EDIT_COLOR" }
             "S" { return "EDIT_STATS" }
         }
     } while ($true)

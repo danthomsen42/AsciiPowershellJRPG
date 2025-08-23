@@ -292,10 +292,15 @@ function Apply-CharacterColorsToViewport {
     # Build colored positions lookup (only party members)
     $coloredPositions = @{}
     
-    # Add party member positions with their colors
+    # Add party member positions with their individual colors
     foreach ($key in $partyPositions.Keys) {
         $member = $partyPositions[$key]
-        $color = Get-CharacterColor $member.Class
+        # Use individual character color if available, fall back to class color
+        $color = if ($member.Color -and $member.Color -ne "") { 
+            $member.Color 
+        } else { 
+            Get-CharacterColor $member.Class 
+        }
         $coloredPositions[$key] = @{
             Symbol = $member.Symbol
             Color = $color
@@ -305,10 +310,14 @@ function Apply-CharacterColorsToViewport {
     # Add player/leader position if needed
     $playerKey = "$playerX,$playerY"
     if (-not $coloredPositions.ContainsKey($playerKey)) {
-        # Get leader's class for color
+        # Get leader's individual color or fall back to class color
         $leaderColor = "White"
         if ($global:Party -and $global:Party.Count -gt 0) {
-            $leaderColor = Get-CharacterColor $global:Party[0].Class
+            $leaderColor = if ($global:Party[0].Color -and $global:Party[0].Color -ne "") { 
+                $global:Party[0].Color 
+            } else { 
+                Get-CharacterColor $global:Party[0].Class 
+            }
         }
         $coloredPositions[$playerKey] = @{
             Symbol = $playerChar
