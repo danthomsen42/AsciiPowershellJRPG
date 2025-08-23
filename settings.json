@@ -1,0 +1,30 @@
+{
+    "Gameplay":  {
+                     "AutoSaveFrequency":  "BATTLE",
+                     "ShowDamageNumbers":  true,
+                     "ShowTurnOrder":  true,
+                     "BattleDifficulty":  "NORMAL"
+                 },
+    "Audio":  {
+                  "Music":  true,
+                  "Volume":  50,
+                  "SoundEffects":  true
+              },
+    "Graphics":  {
+                     "ViewportHeight":  25,
+                     "WaterAnimation":  true,
+                     "ViewportWidth":  80,
+                     "WaterRenderMethod":  "ANSI",
+                     "EnableColorZones":  false
+                 },
+    "Controls":  {
+                     "CancelKey":  "ESC",
+                     "MovementKeys":  "WASD",
+                     "ConfirmKey":  "ENTER",
+                     "MenuNavigation":  "ARROWS"
+                 },
+    "System":  {
+                   "SettingsVersion":  "1.0",
+                   "LastModified":  "2025-08-22 21:41:47"
+               }
+}

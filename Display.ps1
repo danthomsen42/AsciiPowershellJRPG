@@ -18,6 +18,8 @@
 # Import enhanced enemy and battle systems
 . "$PSScriptRoot\NewEnemies.ps1"
 . "$PSScriptRoot\EnhancedCombatDisplay.ps1"
+# Import Settings Menu System
+. "$PSScriptRoot\SettingsMenu.ps1"
 # Note: CleanArrowTargeting functions are now defined directly below
 
 # Enhanced enemy array cleanup function - ensures it's always available
@@ -265,15 +267,20 @@ function Show-NPCInteraction {
 . "$PSScriptRoot\Enemies.ps1"
 
 # Load party system (Phase 2.1/2.2)
+# Load PartySystem.ps1 for party functions
 . "$PSScriptRoot\PartySystem.ps1"
 
-# Initialize global party from save data or create new party (after PartySystem.ps1 loads)
-if ($SaveState.Party.Members -and $SaveState.Party.Members.Count -gt 0) {
-    $global:Party = ConvertFrom-PartySaveData $SaveState.Party.Members
-    Write-Host "Party loaded from save data!" -ForegroundColor Green
+# Initialize global party from save data or create new party (only if no custom party exists)
+if (-not $global:Party) {
+    if ($SaveState.Party.Members -and $SaveState.Party.Members.Count -gt 0) {
+        $global:Party = ConvertFrom-PartySaveData $SaveState.Party.Members
+        Write-Host "Party loaded from save data!" -ForegroundColor Green
+    } else {
+        $global:Party = New-DefaultParty
+        Write-Host "New party assembled! Ready for adventure!" -ForegroundColor Green
+    }
 } else {
-    $global:Party = New-DefaultParty
-    Write-Host "New party assembled! Ready for adventure!" -ForegroundColor Green
+    Write-Host "Using custom party from character creation!" -ForegroundColor Green
 }
 
 # Pause for startup error visibility (after imports)
@@ -310,8 +317,10 @@ try {
         $errorMsg = $null
         try {
             if ($battleMode) {
-                # Load player and enemy stats
-                . "$PSScriptRoot\Player.ps1"
+                # Only load default Player.ps1 if no custom party exists
+                if (-not $global:Player -or (-not $global:PartyMembers -and -not $global:Party)) {
+                    . "$PSScriptRoot\Player.ps1"
+                }
                 
                 # Party is already initialized globally
                 
@@ -865,6 +874,7 @@ try {
                     "DownArrow" { $newY = [math]::Min($currentMap.Count - 1, $playerY + 1); $moved = $true }
                     "S"         { $newY = [math]::Min($currentMap.Count - 1, $playerY + 1); $moved = $true }
                     "Q"         { $running = $false }
+                    "Escape"    { Show-SettingsMenu }
                     "J"         { Show-QuestLog }
                     "E"         { Show-NPCInteraction $playerX $playerY }
                     "F5"        { QuickSave-GameState }

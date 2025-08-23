@@ -1,7 +1,7 @@
 PowerShell ASCII JRPG Development Roadmap
 Project: AsciiPowershellJRPG  
 Owner: danthomsen42  
-Last Updated: August 4, 2025  
+Last Updated: August 22, 2025  
 Status: Living Document
 
 ================================================================================
@@ -14,6 +14,9 @@ CURRENT PROJECT STATUS
 ✅ Save/load system
 ✅ Equipment and stats framework
 ✅ Basic enemy variety (5 enemies with ASCII art)
+✅ Settings menu system with persistent configuration
+✅ Professional start screen with main menu navigation
+✅ Final Fantasy 1 style character creation with 4-class party system
 
 ================================================================================
 PHASE 1: CORE BATTLE SYSTEM ENHANCEMENT (HIGH PRIORITY)
@@ -251,13 +254,30 @@ Goal: Polish and accessibility
 - Files to modify: Display.ps1
 - Estimated effort: 1-2 days
 
-4.3 Settings Menu ⚙️
+4.3 Settings Menu ⚙️ ✅ COMPLETED
+- Current: No centralized settings system
 - Add: 
-  * Accessible settings for graphics, controls
-  * Save/load settings to file
-  * In-game settings access (ESC key?)
-- Dependencies: 4.1, 4.2 helpful
-- New files: SettingsMenu.ps1
+  * Accessible settings for graphics, controls, gameplay
+  * Save/load settings to persistent settings.json file
+  * In-game settings access via ESC key integration
+  * Comprehensive settings categories (Display, Audio, Controls, Gameplay)
+  * Professional menu interface with arrow key navigation
+- Implementation:
+  * Created complete SettingsMenu.ps1 with full settings management
+  * Added persistent settings.json storage system
+  * Integrated ESC key access from main game loop
+  * Comprehensive settings categories:
+    - Display Settings: Colors, viewport size, animations
+    - Audio Settings: Sound effects, music volume (ready for future audio)
+    - Control Settings: Key bindings, movement speed
+    - Gameplay Settings: Difficulty, auto-save, battle speed
+  * Professional menu navigation with color-coded options
+  * Settings validation and default value handling
+  * Backward compatible with existing game systems
+- Dependencies: None (standalone system)
+- Files created: SettingsMenu.ps1
+- Files modified: Display.ps1 (ESC key integration)
+- Completion date: August 22, 2025
 - Estimated effort: 2-3 days
 
 ================================================================================
@@ -265,18 +285,34 @@ PHASE 5: START SCREEN & CHARACTER CREATION SYSTEM (MEDIUM-HIGH PRIORITY)
 ================================================================================
 Goal: Professional game presentation and character customization
 
-5.1 Main Menu & Start Screen 🎮
+5.1 Main Menu & Start Screen 🎮 ✅ COMPLETED
 - Current: Game starts directly in exploration mode
 - Add: 
   * Professional start screen with ASCII title art
   * Main menu options: New Game, Load Game, Settings, Credits, Exit
-  * Scrolling credits ticker (top or bottom of screen)
-  * Credit attribution for ASCII art sources, story contributors, etc.
-  * Animated/cycling ASCII backgrounds or decorative elements
+  * Credits screen with comprehensive development information
   * Menu navigation with arrow keys and Enter/Escape
-- Dependencies: Phase 4 (Settings Menu) recommended but not required
-- New files: StartScreen.ps1, Credits.ps1
-- Files to modify: Display.ps1 (entry point restructure)
+  * Integration with Settings Menu system
+  * Professional game launcher with error handling
+- Implementation:
+  * Created GameLauncherSimple.ps1 as professional game entry point
+  * ASCII art title system with clean, compatible design
+  * Interactive main menu with responsive navigation (Up/Down/Enter/ESC)
+  * Credits screen showcasing:
+    - Developer information and repository details
+    - Technology stack and framework acknowledgments
+    - Feature implementation highlights
+    - Special thanks and inspirations
+  * Seamless integration with existing game systems:
+    - Settings Menu integration via ESC key
+    - New Game launches existing game loop
+    - Load Game menu prepared for future save integration
+  * Clean interface design avoiding Unicode encoding issues
+  * Professional presentation with proper error handling
+- Dependencies: Phase 4.3 (Settings Menu) for full integration
+- Files created: GameLauncherSimple.ps1
+- Files modified: None (standalone system)
+- Completion date: August 22, 2025
 - Estimated effort: 3-4 days
 
 5.2 Story Intro Sequence 📜
@@ -293,7 +329,7 @@ Goal: Professional game presentation and character customization
 - Files to modify: StartScreen.ps1
 - Estimated effort: 2-3 days
 
-5.3 Character Creation System 👥
+5.3 Character Creation System 👥 ✅ COMPLETED
 - Current: Fixed single hero character
 - Add: 
   * Final Fantasy 1 style party creation
@@ -304,9 +340,35 @@ Goal: Professional game presentation and character customization
   * Starting level 1 with class-appropriate abilities
   * Preview character stats before confirming party
   * Random name generator option
-- Dependencies: 5.1 complete, Phase 2.1 (Multiple Party Members) required
-- New files: CharacterCreation.ps1
-- Files to modify: Player.ps1 (multi-character support), PartySystem.ps1
+- Implementation:
+  * Created comprehensive CharacterCreation.ps1 with full party creation system
+  * Interactive class selection with detailed character previews:
+    - Visual class browser with Up/Down navigation
+    - Real-time stat display for selected classes
+    - Equipment and spell information
+  * Advanced naming system:
+    - Custom name input with length validation and capitalization
+    - Class-specific fantasy name suggestions
+    - Random name generation with multiple categories (Male/Female/Unisex/Class-themed)
+    - 80+ unique names across all categories
+  * Character generation with balanced stats:
+    - Warrior: High HP/Defense tank (35 HP, 8 ATK, 6 DEF)
+    - Mage: Powerful spellcaster (20 HP, 15 MP, 4 spell arsenal)
+    - Healer: Support specialist (25 HP, 12 MP, healing focus)
+    - Rogue: Fast striker (28 HP, 9 SPD, agility-based)
+  * Professional party preview system:
+    - Complete stat summary for all 4 characters
+    - Equipment visualization
+    - Party formation display and total statistics
+    - Confirmation/restart/randomize options
+  * Seamless integration with existing game systems:
+    - Updated GameLauncherSimple.ps1 with "Create Party" option
+    - Automatic party initialization and game launch
+    - Compatible with existing save system and battle mechanics
+- Dependencies: 5.1 complete ✅, PartySystem.ps1 (existing) ✅
+- Files created: CharacterCreation.ps1, TestCharacterCreation.ps1
+- Files modified: GameLauncherSimple.ps1 (character creation integration)
+- Completion date: August 22, 2025
 - Estimated effort: 4-5 days
 
 5.4 Enhanced Load Game Integration 💾
@@ -498,6 +560,65 @@ SUCCESS METRICS
 - Phase 4: Polished, accessible user experience
 - Phase 5: High replay value with varied content
 
+================================================================================
+CREATIVE DISCOVERIES & FUTURE PUZZLE MECHANICS
+================================================================================
+These are interesting visual effects and behaviors discovered during development
+that could be deliberately implemented for unique gameplay features.
+
+💫 PHANTOM ECHO EFFECT (Discovered August 22, 2025)
+
+What it was: During implementation of the centered map rendering system, a coordinate
+translation bug created a fascinating visual where party members appeared in two
+locations simultaneously - once at their correct positions within small centered maps,
+and again as "ghost/phantom" characters at their equivalent positions as if the map
+were full-sized (typically appearing outside the map boundaries but within the viewport).
+
+Technical cause: The main rendering functions (Draw-ViewportWithANSI and 
+Draw-ViewportTraditional) correctly handled coordinate translation for centered maps
+using mapOffsetX/mapOffsetY parameters, but the color application function 
+(Apply-CharacterColorsToViewport) was using raw world coordinates without accounting
+for the centering offset. This created dual rendering where:
+- Monochrome characters appeared at raw coordinates (the "phantoms")  
+- Colored characters appeared at offset-corrected coordinates (the real positions)
+
+Future Implementation Ideas:
+🎮 MIRROR DIMENSION PUZZLES: Could create areas where player actions affect both
+their real position and a "phantom" position simultaneously, requiring coordination
+between both positions to solve puzzles.
+
+🎮 ASTRAL PROJECTION MECHANICS: Magic spells that intentionally create phantom
+versions of party members that can activate switches, scout areas, or provide
+tactical advantages in combat.
+
+🎮 DIMENSIONAL SHIFT DUNGEONS: Rooms where the "phantom echo" represents an
+alternate dimension overlay - players might need to position themselves so their
+phantom can access areas their real form cannot reach.
+
+🎮 TEMPORAL ECHOES: Story elements where the phantom positions represent past or
+future positions of characters, creating time-based puzzle mechanics.
+
+How to recreate:
+1. In ViewportRenderer.ps1, modify Apply-CharacterColorsToViewport to NOT use
+   the mapOffsetX/mapOffsetY parameters (remove the + $mapOffsetX/Y from the
+   screenX/screenY calculations)
+2. Use small centered maps (like StoreMap1) 
+3. The "real" characters will appear correctly positioned in the centered map
+4. The "phantom" characters will appear at the raw coordinate positions
+
+This effect was most visually striking because:
+- The real characters (colored) appeared logical and correct
+- The phantoms (monochrome) appeared in systematic positions, creating the impression
+  of intentional game mechanics rather than random glitches
+- Both sets of characters moved in perfect synchronization
+
+CODE LOCATION: ViewportRenderer.ps1, Apply-CharacterColorsToViewport function
+FIXED IN: Centered map rendering implementation (August 22, 2025)
+REPLICATION: Remove coordinate offset correction in color application function
+
+
+(Settings option ideas)
+1. Toggle on and off the '.'s in the view area. 
 ================================================================================
 NOTES SECTION
 ================================================================================

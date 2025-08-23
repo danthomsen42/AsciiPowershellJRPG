@@ -3,11 +3,33 @@
 # Function to draw the current viewport of the map
 function Draw-Viewport {
     param($map, $playerX, $playerY, $boxWidth, $boxHeight)
-    # Calculate viewport origin so player is centered when possible
+    
+    # Get map dimensions
     $mapWidth = $map[0].Length
     $mapHeight = $map.Count
-    $viewX = [math]::Max(0, [math]::Min($playerX - [math]::Floor($boxWidth/2), $mapWidth - $boxWidth))
-    $viewY = [math]::Max(0, [math]::Min($playerY - [math]::Floor($boxHeight/2), $mapHeight - $boxHeight))
+    
+    # Check if map is smaller than viewport and needs centering
+    $centerMap = ($mapWidth -lt $boxWidth) -or ($mapHeight -lt $boxHeight)
+    
+    if ($centerMap) {
+        # Calculate centering offsets for small maps
+        $mapOffsetX = [math]::Max(0, [math]::Floor(($boxWidth - $mapWidth) / 2))
+        $mapOffsetY = [math]::Max(0, [math]::Floor(($boxHeight - $mapHeight) / 2))
+        
+        # For centered maps, show entire map (no scrolling)
+        $viewX = 0
+        $viewY = 0
+        $actualBoxWidth = $mapWidth
+        $actualBoxHeight = $mapHeight
+    } else {
+        # Normal viewport calculation for large maps (player-centered)
+        $viewX = [math]::Max(0, [math]::Min($playerX - [math]::Floor($boxWidth/2), $mapWidth - $boxWidth))
+        $viewY = [math]::Max(0, [math]::Min($playerY - [math]::Floor($boxHeight/2), $mapHeight - $boxHeight))
+        $mapOffsetX = 0
+        $mapOffsetY = 0
+        $actualBoxWidth = $boxWidth
+        $actualBoxHeight = $boxHeight
+    }
     
     # Get party positions for rendering (if party system is loaded)
     $partyPositions = @{}
@@ -15,19 +37,19 @@ function Draw-Viewport {
         $partyPositions = Get-PartyPositions $global:Party
     }
     
-    # Choose rendering method
+    # Choose rendering method with centering support
     if ($global:EnableWaterAnimation -and $global:WaterRenderMethod -eq "ANSI") {
         # High-performance ANSI rendering with embedded water colors
-        Draw-ViewportWithANSI $map $playerX $playerY $boxWidth $boxHeight $viewX $viewY $partyPositions
+        Draw-ViewportWithANSI $map $playerX $playerY $boxWidth $boxHeight $viewX $viewY $partyPositions $mapOffsetX $mapOffsetY $actualBoxWidth $actualBoxHeight $centerMap
     } else {
         # Traditional rendering (fast and compatible)
-        Draw-ViewportTraditional $map $playerX $playerY $boxWidth $boxHeight $viewX $viewY $partyPositions
+        Draw-ViewportTraditional $map $playerX $playerY $boxWidth $boxHeight $viewX $viewY $partyPositions $mapOffsetX $mapOffsetY $actualBoxWidth $actualBoxHeight $centerMap
     }
 }
 
 # High-performance ANSI rendering with embedded water colors
 function Draw-ViewportWithANSI {
-    param($map, $playerX, $playerY, $boxWidth, $boxHeight, $viewX, $viewY, $partyPositions)
+    param($map, $playerX, $playerY, $boxWidth, $boxHeight, $viewX, $viewY, $partyPositions, $mapOffsetX = 0, $mapOffsetY = 0, $actualBoxWidth = $boxWidth, $actualBoxHeight = $boxHeight, $centerMap = $false)
     
     # Safety check for null map
     if (-not $map -or $map.Count -eq 0) {
@@ -43,8 +65,8 @@ function Draw-ViewportWithANSI {
                 $npcX = $npc.X
                 $npcY = $npc.Y
                 # Only include NPCs that might be visible in viewport
-                if ($npcX -ge $viewX -and $npcX -lt ($viewX + $boxWidth) -and 
-                    $npcY -ge $viewY -and $npcY -lt ($viewY + $boxHeight)) {
+                if ($npcX -ge $viewX -and $npcX -lt ($viewX + $actualBoxWidth) -and 
+                    $npcY -ge $viewY -and $npcY -lt ($viewY + $actualBoxHeight)) {
                     $npcPositions["$npcX,$npcY"] = $npc
                 }
             }
@@ -58,19 +80,37 @@ function Draw-ViewportWithANSI {
     [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
     [void]$output.AppendLine("Map: $CurrentMapName | Player: ($playerX,$playerY)")
     
-    # Pre-build all viewport rows with embedded ANSI colors
+    # Pre-build all viewport rows with embedded ANSI colors and centering support
     for ($y = 0; $y -lt $boxHeight; $y++) {
         [void]$output.Append("|")
         
         for ($x = 0; $x -lt $boxWidth; $x++) {
-            $worldX = $x + $viewX
-            $worldY = $y + $viewY
-            
-            # Safe map access with bounds checking
-            $mapChar = '.'  # Default character
-            if ($worldY -ge 0 -and $worldY -lt $map.Count -and 
-                $worldX -ge 0 -and $worldX -lt $map[0].Length) {
-                $mapChar = $map[$worldY][$worldX]
+            if ($centerMap) {
+                # Handle centered small maps
+                $mapX = $x - $mapOffsetX
+                $mapY = $y - $mapOffsetY
+                
+                # Check if we're within the actual map bounds
+                if ($mapX -ge 0 -and $mapX -lt $map[0].Length -and $mapY -ge 0 -and $mapY -lt $map.Count) {
+                    $worldX = $mapX + $viewX
+                    $worldY = $mapY + $viewY
+                    $mapChar = $map[$mapY][$mapX]
+                } else {
+                    # Outside map bounds - use empty space (not dots)
+                    [void]$output.Append(" ")
+                    continue
+                }
+            } else {
+                # Normal large map handling
+                $worldX = $x + $viewX
+                $worldY = $y + $viewY
+                
+                # Safe map access with bounds checking
+                $mapChar = '.'  # Default character
+                if ($worldY -ge 0 -and $worldY -lt $map.Count -and 
+                    $worldX -ge 0 -and $worldX -lt $map[0].Length) {
+                    $mapChar = $map[$worldY][$worldX]
+                }
             }
             
             # Determine what character to display
@@ -110,16 +150,25 @@ function Draw-ViewportWithANSI {
     
     # Apply colors ONLY to specific positions (super fast!)
     if ($global:EnableColorZones) {
-        Apply-SimpleColors $CurrentMapName $viewX $viewY $boxWidth $boxHeight $playerX $playerY $partyPositions
+        if ($centerMap) {
+            Apply-SimpleColors $CurrentMapName $viewX $viewY $actualBoxWidth $actualBoxHeight $playerX $playerY $partyPositions $mapOffsetX $mapOffsetY
+        } else {
+            Apply-SimpleColors $CurrentMapName $viewX $viewY $boxWidth $boxHeight $playerX $playerY $partyPositions
+        }
     }
     
     # Apply character colors (only 4-5 positions, very fast!)
-    Apply-CharacterColorsToViewport $viewX $viewY $boxWidth $boxHeight $playerX $playerY $partyPositions
+    if ($centerMap) {
+        # For centered maps, pass the full viewport dimensions for bounds checking, not the smaller map size
+        Apply-CharacterColorsToViewport $viewX $viewY $boxWidth $boxHeight $playerX $playerY $partyPositions $mapOffsetX $mapOffsetY
+    } else {
+        Apply-CharacterColorsToViewport $viewX $viewY $boxWidth $boxHeight $playerX $playerY $partyPositions
+    }
 }
 
 # Traditional rendering method (backwards compatible)
 function Draw-ViewportTraditional {
-    param($map, $playerX, $playerY, $boxWidth, $boxHeight, $viewX, $viewY, $partyPositions)
+    param($map, $playerX, $playerY, $boxWidth, $boxHeight, $viewX, $viewY, $partyPositions, $mapOffsetX = 0, $mapOffsetY = 0, $actualBoxWidth = $boxWidth, $actualBoxHeight = $boxHeight, $centerMap = $false)
     
     # Pre-calculate NPCs in viewport area (performance optimization)
     $npcPositions = @{}
@@ -129,8 +178,8 @@ function Draw-ViewportTraditional {
                 $npcX = $npc.X
                 $npcY = $npc.Y
                 # Only include NPCs that might be visible in viewport
-                if ($npcX -ge $viewX -and $npcX -lt ($viewX + $boxWidth) -and 
-                    $npcY -ge $viewY -and $npcY -lt ($viewY + $boxHeight)) {
+                if ($npcX -ge $viewX -and $npcX -lt ($viewX + $actualBoxWidth) -and 
+                    $npcY -ge $viewY -and $npcY -lt ($viewY + $actualBoxHeight)) {
                     $npcPositions["$npcX,$npcY"] = $npc
                 }
             }
@@ -144,14 +193,32 @@ function Draw-ViewportTraditional {
     [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
     [void]$output.AppendLine("Map: $CurrentMapName | Player: ($playerX,$playerY)")
     
-    # Pre-build all viewport rows
+    # Pre-build all viewport rows with centering support
     for ($y = 0; $y -lt $boxHeight; $y++) {
         [void]$output.Append("|")
         
         for ($x = 0; $x -lt $boxWidth; $x++) {
-            $worldX = $x + $viewX
-            $worldY = $y + $viewY
-            $mapChar = $map[$viewY + $y][$viewX + $x]
+            if ($centerMap) {
+                # Handle centered small maps
+                $mapX = $x - $mapOffsetX
+                $mapY = $y - $mapOffsetY
+                
+                # Check if we're within the actual map bounds
+                if ($mapX -ge 0 -and $mapX -lt $map[0].Length -and $mapY -ge 0 -and $mapY -lt $map.Count) {
+                    $worldX = $mapX + $viewX
+                    $worldY = $mapY + $viewY
+                    $mapChar = $map[$mapY][$mapX]
+                } else {
+                    # Outside map bounds - use empty space (not dots)
+                    [void]$output.Append(" ")
+                    continue
+                }
+            } else {
+                # Normal large map handling
+                $worldX = $x + $viewX
+                $worldY = $y + $viewY
+                $mapChar = $map[$viewY + $y][$viewX + $x]
+            }
             
             # Determine what character to display and apply integrated colors
             $displayChar = $mapChar
@@ -193,7 +260,12 @@ function Draw-ViewportTraditional {
     }
     
     # Apply character colors (only 4-5 positions, very fast!)
-    Apply-CharacterColorsToViewport $viewX $viewY $boxWidth $boxHeight $playerX $playerY $partyPositions
+    if ($centerMap) {
+        # For centered maps, pass the full viewport dimensions for bounds checking, not the smaller map size
+        Apply-CharacterColorsToViewport $viewX $viewY $boxWidth $boxHeight $playerX $playerY $partyPositions $mapOffsetX $mapOffsetY
+    } else {
+        Apply-CharacterColorsToViewport $viewX $viewY $boxWidth $boxHeight $playerX $playerY $partyPositions
+    }
     
     # Water animation rendering using individual positioning (if needed)
     if ($global:EnableWaterAnimation -and $global:WaterRenderMethod -eq "CURSOR") {
@@ -215,7 +287,7 @@ function Set-CursorInBox {
 
 # Apply character colors to party members only (high performance)
 function Apply-CharacterColorsToViewport {
-    param($viewX, $viewY, $boxWidth, $boxHeight, $playerX, $playerY, $partyPositions)
+    param($viewX, $viewY, $boxWidth, $boxHeight, $playerX, $playerY, $partyPositions, $mapOffsetX = 0, $mapOffsetY = 0)
     
     # Build colored positions lookup (only party members)
     $coloredPositions = @{}
@@ -251,8 +323,16 @@ function Apply-CharacterColorsToViewport {
         $worldY = [int]$coords[1]
         
         # Check if this character is visible in current viewport
-        $screenX = $worldX - $viewX
-        $screenY = $worldY - $viewY
+        # For centered maps, we need to account for the offset
+        if ($mapOffsetX -gt 0 -or $mapOffsetY -gt 0) {
+            # Centered map: translate world coordinates to screen coordinates
+            $screenX = $worldX - $viewX + $mapOffsetX
+            $screenY = $worldY - $viewY + $mapOffsetY
+        } else {
+            # Normal map: standard coordinate translation
+            $screenX = $worldX - $viewX
+            $screenY = $worldY - $viewY
+        }
         
         if ($screenX -ge 0 -and $screenX -lt $boxWidth -and $screenY -ge 0 -and $screenY -lt $boxHeight) {
             $charInfo = $coloredPositions[$positionKey]

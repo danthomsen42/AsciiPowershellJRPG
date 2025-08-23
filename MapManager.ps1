@@ -9,6 +9,7 @@ $global:Maps = @{
     "TownCastle" = $TownCastle
     "Dungeon"  = $DungeonMap
     "DungeonMap2" = $DungeonMap2
+    "StoreMap1" = $StoreMap1
     "RandomizedDungeon" = $global:RandomizedDungeon
     
     # Add more maps here, e.g. "Shop" = $ShopMap
@@ -35,6 +36,7 @@ $global:DoorRegistry = @{
     "DungeonMap2,42,10" = @{ Map = "Dungeon";    X = 42; Y = 24 }
     "Town,50,18"    = @{ Map = "TownCastle"; X = 1; Y = 2 }
     "TownCastle,36,15" = @{ Map = "Town"; X = 50; Y = 18 }
+    "Town,48,8"     = @{ Map = "StoreMap1"; X = 11; Y = 8 }
     # Add more doors for other maps here
 }
 
