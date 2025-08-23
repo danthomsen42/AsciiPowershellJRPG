@@ -910,8 +910,20 @@ try {
                     "Escape"    { Show-SettingsMenu }
                     "J"         { Show-QuestLog }
                     "E"         { Show-NPCInteraction $playerX $playerY }
-                    "F5"        { QuickSave-GameState }
-                    "F9"        { Show-SaveMenu }
+                    "F5"        { 
+                        # Load enhanced save system if not already loaded
+                        if (-not (Get-Command Save-AutoSave -ErrorAction SilentlyContinue)) {
+                            . "$PSScriptRoot\EnhancedSaveSystem.ps1"
+                        }
+                        Save-AutoSave 
+                    }
+                    "F9"        { 
+                        # Load enhanced save system if not already loaded
+                        if (-not (Get-Command Show-SaveMenu -ErrorAction SilentlyContinue)) {
+                            . "$PSScriptRoot\EnhancedSaveSystem.ps1"
+                        }
+                        Show-SaveMenu 
+                    }
                 }
             }
 

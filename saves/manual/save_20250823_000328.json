@@ -1,18 +1,15 @@
 ﻿{
     "Inventory":  {
                       "Items":  {
-                                    "Gold Coins":  450,
-                                    "Iron Ore":  12,
-                                    "Mana Potion":  3,
-                                    "Health Potion":  5,
-                                    "Magic Scroll":  2
+                                    "Gold Coins":  250,
+                                    "Health Potion":  3
                                 }
                   },
     "GameInfo":  {
-                     "SaveType":  "auto",
-                     "PlayTime":  120.00038338666667,
+                     "SaveType":  "manual",
+                     "PlayTime":  130.02729959,
                      "Version":  "5.4",
-                     "SaveTime":  "2025-08-22 23:53:26"
+                     "SaveTime":  "2025-08-23 00:03:28"
                  },
     "Location":  {
                      "PlayerX":  15,
@@ -65,41 +62,6 @@
                                       "Spells":  [
                                                      "Heal",
                                                      "Fireball"
-                                                 ]
-                                  },
-                                  {
-                                      "HP":  45,
-                                      "MP":  55,
-                                      "Inventory":  {
-
-                                                    },
-                                      "Level":  4,
-                                      "Defense":  null,
-                                      "Equipped":  {
-                                                       "Armor":  null,
-                                                       "Accessory":  null,
-                                                       "Weapon":  null
-                                                   },
-                                      "Class":  "Wizard",
-                                      "Speed":  null,
-                                      "Color":  "Blue",
-                                      "NextLevelXP":  null,
-                                      "XP":  1800,
-                                      "Position":  {
-                                                       "Y":  8,
-                                                       "X":  14
-                                                   },
-                                      "MapSymbol":  null,
-                                      "Attack":  null,
-                                      "Name":  "TestMage",
-                                      "MaxHP":  60,
-                                      "ClassData":  null,
-                                      "MaxMP":  80,
-                                      "Spells":  [
-                                                     "Lightning",
-                                                     "Heal",
-                                                     "Fireball",
-                                                     "Ice Shard"
                                                  ]
                                   }
                               ],

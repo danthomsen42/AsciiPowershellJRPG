@@ -92,7 +92,10 @@ function Show-StartScreen {
                             $exitStartScreen = $true
                         }
                         1 { # Load Game
-                            Show-LoadGameMenu
+                            $gameLoaded = Show-LoadGameMenu
+                            if ($gameLoaded) {
+                                $exitStartScreen = $true
+                            }
                         }
                         2 { # Settings
                             Show-SettingsMenu
@@ -183,14 +186,17 @@ function Show-LoadGameMenu {
     Write-Host "  ═══════════════════════" -ForegroundColor DarkYellow
     Write-Host ""
     
-    for ($i = 0; $i -lt [Math]::Min($saveFiles.Count, 5); $i++) {
+    for ($i = 0; $i -lt [Math]::Min($saveFiles.Count, 10); $i++) {
         $saveFile = $saveFiles[$i]
         $saveInfo = Get-SaveFilePreview $saveFile.FullName
         
         Write-Host "  [$($i + 1)] $($saveFile.BaseName)" -ForegroundColor White
-        Write-Host "      Time: $($saveFile.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Gray
-        Write-Host "      Location: $($saveInfo.Location)" -ForegroundColor Gray
-        Write-Host "      Level $($saveInfo.Level) - $($saveInfo.HP)/$($saveInfo.MaxHP) HP" -ForegroundColor Gray
+        Write-Host "      Created: $($saveFile.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Gray
+        Write-Host "      Location: $($saveInfo.Location) | Party: $($saveInfo.PartySize) members" -ForegroundColor Gray
+        Write-Host "      Leader: Level $($saveInfo.Level) - $($saveInfo.HP)/$($saveInfo.MaxHP) HP" -ForegroundColor Gray
+        if ($saveInfo.SaveType -ne "unknown") {
+            Write-Host "      Type: $($saveInfo.SaveType) | Play Time: $([math]::Round($saveInfo.PlayTime, 1)) minutes" -ForegroundColor Gray
+        }
         Write-Host ""
     }
     
@@ -206,9 +212,13 @@ function Show-LoadGameMenu {
         
         if ($choice -match '^[1-9]$' -and [int]$choice -le $saveFiles.Count) {
             $selectedSave = $saveFiles[[int]$choice - 1]
-            Load-SaveFile $selectedSave.FullName
-            Start-MainGame
-            return
+            $loadSuccess = Load-SaveFile $selectedSave.FullName
+            if ($loadSuccess) {
+                # Successfully loaded - start the main game
+                Start-MainGame
+                return $true  # Signal that we loaded successfully
+            }
+            # If load failed, return to load menu
         }
     } while ($true)
 }
@@ -264,16 +274,38 @@ function Show-CreditsScreen {
 function Get-SaveFilePreview {
     param($saveFilePath)
     <#
-    Get preview information from save file
+    Get preview information from enhanced save file
     #>
     
     try {
-        $saveData = Get-Content $saveFilePath | ConvertFrom-Json
-        return @{
-            Location = $saveData.CurrentMapName
-            Level = $saveData.Player.Level
-            HP = $saveData.Player.HP
-            MaxHP = $saveData.Player.MaxHP
+        $saveData = Get-Content $saveFilePath -Raw | ConvertFrom-Json
+        
+        # Extract info from enhanced save structure
+        $location = if ($saveData.Location.CurrentMap) { $saveData.Location.CurrentMap } else { "Unknown" }
+        
+        # Get first party member info (leader)
+        if ($saveData.Party.Members -and $saveData.Party.Members.Count -gt 0) {
+            $leader = $saveData.Party.Members[0]
+            return @{
+                Location = $location
+                Level = $leader.Level
+                HP = $leader.HP
+                MaxHP = $leader.MaxHP
+                PartySize = $saveData.Party.Members.Count
+                SaveType = $saveData.GameInfo.SaveType
+                PlayTime = $saveData.GameInfo.PlayTime
+            }
+        } else {
+            # Fallback for saves without party data
+            return @{
+                Location = $location
+                Level = "?"
+                HP = "?"
+                MaxHP = "?"
+                PartySize = 0
+                SaveType = "unknown"
+                PlayTime = 0
+            }
         }
     }
     catch {
@@ -282,7 +314,12 @@ function Get-SaveFilePreview {
             Level = "?"
             HP = "?"
             MaxHP = "?"
+            PartySize = 0
+            SaveType = "corrupted"
+            PlayTime = 0
         }
+    }
+}
     }
 }
 
@@ -313,26 +350,92 @@ function Start-MainGame {
 function Load-SaveFile {
     param($saveFilePath)
     <#
-    Load specific save file
+    Load specific save file using enhanced save system
     #>
     
     Write-Host ""
     Write-Host "  Loading save file..." -ForegroundColor Green
     
-    # This will integrate with existing save system
     try {
-        # Load the save file using existing save system
-        . "$PSScriptRoot\SaveSystem.ps1"
-        Load-GameState -SaveFilePath $saveFilePath
+        # Load the enhanced save system if not already loaded
+        if (-not (Get-Command Restore-SaveState -ErrorAction SilentlyContinue)) {
+            . "$PSScriptRoot\EnhancedSaveSystem.ps1"
+        }
         
-        Write-Host "  ✅ Save file loaded successfully!" -ForegroundColor Green
+        # Load and parse the save file
+        $saveData = Get-Content -Path $saveFilePath -Raw | ConvertFrom-Json
+        
+        # Show preview and confirm load
+        Show-SavePreview $saveData ([System.IO.Path]::GetFileNameWithoutExtension($saveFilePath))
+        Write-Host ""
+        Write-Host "Load this save? (Y/N): " -NoNewline -ForegroundColor Yellow
+        $key = [Console]::ReadKey($true)
+        Write-Host ""
+        
+        if ($key.Key -eq 'Y') {
+            # Restore the game state
+            Restore-SaveState $saveData
+            Write-Host "  ✅ Save file loaded successfully!" -ForegroundColor Green
+            Start-Sleep -Milliseconds 1000
+            return $true
+        } else {
+            Write-Host "  Load cancelled." -ForegroundColor Yellow
+            return $false
+        }
     }
     catch {
         Write-Host "  ❌ Error loading save file: $($_.Exception.Message)" -ForegroundColor Red
         Write-Host ""
         Write-Host "Press any key to continue..." -ForegroundColor Gray
         [Console]::ReadKey($true) | Out-Null
+        return $false
     }
+}
+
+function Show-CreditsScreen {
+    <#
+    Display full credits screen
+    #>
+    
+    Clear-Host
+    Write-Host "╔══════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
+    Write-Host "║                                CREDITS                                  ║" -ForegroundColor Magenta
+    Write-Host "╚══════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
+    Write-Host ""
+    Write-Host "  ASCII PowerShell JRPG" -ForegroundColor Yellow
+    Write-Host "  A text-based RPG adventure built in PowerShell" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  Developer: Game Development Team" -ForegroundColor Yellow
+    Write-Host "  Year: 2025" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  Special thanks to the PowerShell community!" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Press any key to return to main menu..." -ForegroundColor Gray
+    [Console]::ReadKey($true) | Out-Null
+}
+
+function Initialize-NewGameState {
+    <#
+    Set up fresh game state for new adventure
+    #>
+    
+    # This will integrate with existing save system
+    # Reset any global game state variables
+    $global:CurrentMapName = "Town"
+    
+    # Clear any existing save state for new game
+    if (Get-Variable -Name "SaveState" -ErrorAction SilentlyContinue) {
+        Remove-Variable -Name "SaveState" -Scope Global -ErrorAction SilentlyContinue
+    }
+}
+
+function Start-MainGame {
+    <#
+    Launch the main game loop
+    #>
+    
+    # Import and launch the main game system
+    . "$PSScriptRoot\Display.ps1"
 }
 
 # =============================================================================

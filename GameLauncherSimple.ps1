@@ -84,8 +84,13 @@ function Show-MainMenu {
                     }
                     1 { # Load Game
                         Write-Host ""
-                        Write-Host "Load game feature coming soon..." -ForegroundColor Yellow
-                        Start-Sleep -Milliseconds 1500
+                        # Load the enhanced save system
+                        if (-not (Get-Command Show-SaveMenu -ErrorAction SilentlyContinue)) {
+                            . "$PSScriptRoot\EnhancedSaveSystem.ps1"
+                        }
+                        
+                        # Show the save menu for loading
+                        Show-SaveMenu
                     }
                     2 { # Settings
                         . "$PSScriptRoot\SettingsMenu.ps1"

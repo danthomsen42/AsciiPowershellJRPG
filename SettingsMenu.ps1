@@ -164,7 +164,7 @@ function Show-SettingsMenu {
     #>
     
     $currentCategory = 0
-    $categories = @("Graphics", "Audio", "Controls", "Gameplay", "Party", "System")
+    $categories = @("Graphics", "Audio", "Controls", "Gameplay", "Party", "Save/Load", "System")
     $exitMenu = $false
     
     while (-not $exitMenu) {
@@ -217,6 +217,12 @@ function Show-CategorySettings {
     # Special handling for Party management
     if ($categoryName -eq "Party") {
         Show-PartyManagementMenu
+        return
+    }
+    
+    # Special handling for Save/Load
+    if ($categoryName -eq "Save/Load") {
+        Show-SaveLoadMenu
         return
     }
     
@@ -649,6 +655,31 @@ function Update-PartyPositionsAfterReorder {
             }
         }
     }
+}
+
+# =============================================================================
+# SAVE/LOAD MENU INTEGRATION
+# =============================================================================
+
+function Show-SaveLoadMenu {
+    <#
+    Integrated save/load menu for the settings system
+    #>
+    
+    # Load the enhanced save system if not already loaded
+    if (-not (Get-Command "Show-SaveMenu" -ErrorAction SilentlyContinue)) {
+        if (Test-Path "$PSScriptRoot\EnhancedSaveSystem.ps1") {
+            . "$PSScriptRoot\EnhancedSaveSystem.ps1"
+        } else {
+            Write-Host "Enhanced Save System not found!" -ForegroundColor Red
+            Write-Host "Press any key to return..." -ForegroundColor Gray
+            [Console]::ReadKey($true) | Out-Null
+            return
+        }
+    }
+    
+    # Call the enhanced save menu
+    Show-SaveMenu
 }
 
 # =============================================================================

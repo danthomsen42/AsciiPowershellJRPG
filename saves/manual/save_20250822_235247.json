@@ -1,53 +1,38 @@
-{
+﻿{
+    "Inventory":  {
+                      "Items":  {
+                                    "Gold Coins":  450,
+                                    "Iron Ore":  12,
+                                    "Mana Potion":  3,
+                                    "Health Potion":  5,
+                                    "Magic Scroll":  2
+                                }
+                  },
     "GameInfo":  {
-                     "GameStarted":  "2025-08-23 00:15:27",
-                     "PlayTime":  0.229714835,
+                     "SaveType":  "manual",
+                     "PlayTime":  120.00166694,
                      "Version":  "5.4",
-                     "SaveTime":  "2025-08-23 00:15:41"
+                     "SaveTime":  "2025-08-22 23:52:47"
                  },
-    "GameEvents":  {
-                       "LastBattleWon":  null,
-                       "LastItemFound":  null,
-                       "LastLevelUp":  null,
-                       "LastNPCTalk":  null
-                   },
-    "Player":  {
-                   "ItemsCollected":  [
-
-                                      ],
-                   "Y":  0,
-                   "MonstersDefeated":  0,
-                   "Level":  1,
-                   "CurrentMap":  "StartingArea",
-                   "Weapon":  "Axe",
-                   "MaxMP":  5,
-                   "X":  0,
-                   "QuestsCompleted":  [
-
-                                       ],
-                   "MP":  5,
-                   "HP":  30,
-                   "XP":  0,
-                   "NPCsSpokenTo":  [
-
-                                    ],
-                   "MaxHP":  30,
-                   "AreasDiscovered":  [
-
-                                       ],
-                   "Armor":  "Leather Armor"
-               },
-    "Monsters":  {
-
+    "Location":  {
+                     "PlayerX":  15,
+                     "PlayerY":  8,
+                     "CurrentMap":  "TestTown"
+                 },
+    "Progress":  {
+                     "BattlesWon":  0,
+                     "AreasDiscovered":  [
+                                             "Town",
+                                             "Forest"
+                                         ],
+                     "QuestsCompleted":  "Tutorial Quest",
+                     "TotalXPGained":  0,
+                     "NPCsSpokenTo":  [
+                                          "Merchant",
+                                          "Guard"
+                                      ]
                  },
     "Party":  {
-                  "Formation":  [
-                                    "@",
-                                    "M",
-                                    "H",
-                                    "R"
-                                ],
-                  "Leader":  0,
                   "Members":  [
                                   {
                                       "HP":  80,
@@ -117,6 +102,12 @@
                                                      "Ice Shard"
                                                  ]
                                   }
-                              ]
+                              ],
+                  "Formation":  [
+                                    "@",
+                                    "M",
+                                    "H",
+                                    "R"
+                                ]
               }
 }
