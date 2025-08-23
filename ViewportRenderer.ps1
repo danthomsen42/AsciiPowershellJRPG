@@ -29,6 +29,12 @@ function Draw-Viewport {
 function Draw-ViewportWithANSI {
     param($map, $playerX, $playerY, $boxWidth, $boxHeight, $viewX, $viewY, $partyPositions)
     
+    # Safety check for null map
+    if (-not $map -or $map.Count -eq 0) {
+        Write-Host "Error: Map is null or empty in Draw-ViewportWithANSI" -ForegroundColor Red
+        return
+    }
+    
     # Ultra-fast rendering using StringBuilder with embedded ANSI color codes
     $output = [System.Text.StringBuilder]::new(8192)  # Larger buffer for ANSI codes
     
@@ -43,7 +49,13 @@ function Draw-ViewportWithANSI {
         for ($x = 0; $x -lt $boxWidth; $x++) {
             $worldX = $x + $viewX
             $worldY = $y + $viewY
-            $mapChar = $map[$viewY + $y][$viewX + $x]
+            
+            # Safe map access with bounds checking
+            $mapChar = '.'  # Default character
+            if ($worldY -ge 0 -and $worldY -lt $map.Count -and 
+                $worldX -ge 0 -and $worldX -lt $map[0].Length) {
+                $mapChar = $map[$worldY][$worldX]
+            }
             
             # Determine what character to display
             $displayChar = $mapChar
@@ -54,7 +66,11 @@ function Draw-ViewportWithANSI {
             } elseif ($worldX -eq $playerX -and $worldY -eq $playerY) {
                 $displayChar = $playerChar
             } else {
-                $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
+                # Only check NPCs on Town map to avoid array indexing errors
+                $npcChar = $null
+                if ($global:CurrentMapName -eq "Town") {
+                    $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
+                }
                 if ($npcChar) {
                     $displayChar = $npcChar.Char
                 }
@@ -118,7 +134,11 @@ function Draw-ViewportTraditional {
                 $displayChar = $playerChar
                 [void]$output.Append($displayChar)
             } else {
-                $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
+                # Only check NPCs on Town map to avoid array indexing errors
+                $npcChar = $null
+                if ($global:CurrentMapName -eq "Town") {
+                    $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
+                }
                 if ($npcChar) {
                     $displayChar = $npcChar.Char
                     [void]$output.Append($displayChar)

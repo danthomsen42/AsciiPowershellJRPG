@@ -231,10 +231,13 @@ function Show-NPCInteraction {
     )
     
     $nearbyNPCs = @()
-    foreach ($pos in $adjacentPositions) {
-        $posKey = "$($pos.X),$($pos.Y)"
-        if ($global:NPCPositionLookup.ContainsKey($posKey)) {
-            $nearbyNPCs += $global:NPCPositionLookup[$posKey]
+    # Only check for NPCs on Town map to avoid array indexing errors
+    if ($global:CurrentMapName -eq "Town") {
+        foreach ($pos in $adjacentPositions) {
+            $posKey = "$($pos.X),$($pos.Y)"
+            if ($global:NPCPositionLookup.ContainsKey($posKey)) {
+                $nearbyNPCs += $global:NPCPositionLookup[$posKey]
+            }
         }
     }
     
@@ -889,8 +892,11 @@ try {
                 }
             }
 
-            # NPC interaction - direct hashtable lookup
-            $npcHere = $global:NPCPositionLookup["$playerX,$playerY"]
+            # NPC interaction - direct hashtable lookup (only on Town map)
+            $npcHere = $null
+            if ($CurrentMapName -eq "Town") {
+                $npcHere = $global:NPCPositionLookup["$playerX,$playerY"]
+            }
             if ($npcHere) {
                 Write-Host "Press E to talk to $($npcHere.Name) ($($npcHere.Char))" -ForegroundColor Yellow
                 $keyInput = [System.Console]::ReadKey($true)

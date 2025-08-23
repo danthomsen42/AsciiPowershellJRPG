@@ -84,8 +84,11 @@ function Render-ColoredViewport {
                 # Regular map tile (no coloring)
                 $mapChar = $map[$viewY + $y][$viewX + $x]
                 
-                # Check for NPCs
-                $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
+                # Check for NPCs (only on Town map to avoid array indexing errors)
+                $npcChar = $null
+                if ($global:CurrentMapName -eq "Town") {
+                    $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
+                }
                 if ($npcChar) {
                     [void]$output.Append($npcChar.Char)
                 } else {

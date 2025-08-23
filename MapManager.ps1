@@ -6,10 +6,11 @@
 # Registry of all maps by name
 $global:Maps = @{
     "Town"     = $TownMap
+    "TownCastle" = $TownCastle
     "Dungeon"  = $DungeonMap
     "DungeonMap2" = $DungeonMap2
     "RandomizedDungeon" = $global:RandomizedDungeon
-    "TownCastle" = $TownCastle
+    
     # Add more maps here, e.g. "Shop" = $ShopMap
 }
 
@@ -22,7 +23,7 @@ function PrintDoorCoords {
     }
 }
 # Uncomment to print door coordinates:
-# PrintDoorCoords $TownMap "Town"
+PrintDoorCoords $TownMap "Town"
 # PrintDoorCoords $DungeonMap "Dungeon"
 
 # Door registry: (MapName,X,Y) => @{ Map = "DestinationMapName"; X = entryX; Y = entryY }
@@ -32,7 +33,8 @@ $global:DoorRegistry = @{
     "Dungeon,21,29" = @{ Map = "Town";    X = 21; Y = 29 }
     "Dungeon,42,24" = @{ Map = "DungeonMap2";    X = 42; Y = 24 }
     "DungeonMap2,42,10" = @{ Map = "Dungeon";    X = 42; Y = 24 }
-    "Town,50,18"    = @{ Map = "TownCastle"; X = 1; Y = 1 }
+    "Town,50,18"    = @{ Map = "TownCastle"; X = 1; Y = 2 }
+    "TownCastle,36,15" = @{ Map = "Town"; X = 50; Y = 18 }
     # Add more doors for other maps here
 }
 
