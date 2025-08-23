@@ -24,28 +24,55 @@ if ($GameState.PrincessRescued -and (Has-ActiveQuest "rescue_princess")) {
     Complete-Quest "rescue_princess"
 }
 
- # Performance optimization: NPC position lookup hashtable
+ # Performance optimization: NPC position lookup hashtable (map-aware)
  $NPCPositionLookup = @{}
 
- # Helper function to rebuild NPC position index
+ # Helper function to rebuild NPC position index (map-aware)
  function Update-NPCPositionIndex {
      $global:NPCPositionLookup = @{}
      foreach ($npc in $global:NPCs) {
-         $key = "$($npc.X),$($npc.Y)"
-         $global:NPCPositionLookup[$key] = $npc
+         # Create map-specific lookup: "MapName:X,Y" = NPC
+         $mapKey = "$($npc.Map):$($npc.X),$($npc.Y)"
+         $global:NPCPositionLookup[$mapKey] = $npc
+         
+         # Also create position-only lookup for backward compatibility
+         $posKey = "$($npc.X),$($npc.Y)"
+         $global:NPCPositionLookup[$posKey] = $npc
      }
  }
 
- # Helper function to get NPC at position (ultra-fast lookup)
+ # Helper function to get NPC at position on current map
  function Get-NPCAtPosition {
-     param($x, $y)
+     param($x, $y, $mapName = $global:CurrentMapName)
+     
+     # Try map-specific lookup first
+     $mapKey = "$mapName`:$x,$y"
+     if ($global:NPCPositionLookup.ContainsKey($mapKey)) {
+         return $global:NPCPositionLookup[$mapKey]
+     }
+     
+     # Fallback to position-only lookup (for backward compatibility)
      return $global:NPCPositionLookup["$x,$y"]
+ }
+
+ # Helper function to move NPC to different map/position
+ function Move-NPC {
+     param($npcName, $newMap, $newX, $newY)
+     
+     $npc = $global:NPCs | Where-Object { $_.Name -eq $npcName } | Select-Object -First 1
+     if ($npc) {
+         $npc.Map = $newMap
+         $npc.X = $newX  
+         $npc.Y = $newY
+         Update-NPCPositionIndex
+         Write-Host "$npcName moved to $newMap at ($newX, $newY)" -ForegroundColor Green
+     }
  }
 
  # Enhanced NPC definitions with quest integration
  $global:NPCs = @(
     @{
-        Name = "King"; X = 42; Y = 2; Char = "K"; CanMove = $false
+        Name = "King"; Map = "TownCastle"; X = 36; Y = 2; Char = "K"; CanMove = $false
         DialogueTree = @{
             # First meeting - quest introduction
             "start" = @{
@@ -149,7 +176,7 @@ if ($GameState.PrincessRescued -and (Has-ActiveQuest "rescue_princess")) {
         }
     }
     @{
-        Name = "Town Elder"; X = 10; Y = 22; Char = "E"; CanMove = $false
+        Name = "Town Elder"; Map = "Town"; X = 10; Y = 22; Char = "E"; CanMove = $false
         DialogueTree = @{
             # First meeting
             "start" = @{
@@ -258,7 +285,7 @@ if ($GameState.PrincessRescued -and (Has-ActiveQuest "rescue_princess")) {
         }
     }
     @{
-        Name = "Merchant"; X = 30; Y = 25; Char = "M"; CanMove = $false
+        Name = "Merchant"; Map = "Town"; X = 30; Y = 25; Char = "M"; CanMove = $false
         DialogueTree = @{
             # First meeting
             "start" = @{

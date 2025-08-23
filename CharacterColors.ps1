@@ -34,6 +34,22 @@ function Get-CharacterColor {
 function Render-ColoredViewport {
     param($map, $viewX, $viewY, $boxWidth, $boxHeight, $playerX, $playerY, $playerChar, $partyPositions)
     
+    # Pre-calculate NPCs in viewport area (performance optimization)
+    $npcPositions = @{}
+    if ($global:NPCs) {
+        foreach ($npc in $global:NPCs) {
+            if ($npc.Map -eq $global:CurrentMapName) {
+                $npcX = $npc.X
+                $npcY = $npc.Y
+                # Only include NPCs that might be visible in viewport
+                if ($npcX -ge $viewX -and $npcX -lt ($viewX + $boxWidth) -and 
+                    $npcY -ge $viewY -and $npcY -lt ($viewY + $boxHeight)) {
+                    $npcPositions["$npcX,$npcY"] = $npc
+                }
+            }
+        }
+    }
+    
     # Build output string for performance (same as your current system)
     $output = New-Object System.Text.StringBuilder
     [void]$output.AppendLine("+" + ("-" * $boxWidth) + "+")
@@ -84,11 +100,8 @@ function Render-ColoredViewport {
                 # Regular map tile (no coloring)
                 $mapChar = $map[$viewY + $y][$viewX + $x]
                 
-                # Check for NPCs (only on Town map to avoid array indexing errors)
-                $npcChar = $null
-                if ($global:CurrentMapName -eq "Town") {
-                    $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
-                }
+                # Check for NPCs using pre-calculated positions (fast!)
+                $npcChar = $npcPositions["$worldX,$worldY"]
                 if ($npcChar) {
                     [void]$output.Append($npcChar.Char)
                 } else {

@@ -35,6 +35,22 @@ function Draw-ViewportWithANSI {
         return
     }
     
+    # Pre-calculate NPCs in viewport area (performance optimization)
+    $npcPositions = @{}
+    if ($global:NPCs) {
+        foreach ($npc in $global:NPCs) {
+            if ($npc.Map -eq $global:CurrentMapName) {
+                $npcX = $npc.X
+                $npcY = $npc.Y
+                # Only include NPCs that might be visible in viewport
+                if ($npcX -ge $viewX -and $npcX -lt ($viewX + $boxWidth) -and 
+                    $npcY -ge $viewY -and $npcY -lt ($viewY + $boxHeight)) {
+                    $npcPositions["$npcX,$npcY"] = $npc
+                }
+            }
+        }
+    }
+    
     # Ultra-fast rendering using StringBuilder with embedded ANSI color codes
     $output = [System.Text.StringBuilder]::new(8192)  # Larger buffer for ANSI codes
     
@@ -66,11 +82,8 @@ function Draw-ViewportWithANSI {
             } elseif ($worldX -eq $playerX -and $worldY -eq $playerY) {
                 $displayChar = $playerChar
             } else {
-                # Only check NPCs on Town map to avoid array indexing errors
-                $npcChar = $null
-                if ($global:CurrentMapName -eq "Town") {
-                    $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
-                }
+                # Check for NPCs using pre-calculated positions (fast!)
+                $npcChar = $npcPositions["$worldX,$worldY"]
                 if ($npcChar) {
                     $displayChar = $npcChar.Char
                 }
@@ -108,6 +121,22 @@ function Draw-ViewportWithANSI {
 function Draw-ViewportTraditional {
     param($map, $playerX, $playerY, $boxWidth, $boxHeight, $viewX, $viewY, $partyPositions)
     
+    # Pre-calculate NPCs in viewport area (performance optimization)
+    $npcPositions = @{}
+    if ($global:NPCs) {
+        foreach ($npc in $global:NPCs) {
+            if ($npc.Map -eq $global:CurrentMapName) {
+                $npcX = $npc.X
+                $npcY = $npc.Y
+                # Only include NPCs that might be visible in viewport
+                if ($npcX -ge $viewX -and $npcX -lt ($viewX + $boxWidth) -and 
+                    $npcY -ge $viewY -and $npcY -lt ($viewY + $boxHeight)) {
+                    $npcPositions["$npcX,$npcY"] = $npc
+                }
+            }
+        }
+    }
+    
     # Traditional StringBuilder approach (same as original)
     $output = [System.Text.StringBuilder]::new(4096)
     
@@ -134,11 +163,8 @@ function Draw-ViewportTraditional {
                 $displayChar = $playerChar
                 [void]$output.Append($displayChar)
             } else {
-                # Only check NPCs on Town map to avoid array indexing errors
-                $npcChar = $null
-                if ($global:CurrentMapName -eq "Town") {
-                    $npcChar = $global:NPCPositionLookup["$worldX,$worldY"]
-                }
+                # Check for NPCs using pre-calculated positions (fast!)
+                $npcChar = $npcPositions["$worldX,$worldY"]
                 if ($npcChar) {
                     $displayChar = $npcChar.Char
                     [void]$output.Append($displayChar)
