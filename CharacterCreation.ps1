@@ -132,7 +132,7 @@ function New-CharacterWithRolledStats {
         Defense     = $rolledDefense
         Speed       = $rolledSpeed
         XP          = 0
-        NextLevelXP = 100
+        NextLevelXP = 100  # XP needed for level 2 (will be updated by level system)
         Spells      = $classData.Spells.Clone()
         Inventory   = @()
         Equipped    = @{
@@ -214,7 +214,7 @@ function New-Character {
         Defense     = $classData.BaseDefense
         Speed       = $classData.BaseSpeed
         XP          = 0
-        NextLevelXP = 100
+        NextLevelXP = 100  # XP needed for level 2 (will be updated by level system)
         Spells      = $classData.Spells.Clone()
         Inventory   = @()
         Equipped    = @{
@@ -822,7 +822,8 @@ function Show-CharacterConfirmation {
     Write-Host "    Name: $($Character.Name)" -ForegroundColor White
     Write-Host "    Class: $($Character.Class)" -ForegroundColor White
     Write-Host "    Color: " -NoNewline -ForegroundColor White
-    Write-Host $Character.Color -ForegroundColor $Character.Color
+    $charColor = if ($Character.Color) { $Character.Color } else { "White" }
+    Write-Host $Character.Color -ForegroundColor $charColor
     Write-Host "    HP: $($Character.MaxHP)  MP: $($Character.MaxMP)  ATK: $($Character.Attack)  DEF: $($Character.Defense)  SPD: $($Character.Speed)" -ForegroundColor Green
     Write-Host "    Equipment: $($Character.Equipped.Weapon), $($Character.Equipped.Armor)" -ForegroundColor Gray
     Write-Host "    Spells: $($Character.Spells -join ', ')" -ForegroundColor Cyan

@@ -43,8 +43,8 @@ function New-SaveState {
         # Map and Position Data
         Location = @{
             CurrentMap = if ($global:CurrentMapName) { $global:CurrentMapName } else { "Town" }
-            PlayerX = if ($global:Player -and $global:Player.Position) { $global:Player.Position.X } else { 40 }
-            PlayerY = if ($global:Player -and $global:Player.Position) { $global:Player.Position.Y } else { 12 }
+            PlayerX = if ($global:PlayerCurrentX -ne $null) { $global:PlayerCurrentX } else { 40 }
+            PlayerY = if ($global:PlayerCurrentY -ne $null) { $global:PlayerCurrentY } else { 12 }
         }
         
         # Complete Party Data
@@ -197,7 +197,7 @@ function Get-SaveDisplayInfo {
 
 function Show-SavePreview {
     param(
-        [hashtable]$SaveData,
+        $SaveData,
         [string]$SaveFile
     )
     
@@ -220,7 +220,8 @@ function Show-SavePreview {
     Write-Host "Characters:" -ForegroundColor White
     foreach ($member in $SaveData.Party.Members) {
         Write-Host "  • " -NoNewline -ForegroundColor White
-        Write-Host "$($member.Name)" -NoNewline -ForegroundColor $member.Color
+        $memberColor = if ($member.Color) { $member.Color } else { "White" }
+        Write-Host "$($member.Name)" -NoNewline -ForegroundColor $memberColor
         Write-Host " the " -NoNewline -ForegroundColor White
         Write-Host "$($member.Class)" -NoNewline -ForegroundColor Green
         Write-Host " (Level $($member.Level)) " -NoNewline -ForegroundColor White
@@ -272,6 +273,12 @@ function Load-AutoSave {
         
         if ($key.Key -eq 'Y') {
             Restore-SaveState $saveData
+            Write-Host "Auto-save loaded successfully!" -ForegroundColor Green
+            Write-Host "Starting game..." -ForegroundColor Green
+            Start-Sleep -Milliseconds 1000
+            
+            # Launch the game with the loaded state
+            . "$PSScriptRoot\Display.ps1"
             return $true
         }
         return $false
@@ -396,9 +403,16 @@ function Show-SaveMenu {
                     if ($loadKey.Key -eq 'Y') {
                         Restore-SaveState $selectedSave.SaveData
                         Write-Host "Save loaded successfully!" -ForegroundColor Green
+                        Write-Host "Starting game..." -ForegroundColor Green
+                        Start-Sleep -Milliseconds 1000
+                        
+                        # Launch the game with the loaded state
+                        . "$PSScriptRoot\Display.ps1"
+                        return  # Exit the save menu since we're launching the game
+                    } else {
+                        Write-Host "Load cancelled." -ForegroundColor Yellow
                         Write-Host "Press any key to continue..." -ForegroundColor Gray
                         [Console]::ReadKey($true) | Out-Null
-                        return
                     }
                 }
             }
@@ -417,20 +431,37 @@ function Restore-SaveState {
         Write-Host "No save data to restore" -ForegroundColor Red
         return
     }
-    
+
     try {
-        # Restore location
-        if ($SaveData.Location) {
-            $global:CurrentMapName = $SaveData.Location.CurrentMap
-            # Player position will be set when party is restored
-        }
+        Write-Host "Restoring game state..." -ForegroundColor Yellow
         
-        # Restore party
+        # Set global variables that the game systems expect
+        $global:CurrentMapName = $SaveData.Location.CurrentMap
+        $global:PlayerStartX = $SaveData.Location.PlayerX
+        $global:PlayerStartY = $SaveData.Location.PlayerY
+        
+        # Also set the old-style save state format for compatibility
+        $global:SaveState = @{
+            Player = @{
+                CurrentMap = $SaveData.Location.CurrentMap
+                X = $SaveData.Location.PlayerX
+                Y = $SaveData.Location.PlayerY
+                NPCsSpokenTo = if ($SaveData.Progress.NPCsSpokenTo) { $SaveData.Progress.NPCsSpokenTo } else { @() }
+                QuestsCompleted = if ($SaveData.Progress.QuestsCompleted) { $SaveData.Progress.QuestsCompleted } else { @() }
+                AreasDiscovered = if ($SaveData.Progress.AreasDiscovered) { $SaveData.Progress.AreasDiscovered } else { @() }
+            }
+            Party = @{
+                Members = @()
+            }
+        }
+
+        # Restore party data
         if ($SaveData.Party -and $SaveData.Party.Members) {
             $global:Party = @()
             
             foreach ($memberData in $SaveData.Party.Members) {
-                $member = @{
+                # Create party member as PSCustomObject (matching game format)
+                $member = [PSCustomObject]@{
                     Name = $memberData.Name
                     Class = $memberData.Class
                     Level = $memberData.Level
@@ -441,11 +472,11 @@ function Restore-SaveState {
                     MaxHP = $memberData.MaxHP
                     MP = $memberData.MP
                     MaxMP = $memberData.MaxMP
-                    Attack = $memberData.Attack
-                    Defense = $memberData.Defense
-                    Speed = $memberData.Speed
+                    Attack = if ($memberData.Attack) { $memberData.Attack } else { 10 }
+                    Defense = if ($memberData.Defense) { $memberData.Defense } else { 8 }
+                    Speed = if ($memberData.Speed) { $memberData.Speed } else { 6 }
                     XP = $memberData.XP
-                    NextLevelXP = $memberData.NextLevelXP
+                    NextLevelXP = if ($memberData.NextLevelXP) { $memberData.NextLevelXP } else { 100 }
                     
                     # Equipment
                     Equipped = if ($memberData.Equipped) { $memberData.Equipped } else { @{} }
@@ -454,70 +485,49 @@ function Restore-SaveState {
                     Spells = if ($memberData.Spells) { $memberData.Spells } else { @() }
                     Inventory = if ($memberData.Inventory) { $memberData.Inventory } else { @() }
                     
-                    # Position
-                    Position = if ($memberData.Position) {
-                        @{
-                            X = $memberData.Position.X
-                            Y = $memberData.Position.Y
-                        }
-                    } else {
-                        @{
-                            X = $SaveData.Location.PlayerX
-                            Y = $SaveData.Location.PlayerY
-                        }
+                    # Position - set to saved location
+                    Position = [PSCustomObject]@{
+                        X = $SaveData.Location.PlayerX
+                        Y = $SaveData.Location.PlayerY
                     }
                     
                     # Class data
-                    MapSymbol = $memberData.MapSymbol
+                    MapSymbol = if ($memberData.MapSymbol) { $memberData.MapSymbol } else { "@" }
                     ClassData = $memberData.ClassData
                 }
                 
                 $global:Party += $member
+                $global:SaveState.Party.Members += $memberData
             }
             
-            # Set up player as party leader
-            if ($global:Party.Count -gt 0) {
-                $global:Player = $global:Party[0]
-                # Ensure player position matches save data
-                $global:Player.Position = @{
-                    X = $SaveData.Location.PlayerX
-                    Y = $SaveData.Location.PlayerY
-                }
-            }
+            Write-Host "  Restored $($global:Party.Count) party members" -ForegroundColor Green
             
-            # Restore party formation
-            if ($SaveData.Party.Formation) {
-                $global:PartyFormation = $SaveData.Party.Formation
+            # Initialize XP system for proper NextLevelXP calculations
+            if (Test-Path "$PSScriptRoot\LevelUpSystem.ps1") {
+                . "$PSScriptRoot\LevelUpSystem.ps1"
+                Initialize-PartyXP $global:Party
+                Write-Host "  Initialized level progression system" -ForegroundColor Green
             }
         }
-        
+
         # Restore global inventory
         if ($SaveData.Inventory -and $SaveData.Inventory.Items) {
             $global:Inventory = $SaveData.Inventory.Items
+            Write-Host "  Restored inventory with $($global:Inventory.Count) item types" -ForegroundColor Green
         }
         
-        # Restore progress tracking
-        if ($SaveData.Progress) {
-            # Update global save state for compatibility
-            if (-not $global:SaveState) {
-                $global:SaveState = @{
-                    Player = @{}
-                }
-            }
-            
-            $global:SaveState.Player.NPCsSpokenTo = $SaveData.Progress.NPCsSpokenTo
-            $global:SaveState.Player.QuestsCompleted = $SaveData.Progress.QuestsCompleted
-            $global:SaveState.Player.AreasDiscovered = $SaveData.Progress.AreasDiscovered
-        }
+        Write-Host "  Map: $($SaveData.Location.CurrentMap)" -ForegroundColor Green
+        Write-Host "  Position: ($($SaveData.Location.PlayerX), $($SaveData.Location.PlayerY))" -ForegroundColor Green
         
         Write-Host "Game state restored successfully!" -ForegroundColor Green
+        return $true
         
     } catch {
         Write-Host "Failed to restore save state: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Error details: $($_.Exception)" -ForegroundColor Gray
+        return $false
     }
-}
-
-# =============================================================================
+}# =============================================================================
 # HOTKEY AND SETTINGS INTEGRATION
 # =============================================================================
 

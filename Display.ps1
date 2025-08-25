@@ -2,12 +2,18 @@
 # JRPG Display System - Main Controller
 # =============================================================================
 
+# Clear any problematic global variables from previous sessions/tests
+if ($global:CurrentMapName -eq "TestTown") {
+    Write-Host "Warning: Clearing problematic TestTown reference from previous session" -ForegroundColor Yellow
+    $global:CurrentMapName = $null
+}
+
 # Import required modules
 . "$PSScriptRoot\CombatDisplay.ps1"
 . "$PSScriptRoot\TurnOrder.ps1"
 . "$PSScriptRoot\WaterAnimation.ps1"
 . "$PSScriptRoot\ViewportRenderer.ps1"
-. "$PSScriptRoot\SaveSystem.ps1"
+. "$PSScriptRoot\EnhancedSaveSystem.ps1"  # Use enhanced save system
 . "$PSScriptRoot\MapManager.ps1"
 # Import transition effects
 . "$PSScriptRoot\Transitions.ps1"
@@ -65,7 +71,7 @@ function Show-CleanBattleTargeting {
         Add-CleanTargetingArrow $aliveEnemies $aliveEnemies[$selectedIndex] $boxWidth $boxHeight
         
         # All text stays BELOW the battle area
-        [System.Console]::SetCursorPosition(0, $boxHeight + 2)
+        Set-SafeCursorPosition 0 ($boxHeight + 2)
         Write-Host ""
         Write-Host "=== SELECT TARGET ===" -ForegroundColor Yellow
         Write-Host "Use Left/Right Arrow Keys or A/D to select, Enter to confirm, Q to cancel" -ForegroundColor Cyan
@@ -124,7 +130,7 @@ function Add-CleanTargetingArrow {
                 
                 try {
                     if ($arrowY -lt ($boxHeight - 1)) {  # Make sure we stay within battle area
-                        [System.Console]::SetCursorPosition($enemyCenter, $arrowY)
+                        Set-SafeCursorPosition $enemyCenter $arrowY
                         Write-Host "^" -ForegroundColor Red -NoNewline
                     }
                 } catch {
@@ -165,8 +171,84 @@ $ChosenTransition = "flash"
 $boxWidth = 80
 $boxHeight = 25
 
+# Ensure console buffer is large enough to prevent cursor positioning errors
+try {
+    $requiredHeight = $boxHeight + 6  # Extra space for UI elements below the game area
+    if ([Console]::BufferHeight -lt $requiredHeight) {
+        Write-Host "Adjusting console buffer size for optimal display..." -ForegroundColor Yellow
+        [Console]::SetBufferSize([Console]::BufferWidth, [Math]::Max($requiredHeight, [Console]::BufferHeight))
+    }
+    if ([Console]::WindowHeight -lt $requiredHeight) {
+        [Console]::SetWindowSize([Console]::WindowWidth, [Math]::Min($requiredHeight, [Console]::BufferHeight))
+    }
+}
+catch {
+    Write-Host "Warning: Could not adjust console buffer size. Some display issues may occur." -ForegroundColor DarkYellow
+}
+
 # Set console output encoding to UTF-8 for Unicode support
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+# Safe cursor positioning function to prevent console buffer errors
+function Set-SafeCursorPosition {
+    param(
+        [int]$X = 0,
+        [int]$Y = 0
+    )
+    
+    try {
+        # Get current console buffer size
+        $bufferWidth = [Console]::BufferWidth
+        $bufferHeight = [Console]::BufferHeight
+        
+        # Clamp X and Y to safe ranges
+        $safeX = [Math]::Max(0, [Math]::Min($X, $bufferWidth - 1))
+        $safeY = [Math]::Max(0, [Math]::Min($Y, $bufferHeight - 1))
+        
+        # Only set position if it's different and safe
+        if ($safeY -lt $bufferHeight -and $safeX -lt $bufferWidth) {
+            [System.Console]::SetCursorPosition($safeX, $safeY)
+        }
+    }
+    catch {
+        # If cursor positioning fails, just continue without positioning
+        Write-Host "Warning: Could not set cursor position ($X, $Y)" -ForegroundColor DarkYellow
+    }
+}
+
+# Safe Write-Host function to prevent null color errors
+function Write-SafeHost {
+    param(
+        [string]$Object = "",
+        [string]$ForegroundColor = "White",
+        [switch]$NoNewline
+    )
+    
+    try {
+        # Ensure color is valid, default to White if null or invalid
+        $safeColor = if ($ForegroundColor -and $ForegroundColor -ne "") { $ForegroundColor } else { "White" }
+        
+        # Validate the color is a valid ConsoleColor enum value
+        $validColors = @("Black", "DarkBlue", "DarkGreen", "DarkCyan", "DarkRed", "DarkMagenta", "DarkYellow", "Gray", "DarkGray", "Blue", "Green", "Cyan", "Red", "Magenta", "Yellow", "White")
+        if ($safeColor -notin $validColors) {
+            $safeColor = "White"
+        }
+        
+        if ($NoNewline) {
+            Write-Host $Object -ForegroundColor $safeColor -NoNewline
+        } else {
+            Write-Host $Object -ForegroundColor $safeColor
+        }
+    }
+    catch {
+        # Fallback to basic Write-Host without color if all else fails
+        if ($NoNewline) {
+            Write-Host $Object -NoNewline
+        } else {
+            Write-Host $Object
+        }
+    }
+}
 
 # Enable color zones (start small - just one green dot!)
 # Color system configuration (using new simple system)
@@ -203,9 +285,21 @@ Write-Host "Green dot at (32,18), Red 2x2 at (28,16), Blue line at (25,22), Yell
 
 # Party initialization will happen after PartySystem.ps1 is loaded
 
-# Set initial player position (centered, inside box)
-$playerX = [math]::Floor($boxWidth / 2)
-$playerY = [math]::Floor($boxHeight / 2)
+# Set initial player position (from save data if available, otherwise centered)
+if ($global:PlayerStartX -and $global:PlayerStartY) {
+    # Use saved position if available
+    $playerX = $global:PlayerStartX
+    $playerY = $global:PlayerStartY
+    Write-Host "Starting at saved position: ($playerX, $playerY)" -ForegroundColor Green
+} else {
+    # Default position (centered, inside box)
+    $playerX = [math]::Floor($boxWidth / 2)
+    $playerY = [math]::Floor($boxHeight / 2)
+}
+
+# Initialize global position tracking for save system
+$global:PlayerCurrentX = $playerX
+$global:PlayerCurrentY = $playerY
 
 # ASCII character for player
 $playerChar = "@"
@@ -289,8 +383,24 @@ Read-Host "Press Enter to continue..."
 # Clear screen before starting the game
 Clear-Host
 
-# Start in town
-$CurrentMapName = "Town"
+# DEBUG: Show current global state before map loading
+Write-Host "=== MAP LOADING DEBUG INFO ===" -ForegroundColor Yellow
+Write-Host "Current global:CurrentMapName = '$global:CurrentMapName'" -ForegroundColor Cyan
+Write-Host "Available maps: $($global:Maps.Keys -join ', ')" -ForegroundColor Cyan
+
+# Start in saved map or default to town
+if ($global:CurrentMapName) {
+    # Use saved map name
+    $CurrentMapName = $global:CurrentMapName
+    Write-Host "Loading saved map: $CurrentMapName" -ForegroundColor Green
+} else {
+    # Default starting map
+    $CurrentMapName = "Town"
+    $global:CurrentMapName = $CurrentMapName  # Set global for save system
+    Write-Host "Using default new game map: $CurrentMapName" -ForegroundColor Green
+}
+
+Write-Host "About to load map '$CurrentMapName'..." -ForegroundColor Yellow
 $currentMap = $global:Maps[$CurrentMapName]
 
 # Verify map loaded correctly
@@ -461,7 +571,7 @@ try {
                             # Clear area below message for spell menu - safely
                             try {
                                 for ($clearY = $menuStartY; $clearY -lt ($menuStartY + 8) -and $clearY -lt ([System.Console]::BufferHeight - 1); $clearY++) {
-                                    [System.Console]::SetCursorPosition(0, $clearY)
+                                    Set-SafeCursorPosition 0 $clearY
                                     Write-Host (" " * 80)
                                 }
                             } catch {
@@ -471,7 +581,7 @@ try {
                             
                             # Display spell menu in controlled position
                             try {
-                                [System.Console]::SetCursorPosition(0, $menuStartY)
+                                Set-SafeCursorPosition 0 $menuStartY
                                 Write-Host "Available Spells:" -ForegroundColor Magenta
                             } catch {
                                 Write-Host "`nAvailable Spells:" -ForegroundColor Magenta
@@ -487,7 +597,7 @@ try {
                                 if ($spell -and $currentMember.MP -ge $spell.MP) {
                                     $availableSpells += $spell
                                     try {
-                                        [System.Console]::SetCursorPosition(0, $menuLine)
+                                        Set-SafeCursorPosition 0 $menuLine
                                         Write-Host "[$($i+1)] $($spell.Name) (MP: $($spell.MP))" -ForegroundColor Cyan
                                     } catch {
                                         Write-Host "[$($i+1)] $($spell.Name) (MP: $($spell.MP))" -ForegroundColor Cyan
@@ -503,10 +613,10 @@ try {
                             }
                             
                             try {
-                                [System.Console]::SetCursorPosition(0, $menuLine)
+                                Set-SafeCursorPosition 0 $menuLine
                                 Write-Host "[0] Cancel" -ForegroundColor Gray
                                 $menuLine++
-                                [System.Console]::SetCursorPosition(0, $menuLine)
+                                Set-SafeCursorPosition 0 $menuLine
                                 Write-Host "Choose a spell: " -NoNewline -ForegroundColor White
                             } catch {
                                 Write-Host "[0] Cancel" -ForegroundColor Gray
@@ -593,7 +703,7 @@ try {
                             # Clear area below message for item menu - safely
                             try {
                                 for ($clearY = $menuStartY; $clearY -lt ($menuStartY + 5) -and $clearY -lt ([System.Console]::BufferHeight - 1); $clearY++) {
-                                    [System.Console]::SetCursorPosition(0, $clearY)
+                                    Set-SafeCursorPosition 0 $clearY
                                     Write-Host (" " * 80)
                                 }
                             } catch {
@@ -602,14 +712,14 @@ try {
                             
                             # Display item menu in controlled position
                             try {
-                                [System.Console]::SetCursorPosition(0, $menuStartY)
+                                Set-SafeCursorPosition 0 $menuStartY
                                 Write-Host "Inventory:" -ForegroundColor Yellow
                                 
-                                [System.Console]::SetCursorPosition(0, $menuStartY + 1)
+                                Set-SafeCursorPosition 0 ($menuStartY + 1)
                                 Write-Host "[1] Health Potion (Restores 15 HP)" -ForegroundColor Cyan
-                                [System.Console]::SetCursorPosition(0, $menuStartY + 2)
+                                Set-SafeCursorPosition 0 ($menuStartY + 2)
                                 Write-Host "[0] Cancel" -ForegroundColor Gray
-                                [System.Console]::SetCursorPosition(0, $menuStartY + 3)
+                                Set-SafeCursorPosition 0 ($menuStartY + 3)
                                 Write-Host "Choose an item: " -NoNewline -ForegroundColor White
                             } catch {
                                 Write-Host "`nInventory:" -ForegroundColor Yellow
@@ -769,16 +879,24 @@ try {
                             $totalXpGained += ($defeatedEnemy.Level * $defeatedEnemy.BaseXP)
                         }
                         
-                        # Distribute XP to all living party members
-                        $aliveMembers = @($Party | Where-Object { $_.HP -gt 0 })
-                        $xpPerMember = [math]::Floor($totalXpGained / $aliveMembers.Count)
-                        
-                        foreach ($member in $aliveMembers) {
-                            $member.XP += $xpPerMember
-                        }
-                        
                         $enemyNames = ($enemies | ForEach-Object { $_.Name }) -join ", "
-                        Write-CombatMessage "All enemies defeated! Party gained $totalXpGained XP total ($xpPerMember each)!" "Green"
+                        Write-CombatMessage "All enemies defeated! Party gained $totalXpGained XP!" "Green"
+                        
+                        # Load and use the enhanced level up system
+                        if (Test-Path "$PSScriptRoot\LevelUpSystem.ps1") {
+                            . "$PSScriptRoot\LevelUpSystem.ps1"
+                            Add-PartyXP $Party $totalXpGained $true
+                        } else {
+                            # Fallback to simple XP distribution if level system not available
+                            $aliveMembers = @($Party | Where-Object { $_.HP -gt 0 })
+                            $xpPerMember = [math]::Floor($totalXpGained / $aliveMembers.Count)
+                            
+                            foreach ($member in $aliveMembers) {
+                                $member.XP += $xpPerMember
+                            }
+                            
+                            Write-CombatMessage "Each party member gained $xpPerMember XP!" "Cyan"
+                        }
                         
                         # Update save state for monster kills (using party leader for global stats)
                         $partyLeader = $Party[0]
@@ -932,6 +1050,10 @@ try {
                 $playerX = $newX
                 $playerY = $newY
                 
+                # Update global position for save system
+                $global:PlayerCurrentX = $playerX
+                $global:PlayerCurrentY = $playerY
+                
                 # Update party positions for snake-following (if party system is loaded)
                 if ($global:Party) {
                     Update-PartyPositions $playerX $playerY $global:Party
@@ -962,6 +1084,7 @@ try {
                     & $TransitionEffects[$ChosenTransition] $boxWidth $boxHeight
                     $dest = $global:DoorRegistry[$key]
                     $CurrentMapName = $dest.Map
+                    $global:CurrentMapName = $CurrentMapName  # Update global for save system
                     $currentMap = $global:Maps[$CurrentMapName]
                     $playerX = $dest.X
                     $playerY = $dest.Y
@@ -989,6 +1112,7 @@ try {
                 # Transition to the dungeon
                 & $TransitionEffects[$ChosenTransition] $boxWidth $boxHeight
                 $CurrentMapName = "RandomizedDungeon"
+                $global:CurrentMapName = $CurrentMapName  # Update global for save system
                 $currentMap = $global:Maps[$CurrentMapName]
                 $playerX = $global:RandomDungeonEntrance.X
                 $playerY = $global:RandomDungeonEntrance.Y
@@ -1022,7 +1146,7 @@ try {
         }
 
         if ($errorMsg) {
-            [System.Console]::SetCursorPosition(0, $boxHeight + 4)
+            Set-SafeCursorPosition 0 ($boxHeight + 4)
             Write-Host "ERROR: $errorMsg" -ForegroundColor Red
             $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
             $logPath = Join-Path $scriptDir 'error.log'
@@ -1053,7 +1177,7 @@ try {
     # End of while ($running) loop
     
     # Move cursor below the box for end message
-    [System.Console]::SetCursorPosition(0, $boxHeight + 3)
+    Set-SafeCursorPosition 0 ($boxHeight + 3)
     Write-Host "`nThanks for playing!"
 }
 # End of main try block

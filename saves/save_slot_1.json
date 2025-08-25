@@ -1,9 +1,9 @@
 {
     "GameInfo":  {
-                     "GameStarted":  "2025-08-23 00:15:27",
-                     "PlayTime":  0.229714835,
-                     "Version":  "5.4",
-                     "SaveTime":  "2025-08-23 00:15:41"
+                     "GameStarted":  "2025-08-23 00:37:28",
+                     "PlayTime":  0.18934447833333334,
+                     "Version":  "1.4",
+                     "SaveTime":  "2025-08-23 00:37:39"
                  },
     "GameEvents":  {
                        "LastBattleWon":  null,
@@ -41,82 +41,10 @@
 
                  },
     "Party":  {
-                  "Formation":  [
-                                    "@",
-                                    "M",
-                                    "H",
-                                    "R"
-                                ],
+                  "Formation":  "Diamond",
                   "Leader":  0,
                   "Members":  [
-                                  {
-                                      "HP":  80,
-                                      "MP":  30,
-                                      "Inventory":  {
 
-                                                    },
-                                      "Level":  5,
-                                      "Defense":  null,
-                                      "Equipped":  {
-                                                       "Armor":  null,
-                                                       "Accessory":  null,
-                                                       "Weapon":  null
-                                                   },
-                                      "Class":  "Knight",
-                                      "Speed":  null,
-                                      "Color":  "Red",
-                                      "NextLevelXP":  null,
-                                      "XP":  2500,
-                                      "Position":  {
-                                                       "Y":  8,
-                                                       "X":  15
-                                                   },
-                                      "MapSymbol":  null,
-                                      "Attack":  null,
-                                      "Name":  "TestHero",
-                                      "MaxHP":  100,
-                                      "ClassData":  null,
-                                      "MaxMP":  40,
-                                      "Spells":  [
-                                                     "Heal",
-                                                     "Fireball"
-                                                 ]
-                                  },
-                                  {
-                                      "HP":  45,
-                                      "MP":  55,
-                                      "Inventory":  {
-
-                                                    },
-                                      "Level":  4,
-                                      "Defense":  null,
-                                      "Equipped":  {
-                                                       "Armor":  null,
-                                                       "Accessory":  null,
-                                                       "Weapon":  null
-                                                   },
-                                      "Class":  "Wizard",
-                                      "Speed":  null,
-                                      "Color":  "Blue",
-                                      "NextLevelXP":  null,
-                                      "XP":  1800,
-                                      "Position":  {
-                                                       "Y":  8,
-                                                       "X":  14
-                                                   },
-                                      "MapSymbol":  null,
-                                      "Attack":  null,
-                                      "Name":  "TestMage",
-                                      "MaxHP":  60,
-                                      "ClassData":  null,
-                                      "MaxMP":  80,
-                                      "Spells":  [
-                                                     "Lightning",
-                                                     "Heal",
-                                                     "Fireball",
-                                                     "Ice Shard"
-                                                 ]
-                                  }
                               ]
               }
 }

@@ -512,24 +512,30 @@ function Show-PartyManagementMenu {
         Write-Host ""
         Write-Host "Party Management - Reorganize Party Order" -ForegroundColor Cyan
         Write-Host ""
+        Write-Host "Options:" -ForegroundColor Yellow
+        Write-Host "  [V] View detailed party levels and XP" -ForegroundColor Gray
+        Write-Host "  [R] Reorganize party formation" -ForegroundColor Gray
+        Write-Host ""
         Write-Host "Current party formation (leader first):" -ForegroundColor Yellow
         Write-Host ""
         
-        # Display current party order
+        # Display current party order with level information
         for ($i = 0; $i -lt $global:Party.Count; $i++) {
             $member = $global:Party[$i]
             $prefix = if ($i -eq $currentSelection) { ">" } else { " " }
             $color = if ($i -eq $currentSelection) { "Yellow" } else { "White" }
             $leaderText = if ($i -eq 0) { " (LEADER)" } else { "" }
             $colorText = if ($member.Color) { " [$($member.Color)]" } else { "" }
+            $levelText = " Lv.$($member.Level) ($($member.XP)XP)"
             
-            Write-Host "$prefix $($i + 1). $($member.Name) - $($member.Class) [$($member.MapSymbol)]$colorText$leaderText" -ForegroundColor $color
+            Write-Host "$prefix $($i + 1). $($member.Name) - $($member.Class)$levelText [$($member.MapSymbol)]$colorText$leaderText" -ForegroundColor $color
         }
         
         Write-Host ""
         Write-Host "Formation will be: $($global:PartyFormation -join ' -> ')" -ForegroundColor Cyan
         Write-Host ""
         Write-Host "Controls:" -ForegroundColor DarkGray
+        Write-Host "  V: View detailed level/XP information" -ForegroundColor DarkGray
         Write-Host "  Up/Down: Select member" -ForegroundColor DarkGray
         Write-Host "  Left/Right: Move member up/down in order" -ForegroundColor DarkGray
         Write-Host "  R: Reset to original order" -ForegroundColor DarkGray
@@ -540,6 +546,32 @@ function Show-PartyManagementMenu {
         $key = [System.Console]::ReadKey($true)
         
         switch ($key.Key) {
+            "V" {
+                # Show detailed level information
+                if (Test-Path "$PSScriptRoot\LevelUpSystem.ps1") {
+                    . "$PSScriptRoot\LevelUpSystem.ps1"
+                    Show-PartyLevelOverview $global:Party
+                } else {
+                    # Fallback display if level system not available
+                    Clear-Host
+                    Write-Host "╔══════════════════════════════════════╗" -ForegroundColor Cyan
+                    Write-Host "║          PARTY LEVEL STATUS          ║" -ForegroundColor Cyan
+                    Write-Host "╚══════════════════════════════════════╝" -ForegroundColor Cyan
+                    Write-Host ""
+                    
+                    foreach ($member in $global:Party) {
+                        Write-Host "🔸 $($member.Name)" -ForegroundColor White
+                        Write-Host "  Level $($member.Level) $($member.Class)" -ForegroundColor Yellow
+                        Write-Host "  XP: $($member.XP)" -ForegroundColor Gray
+                        Write-Host "  HP: $($member.HP)/$($member.MaxHP)  MP: $($member.MP)/$($member.MaxMP)" -ForegroundColor Gray
+                        Write-Host "  ATK: $($member.Attack)  DEF: $($member.Defense)  SPD: $($member.Speed)" -ForegroundColor Gray
+                        Write-Host ""
+                    }
+                    
+                    Write-Host "Press any key to return..." -ForegroundColor DarkGray
+                    [Console]::ReadKey($true) | Out-Null
+                }
+            }
             "UpArrow" {
                 $currentSelection = ($currentSelection - 1 + $global:Party.Count) % $global:Party.Count
             }

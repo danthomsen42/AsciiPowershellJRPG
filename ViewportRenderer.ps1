@@ -353,7 +353,8 @@ function Apply-CharacterColorsToViewport {
             try {
                 # Fast coloring - just like Write-Host
                 [System.Console]::SetCursorPosition($consoleX, $consoleY)
-                Write-Host $charInfo.Symbol -ForegroundColor $charInfo.Color -NoNewline
+                $safeColor = if ($charInfo.Color) { $charInfo.Color } else { "White" }
+                Write-Host $charInfo.Symbol -ForegroundColor $safeColor -NoNewline
             } catch {
                 # If positioning fails, continue silently
             }

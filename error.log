@@ -1994,3 +1994,13 @@
 Parameter name: top
 Actual value was 28."
 [2025-08-22 23:20:05] The property 'Name' cannot be found on this object. Verify that the property exists and can be set.
+[2025-08-23 00:37:55] STARTUP ERROR: Exception calling "SetCursorPosition" with "2" argument(s): "The value must be greater than or equal to zero and less than the console's buffer size in that dimension.
+Parameter name: top
+Actual value was 28."
+[2025-08-23 00:44:43] STARTUP ERROR: Exception calling "SetCursorPosition" with "2" argument(s): "The value must be greater than or equal to zero and less than the console's buffer size in that dimension.
+Parameter name: top
+Actual value was 29."
+[2025-08-23 00:48:29] STARTUP ERROR: Exception calling "SetCursorPosition" with "2" argument(s): "The value must be greater than or equal to zero and less than the console's buffer size in that dimension.
+Parameter name: top
+Actual value was 29."
+[2025-08-23 00:53:03] Cannot bind parameter 'ForegroundColor' to the target. Exception setting "ForegroundColor": "Cannot convert null to type "System.ConsoleColor" due to enumeration values that are not valid. Specify one of the following enumeration values and try again. The possible enumeration values are "Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White"."

@@ -65,6 +65,17 @@ function Show-MainMenu {
                     0 { # New Game
                         Write-Host ""
                         Write-Host "Starting Character Creation..." -ForegroundColor Green
+                        
+                        # Clear any problematic global variables from test runs
+                        if ($global:CurrentMapName -eq "TestTown") {
+                            Write-Host "Clearing test data from previous session..." -ForegroundColor Yellow
+                            $global:CurrentMapName = $null
+                            $global:PlayerStartX = $null
+                            $global:PlayerStartY = $null
+                            $global:PlayerCurrentX = $null
+                            $global:PlayerCurrentY = $null
+                        }
+                        
                         Start-Sleep -Milliseconds 1000
                         
                         # Start character creation
@@ -90,6 +101,7 @@ function Show-MainMenu {
                         }
                         
                         # Show the save menu for loading
+                        # The save menu will launch Display.ps1 automatically if a save is loaded
                         Show-SaveMenu
                     }
                     2 { # Settings
