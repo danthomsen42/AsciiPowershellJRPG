@@ -1,0 +1,27 @@
+{
+    "shops": {
+        "general_store": {
+            "name": "Thornvale General Store",
+            "greeting": "Welcome! Take a look around.",
+            "inventory": [
+                "potion",
+                "ether",
+                "herb",
+                "antidote",
+                "phoenix_feather",
+                "iron_sword",
+                "oak_staff",
+                "iron_dagger",
+                "iron_mace",
+                "short_bow",
+                "chain_mail",
+                "cloth_robe",
+                "leather_armor",
+                "scale_mail",
+                "hide_armor",
+                "bronze_ring",
+                "silver_amulet"
+            ]
+        }
+    }
+}

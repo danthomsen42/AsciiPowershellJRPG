@@ -1,0 +1,28 @@
+{
+    "name": "Goblin",
+    "spriteFile": "Goblin.txt",
+    "size": "small",
+    "color": "Green",
+    "baseHP": 12,
+    "baseMP": 0,
+    "baseStrength": 6,
+    "baseIntelligence": 3,
+    "baseSpeed": 10,
+    "baseDefense": 4,
+    "baseAccuracy": 70,
+    "baseEXP": 15,
+    "baseGold": 5,
+    "abilities": ["Scratch", "Bite"],
+    "drops": [
+        { "item": "Herb", "chance": 30 },
+        { "item": "Goblin Ear", "chance": 50 }
+    ],
+    "levelScaling": {
+        "HP": 4,
+        "Strength": 2,
+        "Defense": 1,
+        "Speed": 1,
+        "EXP": 5,
+        "Gold": 3
+    }
+}

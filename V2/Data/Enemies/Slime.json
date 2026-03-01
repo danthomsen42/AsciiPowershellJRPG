@@ -1,0 +1,28 @@
+{
+    "name": "Slime",
+    "spriteFile": "Slime.txt",
+    "size": "medium",
+    "color": "DarkGreen",
+    "baseHP": 20,
+    "baseMP": 5,
+    "baseStrength": 7,
+    "baseIntelligence": 4,
+    "baseSpeed": 6,
+    "baseDefense": 8,
+    "baseAccuracy": 65,
+    "baseEXP": 20,
+    "baseGold": 8,
+    "abilities": ["Acid Spit", "Absorb"],
+    "drops": [
+        { "item": "Slime Gel", "chance": 50 },
+        { "item": "Potion", "chance": 15 }
+    ],
+    "levelScaling": {
+        "HP": 6,
+        "Strength": 2,
+        "Defense": 2,
+        "Speed": 1,
+        "EXP": 7,
+        "Gold": 4
+    }
+}

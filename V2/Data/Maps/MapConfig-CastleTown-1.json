@@ -1,0 +1,114 @@
+{
+    "displayName": "Castle Town",
+    "startPosition": { "x": 20, "y": 14 },
+    "tiles": {
+        "#": {
+            "color": "DarkGray",
+            "passable": false,
+            "name": "Stone Wall"
+        },
+        ".": {
+            "color": "DarkGray",
+            "passable": true,
+            "name": "Ground"
+        },
+        "~": {
+            "color": "Cyan",
+            "bgColor": "DarkBlue",
+            "passable": false,
+            "name": "Pond",
+            "animated": true
+        },
+        "º": {
+            "color": "Brown",
+            "passable": false,
+            "name": "Castle Gate"
+        },
+        "T": {
+            "color": "Green",
+            "passable": false,
+            "name": "Tavern Keeper Bram",
+            "action": {
+                "type": "npc",
+                "npcId": "tavern_keeper"
+            }
+        },
+        "H": {
+            "color": "White",
+            "passable": false,
+            "name": "Healer Elara",
+            "action": {
+                "type": "npc",
+                "npcId": "healer_elara"
+            }
+        },
+        "S": {
+            "color": "DarkYellow",
+            "passable": false,
+            "name": "Signpost",
+            "action": {
+                "type": "sign",
+                "text": "Welcome to Thornvale Village! A peaceful place... for now."
+            }
+        },
+        "D": {
+            "color": "DarkRed",
+            "passable": true,
+            "name": "Dungeon Entrance"
+        },
+        "V": {
+            "color": "Yellow",
+            "passable": false,
+            "name": "Shopkeeper Mira",
+            "action": {
+                "type": "sign",
+                "text": "Mira waves at you through the window. Come inside to shop!"
+            }
+        },
+        "P": {
+            "color": "Green",
+            "passable": true,
+            "name": "Shop Entrance"
+        },
+        "B": {
+            "color": "Magenta",
+            "passable": false,
+            "name": "Bard Finnian",
+            "action": {
+                "type": "npc",
+                "npcId": "bard_finnian"
+            }
+        },
+        "+": {
+            "color": "DarkYellow",
+            "passable": false,
+            "name": "Campfire",
+            "action": {
+                "type": "npc",
+                "npcId": "campfire"
+            }
+        },
+        "R": {
+            "color": "DarkGray",
+            "passable": false,
+            "name": "Stone Bench"
+        }
+    },
+    "connections": {
+        "dungeon_entrance": {
+            "position": { "x": 22, "y": 20 },
+            "targetMap": "Map-DarkCavern-1",
+            "targetConfig": "MapConfig-DarkCavern-1",
+            "targetPosition": { "x": 21, "y": 1 }
+        },
+        "castle_entrance": {
+            "position": { "x": 51, "y": 19 },
+            "targetMap": "Map-Shop-1",
+            "targetConfig": "MapConfig-Shop-1",
+            "targetPosition": { "x": 8, "y": 8 }
+        }
+    },
+    "encounters": {
+        "enabled": false
+    }
+}

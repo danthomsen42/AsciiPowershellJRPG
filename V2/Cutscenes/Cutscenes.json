@@ -1,0 +1,74 @@
+{
+    "cutscenes": [
+        {
+            "id": "intro",
+            "name": "The Thornvale Chronicles - Prologue",
+            "trigger": {
+                "type": "game_start"
+            },
+            "onceTrigger": "cutscene_intro_seen"
+        },
+        {
+            "id": "first_cavern_entry",
+            "name": "Entering the Dark Cavern",
+            "trigger": {
+                "type": "map_enter",
+                "map": "Map-DarkCavern-1"
+            },
+            "onceTrigger": "cutscene_first_cavern"
+        },
+        {
+            "id": "goblin_quest_complete",
+            "name": "The Goblin Menace - Resolved",
+            "trigger": {
+                "type": "quest_complete",
+                "questId": "goblin_menace"
+            },
+            "onceTrigger": "cutscene_goblin_done"
+        },
+        {
+            "id": "amulet_quest_complete",
+            "name": "The Lost Amulet - Returned",
+            "trigger": {
+                "type": "quest_complete",
+                "questId": "lost_amulet"
+            },
+            "onceTrigger": "cutscene_amulet_done"
+        },
+        {
+            "id": "amulet_discovery",
+            "name": "A Glittering Discovery",
+            "trigger": {
+                "type": "map_enter",
+                "map": "Map-DarkCavern-1",
+                "requireTrigger": "has_item_silver_amulet_quest"
+            },
+            "onceTrigger": "cutscene_amulet_found"
+        },
+        {
+            "id": "cave_shadow_defeated",
+            "name": "The Shadow Dispelled",
+            "trigger": {
+                "type": "battle_victory",
+                "battleId": "cave_shadow"
+            },
+            "onceTrigger": "cutscene_shadow_boss_done"
+        },
+        {
+            "id": "campfire_vision",
+            "name": "Campfire Vision",
+            "trigger": {
+                "type": "dialogue_effect"
+            },
+            "note": "Triggered via NPC dialogue effect: play_cutscene_campfire_vision"
+        },
+        {
+            "id": "goblin_ambush_memory",
+            "name": "Memory - The Goblin Ambush",
+            "trigger": {
+                "type": "dialogue_effect"
+            },
+            "note": "Triggered via Bard NPC dialogue effect: play_cutscene_goblin_ambush_memory"
+        }
+    ]
+}

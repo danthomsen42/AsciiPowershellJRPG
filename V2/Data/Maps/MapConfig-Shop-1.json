@@ -1,0 +1,52 @@
+{
+    "displayName": "Thornvale General Store",
+    "startPosition": { "x": 8, "y": 8 },
+    "tiles": {
+        "#": {
+            "color": "DarkYellow",
+            "passable": false,
+            "name": "Shop Wall"
+        },
+        ".": {
+            "color": "DarkGray",
+            "passable": true,
+            "name": "Shop Floor"
+        },
+        "C": {
+            "color": "DarkYellow",
+            "passable": false,
+            "name": "Counter"
+        },
+        "S": {
+            "color": "Yellow",
+            "passable": false,
+            "name": "Shopkeeper Mira",
+            "action": {
+                "type": "shop",
+                "npcId": "shopkeeper_mira",
+                "shopId": "general_store"
+            }
+        },
+        "I": {
+            "color": "DarkCyan",
+            "passable": false,
+            "name": "Display Shelf"
+        },
+        "P": {
+            "color": "Green",
+            "passable": true,
+            "name": "Shop Entrance"
+        }
+    },
+    "connections": {
+        "exit_town": {
+            "position": { "x": 8, "y": 9 },
+            "targetMap": "Map-TestTown-1",
+            "targetConfig": "MapConfig-TestTown-1",
+            "targetPosition": { "x": 33, "y": 19 }
+        }
+    },
+    "encounters": {
+        "enabled": false
+    }
+}

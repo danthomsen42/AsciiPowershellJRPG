@@ -1,0 +1,124 @@
+{
+    "npcId": "tavern_keeper",
+    "name": "Tavern Keeper Bram",
+    "entryNode": "start",
+    "nodes": [
+        {
+            "id": "start",
+            "speaker": "Bram",
+            "text": "Welcome to the Rusty Lantern! Finest ale in Thornvale... well, the ONLY ale in Thornvale. What can I do for you?",
+            "choices": [
+                {
+                    "label": "What's the latest news?",
+                    "nextNode": "news"
+                },
+                {
+                    "label": "Any work available?",
+                    "nextNode": "quest_check"
+                },
+                {
+                    "label": "About that quest...",
+                    "nextNode": "quest_chat",
+                    "condition": { "trigger": "quest_goblin_menace_start" }
+                },
+                {
+                    "label": "Just passing through.",
+                    "nextNode": "farewell"
+                }
+            ]
+        },
+        {
+            "id": "news",
+            "speaker": "Bram",
+            "text": "Strange noises from the cavern lately. Goblins have been bold - one even tried to steal a barrel of my ale! Can you imagine? If you're heading down there, watch your step. Those tunnels are a maze.",
+            "nextNode": "farewell"
+        },
+        {
+            "id": "quest_check",
+            "speaker": "Bram",
+            "condition": { "trigger": "quest_goblin_menace_done" },
+            "text": "You've done a fine job clearing those goblins! The village is much safer. Have a drink on the house!",
+            "elseNode": "quest_check_active"
+        },
+        {
+            "id": "quest_check_active",
+            "condition": { "trigger": "quest_goblin_menace_start" },
+            "speaker": "Bram",
+            "text": "",
+            "elseNode": "quest_offer",
+            "nextNode": "quest_check_kills"
+        },
+        {
+            "id": "quest_check_kills",
+            "speaker": "Bram",
+            "condition": { "trigger": "goblin_kills", "minValue": 3 },
+            "text": "You've dealt with those goblins?! Outstanding work, adventurer! Here's the 50 gold I promised, and take this potion too. Thornvale owes you one!",
+            "effect": "complete_quest_goblin_menace",
+            "nextNode": "farewell",
+            "elseNode": "quest_still_working"
+        },
+        {
+            "id": "quest_still_working",
+            "speaker": "Bram",
+            "text": "Still working on those goblins? Head into the Dark Cavern and clear out a few groups. I'm counting on you!",
+            "nextNode": "farewell"
+        },
+        {
+            "id": "quest_chat",
+            "speaker": "Bram",
+            "condition": { "trigger": "quest_goblin_menace_done" },
+            "text": "The goblin problem is all sorted, thanks to you! Drinks are always on the house for you.",
+            "elseNode": "quest_chat_active"
+        },
+        {
+            "id": "quest_chat_active",
+            "speaker": "Bram",
+            "text": "",
+            "nextNode": "quest_chat_kills"
+        },
+        {
+            "id": "quest_chat_kills",
+            "speaker": "Bram",
+            "condition": { "trigger": "goblin_kills", "minValue": 3 },
+            "text": "Wait... you've actually done it? You cleared out those goblins?! Outstanding! Here's your reward - 50 gold and a potion, as promised!",
+            "effect": "complete_quest_goblin_menace",
+            "nextNode": "farewell",
+            "elseNode": "quest_chat_hint"
+        },
+        {
+            "id": "quest_chat_hint",
+            "speaker": "Bram",
+            "text": "The goblins mostly lurk in groups inside the Dark Cavern. You'll need to fight through at least three of the blighters. They tend to cluster near the narrower passages. Be careful - where there's one goblin, there's usually more.",
+            "nextNode": "farewell"
+        },
+        {
+            "id": "quest_offer",
+            "speaker": "Bram",
+            "text": "Actually, yes! Those blasted goblins from the cavern have been raiding our supplies. Could you head down there and deal with them? I'll pay you 50 gold for the trouble!",
+            "choices": [
+                {
+                    "label": "I'll take care of it!",
+                    "nextNode": "quest_accept",
+                    "setTrigger": "quest_goblin_menace_start"
+                },
+                {
+                    "label": "Not right now.",
+                    "nextNode": "farewell"
+                }
+            ]
+        },
+        {
+            "id": "quest_accept",
+            "speaker": "Bram",
+            "text": "Excellent! Head into the Dark Cavern south of town and clear out the goblins. Come back when you've dealt with them!",
+            "effect": "start_quest_goblin_menace",
+            "nextNode": "farewell"
+        },
+        {
+            "id": "farewell",
+            "speaker": "Bram",
+            "text": "Good luck out there! Come back in one piece, yeah?",
+            "nextNode": null
+        }
+    ]
+}

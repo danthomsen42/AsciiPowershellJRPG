@@ -1,0 +1,46 @@
+{
+    "id": "goblin_quest_complete",
+    "name": "The Goblin Menace - Resolved",
+    "steps": [
+        {
+            "type": "effect",
+            "effect": "flash",
+            "color": "Yellow",
+            "count": 2,
+            "delayMs": 80
+        },
+        {
+            "type": "art",
+            "art": [
+                "",
+                "   ╔══════════════════════════════════════╗",
+                "   ║                                      ║",
+                "   ║       ★  QUEST COMPLETE!  ★          ║",
+                "   ║                                      ║",
+                "   ║     The Goblin Menace - Resolved      ║",
+                "   ║                                      ║",
+                "   ║   The goblins have been driven back   ║",
+                "   ║   from the Dark Cavern! Thornvale     ║",
+                "   ║   can rest easier tonight.            ║",
+                "   ║                                      ║",
+                "   ║   Reward: 50 Gold, 30 EXP, Potion    ║",
+                "   ║                                      ║",
+                "   ╚══════════════════════════════════════╝"
+            ],
+            "artColor": "Yellow",
+            "caption": "Bram raises a toast in your honor!"
+        },
+        {
+            "type": "dialogue",
+            "speaker": "Bram",
+            "text": "Three cheers for the adventurers! The goblin threat is no more! This calls for a celebration - drinks all around!",
+            "speakerColor": "Green",
+            "borderColor": "Yellow"
+        },
+        {
+            "type": "effect",
+            "effect": "fade_in",
+            "delayMs": 300
+        }
+    ]
+}

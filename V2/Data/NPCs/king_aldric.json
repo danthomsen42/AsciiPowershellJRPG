@@ -1,0 +1,56 @@
+{
+    "npcId": "king_aldric",
+    "name": "King Aldric",
+    "entryNode": "start",
+    "nodes": [
+        {
+            "id": "start",
+            "speaker": "King Aldric",
+            "text": "Brave adventurers! Thornvale is in great peril. Dark creatures have been emerging from the cavern to the south. I need someone courageous to investigate.",
+            "condition": null,
+            "choices": [
+                {
+                    "label": "We accept your quest!",
+                    "nextNode": "accept",
+                    "setTrigger": "quest_cavern_accepted"
+                },
+                {
+                    "label": "Tell us more about the threat.",
+                    "nextNode": "more_info"
+                },
+                {
+                    "label": "Not right now, your majesty.",
+                    "nextNode": "decline"
+                }
+            ]
+        },
+        {
+            "id": "more_info",
+            "speaker": "King Aldric",
+            "text": "For weeks, goblins and worse things have crawled out of the Dark Cavern. Our guards are overwhelmed. We've lost contact with the miners who worked the deep tunnels. Something sinister lurks below... I can feel it.",
+            "choices": [
+                {
+                    "label": "We'll do it. For Thornvale!",
+                    "nextNode": "accept",
+                    "setTrigger": "quest_cavern_accepted"
+                },
+                {
+                    "label": "We need to prepare first.",
+                    "nextNode": "decline"
+                }
+            ]
+        },
+        {
+            "id": "accept",
+            "speaker": "King Aldric",
+            "text": "Excellent! Head south to the Dark Cavern entrance. Be careful down there - the caves twist and turn, and the creatures grow stronger the deeper you go. The Healer can tend to your wounds before you leave. May fortune favor you!",
+            "nextNode": null
+        },
+        {
+            "id": "decline",
+            "speaker": "King Aldric",
+            "text": "I understand. Take your time to prepare. Speak with the Healer and the Tavern Keeper - they may be able to help. Return to me when you're ready.",
+            "nextNode": null
+        }
+    ]
+}

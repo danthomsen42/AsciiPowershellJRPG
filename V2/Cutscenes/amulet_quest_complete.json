@@ -1,0 +1,47 @@
+{
+    "id": "amulet_quest_complete",
+    "name": "The Lost Amulet - Returned",
+    "steps": [
+        {
+            "type": "effect",
+            "effect": "flash",
+            "color": "Cyan",
+            "count": 2,
+            "delayMs": 80
+        },
+        {
+            "type": "art",
+            "art": [
+                "",
+                "   ╔══════════════════════════════════════╗",
+                "   ║                                      ║",
+                "   ║       ★  QUEST COMPLETE!  ★          ║",
+                "   ║                                      ║",
+                "   ║      The Lost Amulet - Returned       ║",
+                "   ║                                      ║",
+                "   ║   Elara's grandmother's amulet has    ║",
+                "   ║   been found and returned safely.     ║",
+                "   ║   The healer's gratitude knows no     ║",
+                "   ║   bounds.                            ║",
+                "   ║                                      ║",
+                "   ║   Reward: 80 Gold, 50 EXP, 2x Ether  ║",
+                "   ║                                      ║",
+                "   ╚══════════════════════════════════════╝"
+            ],
+            "artColor": "Cyan",
+            "caption": "Elara clutches the amulet to her heart, tears in her eyes."
+        },
+        {
+            "type": "dialogue",
+            "speaker": "Elara",
+            "text": "I can feel my grandmother's warmth in this amulet still... You have given me back a piece of my family. I will never forget this kindness. The blessings of the light be upon you, always.",
+            "speakerColor": "White",
+            "borderColor": "Cyan"
+        },
+        {
+            "type": "effect",
+            "effect": "fade_in",
+            "delayMs": 300
+        }
+    ]
+}

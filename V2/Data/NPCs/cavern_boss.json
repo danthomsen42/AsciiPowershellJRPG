@@ -1,0 +1,45 @@
+{
+    "npcId": "cavern_boss",
+    "name": "Shadowed Figure",
+    "entryNode": "start",
+    "nodes": [
+        {
+            "id": "start",
+            "speaker": "???",
+            "text": "So... the surface dwellers finally send their heroes. How... predictable. You have NO idea what lurks in these depths.",
+            "condition": { "trigger": "boss_cave_shadow_defeated", "negate": true },
+            "elseNode": "start_defeated",
+            "choices": [
+                {
+                    "label": "Who are you?",
+                    "nextNode": "reveal"
+                },
+                {
+                    "label": "We're here to stop you!",
+                    "nextNode": "fight_talk"
+                }
+            ]
+        },
+        {
+            "id": "start_defeated",
+            "speaker": "Narrator",
+            "text": "The shadowed figure is gone. Only the faint echo of its presence remains.",
+            "condition": { "trigger": "boss_cave_shadow_defeated" },
+            "nextNode": null
+        },
+        {
+            "id": "reveal",
+            "speaker": "???",
+            "text": "I am but a servant of something far greater. The darkness below stirs... and soon it will swallow your precious little village whole. But first... let me test your resolve!",
+            "nextNode": "fight_talk"
+        },
+        {
+            "id": "fight_talk",
+            "speaker": "Shadowed Figure",
+            "text": "Enough talk. Prepare yourselves!",
+            "setTrigger": "cavern_boss_encountered",
+            "effect": "start_battle_cave_shadow",
+            "nextNode": null
+        }
+    ]
+}

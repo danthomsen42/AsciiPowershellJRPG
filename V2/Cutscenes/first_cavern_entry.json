@@ -1,0 +1,63 @@
+{
+    "id": "first_cavern_entry",
+    "name": "Entering the Dark Cavern",
+    "steps": [
+        {
+            "type": "effect",
+            "effect": "fade_out",
+            "steps": 3,
+            "delayMs": 150
+        },
+        {
+            "type": "narration",
+            "text": "A cold draft rushes past you as you descend the stone steps into the Dark Cavern. The air smells of damp earth and something... foul.",
+            "textColor": "DarkGray",
+            "boxed": true,
+            "borderColor": "DarkMagenta"
+        },
+        {
+            "type": "art",
+            "art": [
+                "            /\\      /\\",
+                "           /  \\    /  \\",
+                "          /    \\  /    \\",
+                "         /      \\/      \\",
+                "        /   DARK  CAVERN  \\",
+                "       /                    \\",
+                "      /    .-\"\"\"\"\"-.         \\",
+                "     /    /  o   o  \\        \\",
+                "    /    |  \\     /  |        \\",
+                "   /      \\  '---'  /          \\",
+                "  /________\\_______/____________\\",
+                "  |  .  .  .  .  .  .  .  .  .  |",
+                "  | .  .  .  .  .  .  .  .  .  .|",
+                "  |______________________________|"
+            ],
+            "artColor": "DarkMagenta",
+            "caption": "Something lurks in the shadows..."
+        },
+        {
+            "type": "narration",
+            "text": "You hear skittering in the darkness. Faint green eyes watch from the shadows. This is no place for the faint of heart. Steel your resolve - the creatures here will not show mercy.",
+            "textColor": "DarkRed",
+            "boxed": true,
+            "borderColor": "DarkRed"
+        },
+        {
+            "type": "narration",
+            "text": "TIP: Search the walls carefully. Hidden treasures and important items can be found by pressing [E] near suspicious walls.",
+            "textColor": "Yellow",
+            "boxed": true,
+            "borderColor": "Yellow"
+        },
+        {
+            "type": "effect",
+            "effect": "fade_in",
+            "delayMs": 300
+        },
+        {
+            "type": "message",
+            "text": "You enter the Dark Cavern. Stay alert!"
+        }
+    ]
+}

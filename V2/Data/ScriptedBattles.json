@@ -1,0 +1,29 @@
+{
+    "battles": {
+        "cave_shadow": {
+            "name": "The Shadowed Figure",
+            "enemies": [
+                {
+                    "name": "Shadowed Figure",
+                    "spriteId": "ShadowedFigure",
+                    "level": 5,
+                    "count": 1
+                },
+                {
+                    "name": "Shadow Goblin",
+                    "spriteId": "Goblin",
+                    "level": 3,
+                    "count": 2
+                }
+            ],
+            "canRun": false,
+            "victoryTrigger": "boss_cave_shadow_defeated",
+            "bonusRewards": {
+                "gold": 100,
+                "exp": 80,
+                "items": ["steel_sword"]
+            },
+            "victoryMessage": "The shadowed figure dissolves into darkness... The cavern feels safer now."
+        }
+    }
+}

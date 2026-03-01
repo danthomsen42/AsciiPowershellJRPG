@@ -1,0 +1,45 @@
+{
+    "npcId": "bard_finnian",
+    "name": "Bard Finnian",
+    "entryNode": "start",
+    "nodes": [
+        {
+            "id": "start",
+            "speaker": "Finnian",
+            "text": "Ah, a fellow traveler! I am Finnian, wandering bard and collector of tales. Care to hear a story?",
+            "speakerColor": "Magenta",
+            "textColor": "White",
+            "condition": { "trigger": "goblin_ambush_memory_seen", "negate": true },
+            "elseNode": "start_heard",
+            "choices": [
+                { "label": "Tell me about the goblin ambush", "nextNode": "goblin_story" },
+                { "label": "Maybe later", "nextNode": "decline" }
+            ]
+        },
+        {
+            "id": "goblin_story",
+            "speaker": "Finnian",
+            "text": "Ah, the goblins! Let me paint the picture for you... close your eyes and imagine...",
+            "speakerColor": "Magenta",
+            "textColor": "DarkYellow",
+            "effect": "play_cutscene_goblin_ambush_memory",
+            "nextNode": null
+        },
+        {
+            "id": "decline",
+            "speaker": "Finnian",
+            "text": "No worries, friend! I'll be here strumming away if you change your mind.",
+            "speakerColor": "Magenta",
+            "textColor": "Gray",
+            "nextNode": null
+        },
+        {
+            "id": "start_heard",
+            "speaker": "Finnian",
+            "text": "Welcome back! I'm working on some new songs. Come back later and I might have a fresh tale for you!",
+            "speakerColor": "Magenta",
+            "textColor": "Gray",
+            "nextNode": null
+        }
+    ]
+}

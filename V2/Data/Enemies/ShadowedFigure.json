@@ -1,0 +1,28 @@
+{
+    "name": "Shadowed Figure",
+    "spriteFile": "ShadowedFigure.txt",
+    "size": "large",
+    "color": "DarkMagenta",
+    "baseHP": 65,
+    "baseMP": 20,
+    "baseStrength": 14,
+    "baseIntelligence": 12,
+    "baseSpeed": 8,
+    "baseDefense": 10,
+    "baseAccuracy": 80,
+    "baseEXP": 60,
+    "baseGold": 40,
+    "abilities": ["Shadow Slash", "Dark Pulse", "Soul Drain"],
+    "drops": [
+        { "item": "Potion", "chance": 100 },
+        { "item": "Dark Shard", "chance": 50 }
+    ],
+    "levelScaling": {
+        "HP": 12,
+        "Strength": 3,
+        "Defense": 2,
+        "Speed": 1,
+        "EXP": 15,
+        "Gold": 10
+    }
+}

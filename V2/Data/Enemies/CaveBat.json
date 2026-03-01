@@ -1,0 +1,27 @@
+{
+    "name": "Cave Bat",
+    "spriteFile": "CaveBat.txt",
+    "size": "small",
+    "color": "DarkMagenta",
+    "baseHP": 8,
+    "baseMP": 0,
+    "baseStrength": 5,
+    "baseIntelligence": 2,
+    "baseSpeed": 14,
+    "baseDefense": 3,
+    "baseAccuracy": 75,
+    "baseEXP": 10,
+    "baseGold": 2,
+    "abilities": ["Screech", "Wing Slash"],
+    "drops": [
+        { "item": "Bat Wing", "chance": 40 }
+    ],
+    "levelScaling": {
+        "HP": 3,
+        "Strength": 1,
+        "Defense": 1,
+        "Speed": 2,
+        "EXP": 4,
+        "Gold": 2
+    }
+}

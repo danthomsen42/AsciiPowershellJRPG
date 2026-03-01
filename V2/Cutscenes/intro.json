@@ -1,0 +1,73 @@
+{
+    "id": "intro",
+    "name": "The Thornvale Chronicles - Prologue",
+    "steps": [
+        {
+            "type": "effect",
+            "effect": "fade_out",
+            "steps": 3,
+            "delayMs": 200
+        },
+        {
+            "type": "narration",
+            "text": "In an age long forgotten, when the world was young and magic flowed freely through the land...",
+            "textColor": "DarkCyan",
+            "boxed": true,
+            "borderColor": "DarkBlue"
+        },
+        {
+            "type": "narration",
+            "text": "The Kingdom of Thornvale stood as a beacon of hope. Its people lived in peace under the wise rule of King Aldric, protected by ancient wards that kept darkness at bay.",
+            "textColor": "Gray",
+            "boxed": true,
+            "borderColor": "DarkBlue"
+        },
+        {
+            "type": "narration",
+            "text": "But peace is a fragile thing...",
+            "textColor": "DarkYellow"
+        },
+        {
+            "type": "narration",
+            "text": "Strange creatures have begun to emerge from the Dark Cavern south of the village. Goblins raid the supply routes. Bats swarm the lower passages. Slimes ooze from cracks in the stone. Something stirs in the depths below.",
+            "textColor": "DarkRed",
+            "boxed": true,
+            "borderColor": "DarkRed"
+        },
+        {
+            "type": "art",
+            "art": [
+                "       .          .         .      .       .",
+                "    .    *    .       .    *      .    *",
+                " .    .    .    .    .    .    .    .    .",
+                "   *     .    *    .    *    .   *    .",
+                "",
+                "    ___________________________________________",
+                "   /                                           \\",
+                "  /    THORNVALE    *  The village awaits  *    \\",
+                " /                                              \\",
+                " \\     A new chapter in your story begins...    /",
+                "  \\                                            /",
+                "   \\__________________________________________/"
+            ],
+            "artColor": "Cyan",
+            "caption": "Your adventure begins in Thornvale Village..."
+        },
+        {
+            "type": "narration",
+            "text": "King Aldric has summoned adventurers from across the realm. You are among those who answered the call. The fate of Thornvale rests in your hands.",
+            "textColor": "White",
+            "boxed": true,
+            "borderColor": "Cyan"
+        },
+        {
+            "type": "effect",
+            "effect": "fade_in",
+            "delayMs": 500
+        },
+        {
+            "type": "message",
+            "text": "The adventure begins! Speak to King Aldric for guidance."
+        }
+    ]
+}

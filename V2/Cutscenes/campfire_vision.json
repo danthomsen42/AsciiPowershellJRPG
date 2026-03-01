@@ -1,0 +1,147 @@
+{
+    "id": "campfire_vision",
+    "name": "Campfire Vision",
+    "steps": [
+        {
+            "type": "narration",
+            "text": "As the campfire crackles, the flames twist into strange shapes. Images begin to form in the dancing light...",
+            "textColor": "DarkYellow",
+            "boxed": true,
+            "borderColor": "Red"
+        },
+        {
+            "type": "animated_art",
+            "frames": [
+                [
+                    "                          ",
+                    "         (  )             ",
+                    "        (    )            ",
+                    "       ( .  . )           ",
+                    "        ( \\/ )            ",
+                    "       (  \\/  )           ",
+                    "        (    )            ",
+                    "         (  )             ",
+                    "      ____/\\____          ",
+                    "     /~~~~~~~~~~\\         ",
+                    "    /~~~~~~~~~~~~\\        "
+                ],
+                [
+                    "                          ",
+                    "          ( )             ",
+                    "        (    )            ",
+                    "       (  .. )            ",
+                    "        (/\\  )            ",
+                    "       (  /\\  )           ",
+                    "        (    )            ",
+                    "         (  )             ",
+                    "      ____/\\____          ",
+                    "     /~~~~~~~~~~\\         ",
+                    "    /~~~~~~~~~~~~\\        "
+                ],
+                [
+                    "                          ",
+                    "        (    )            ",
+                    "       (  ..  )           ",
+                    "       (  /\\  )           ",
+                    "        ( \\/ )            ",
+                    "       (      )           ",
+                    "        (    )            ",
+                    "          ()              ",
+                    "      ____/\\____          ",
+                    "     /~~~~~~~~~~\\         ",
+                    "    /~~~~~~~~~~~~\\        "
+                ],
+                [
+                    "          .               ",
+                    "        (    )            ",
+                    "       (      )           ",
+                    "       ( .  . )           ",
+                    "        (    )            ",
+                    "       ( \\  / )           ",
+                    "        ( \\/ )            ",
+                    "         (  )             ",
+                    "      ____/\\____          ",
+                    "     /~~~~~~~~~~\\         ",
+                    "    /~~~~~~~~~~~~\\        "
+                ]
+            ],
+            "frameDelayMs": 250,
+            "loops": 3,
+            "artColor": "Red",
+            "caption": "A face forms in the flames...",
+            "captionColor": "DarkYellow",
+            "holdLastFrame": true,
+            "waitForKey": true
+        },
+        {
+            "type": "animated_art",
+            "frames": [
+                [
+                    "                              ",
+                    "      .  *  .    *   .        ",
+                    "    *    ___    *     *        ",
+                    "   .   /     \\   .    .       ",
+                    "  *   | () () |   *           ",
+                    "   .  |   __  |    .   *      ",
+                    "    * |  \\__/ |  *    .       ",
+                    "   .   \\_____/    .           ",
+                    "    *   * .  *   *    *        ",
+                    "      .    *   .    .          ",
+                    "                              "
+                ],
+                [
+                    "                              ",
+                    "    *  .  *  .    *   .        ",
+                    "      *  ___  *    *          ",
+                    "   *   /     \\   *    .       ",
+                    "  .   | (o)(o)|    .          ",
+                    "   *  |   __  |   *    .      ",
+                    "    . |  \\__/ | .     *       ",
+                    "   *   \\_____/   *            ",
+                    "    .   * .  *    .   *        ",
+                    "      *    .   *    *          ",
+                    "                              "
+                ],
+                [
+                    "                              ",
+                    "      .  *  .    *   .        ",
+                    "    .    ___    .     .        ",
+                    "   *   /     \\   *    *       ",
+                    "  .   | (O)(O)|   .           ",
+                    "   *  |  >__< |    *   .      ",
+                    "    . |  \\==/ |  .    *       ",
+                    "   *   \\_____/    *           ",
+                    "    .   * .  *   .    .        ",
+                    "      *    *   *    *          ",
+                    "                              "
+                ]
+            ],
+            "frameDelayMs": 350,
+            "loops": 2,
+            "artColor": "DarkRed",
+            "caption": "A sinister visage stares back at you...",
+            "captionColor": "Red",
+            "holdLastFrame": true,
+            "waitForKey": true
+        },
+        {
+            "type": "effect",
+            "effect": "flash",
+            "color": "White",
+            "count": 2,
+            "delayMs": 100
+        },
+        {
+            "type": "narration",
+            "text": "The flames snap back to normal. The vision fades, but the face lingers in your memory. Something ancient has taken notice of you.",
+            "textColor": "Gray",
+            "boxed": true,
+            "borderColor": "DarkYellow"
+        },
+        {
+            "type": "set_trigger",
+            "trigger": "campfire_vision_seen",
+            "value": true
+        }
+    ]
+}

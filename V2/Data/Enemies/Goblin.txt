@@ -1,0 +1,6 @@
+; Goblin - Small enemy sprite (3x3)
+#####
+# , #
+#/O\#
+# ^ #
+#####

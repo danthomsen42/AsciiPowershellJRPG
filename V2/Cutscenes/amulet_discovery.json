@@ -1,0 +1,29 @@
+{
+    "id": "amulet_discovery",
+    "name": "A Glittering Discovery",
+    "steps": [
+        {
+            "type": "effect",
+            "effect": "flash",
+            "color": "White",
+            "count": 1,
+            "delayMs": 120
+        },
+        {
+            "type": "narration",
+            "text": "As you brush aside the dust, a silver chain catches the torchlight. You carefully pull it free from the rubble... It's a beautiful silver amulet with delicate engravings. On the back, you can make out the initials 'E.T.' - this must be Elara's lost treasure!",
+            "textColor": "Cyan",
+            "boxed": true,
+            "borderColor": "White"
+        },
+        {
+            "type": "message",
+            "text": "You found Elara's Silver Amulet! Return it to her in Thornvale."
+        },
+        {
+            "type": "effect",
+            "effect": "fade_in",
+            "delayMs": 200
+        }
+    ]
+}

@@ -1,0 +1,96 @@
+{
+    "id": "cave_shadow_defeated",
+    "name": "The Shadow Dispelled",
+    "steps": [
+        {
+            "type": "effect",
+            "effect": "fade_out",
+            "steps": 3,
+            "delayMs": 200
+        },
+        {
+            "type": "art",
+            "art": [
+                "                                                ",
+                "              . * .    . * .    . * .           ",
+                "           *         *         *       *        ",
+                "          .    /\\    .         .    /\\    .     ",
+                "         *    /  \\   *         *   /  \\   *     ",
+                "        .    / () \\  .         .  / () \\  .     ",
+                "         *  / \\__/ \\           * / \\__/ \\       ",
+                "          ./________\\ . * .   . /________\\      ",
+                "                *                   *           ",
+                "        The shadow fragments scatter...         ",
+                "                                                "
+            ],
+            "artColor": "DarkMagenta",
+            "caption": ""
+        },
+        {
+            "type": "narration",
+            "text": "The Shadowed Figure lets out a terrible shriek as it collapses in on itself. Tendrils of darkness unravel from its form, dissolving into wisps of smoke that scatter across the cavern floor.",
+            "textColor": "Magenta",
+            "boxed": true,
+            "borderColor": "DarkMagenta"
+        },
+        {
+            "type": "delay",
+            "ms": 400
+        },
+        {
+            "type": "narration",
+            "text": "As the darkness recedes, you notice something strange. The shadows weren't just a creature — they were a seal. A barrier holding something deeper at bay.",
+            "textColor": "DarkCyan",
+            "boxed": true,
+            "borderColor": "DarkCyan"
+        },
+        {
+            "type": "dialogue",
+            "speaker": "???",
+            "text": "Free... at last... You have no idea what you've done, mortal. But I thank you all the same. We will meet again... in the depths below.",
+            "speakerColor": "DarkRed",
+            "textColor": "Red"
+        },
+        {
+            "type": "delay",
+            "ms": 300
+        },
+        {
+            "type": "art",
+            "art": [
+                "                                                ",
+                "     ╔══════════════════════════════════════╗    ",
+                "     ║                                      ║    ",
+                "     ║   The passage ahead is now clear.     ║    ",
+                "     ║   The cavern feels... lighter.        ║    ",
+                "     ║                                      ║    ",
+                "     ║   But something stirs below...        ║    ",
+                "     ║                                      ║    ",
+                "     ╚══════════════════════════════════════╝    ",
+                "                                                "
+            ],
+            "artColor": "Green",
+            "caption": "Chapter 1 Complete"
+        },
+        {
+            "type": "narration",
+            "text": "With the Shadowed Figure defeated, the oppressive darkness of the cavern lifts. You pocket the rewards and steel yourself. Whatever 'the depths below' hold, you'll be ready.",
+            "textColor": "White",
+            "boxed": true,
+            "borderColor": "Green"
+        },
+        {
+            "type": "heal_party"
+        },
+        {
+            "type": "message",
+            "text": "Your party has been fully healed!"
+        },
+        {
+            "type": "effect",
+            "effect": "fade_in",
+            "steps": 3,
+            "delayMs": 150
+        }
+    ]
+}

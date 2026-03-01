@@ -1,0 +1,129 @@
+{
+    "npcId": "healer_elara",
+    "name": "Healer Elara",
+    "entryNode": "start",
+    "nodes": [
+        {
+            "id": "start",
+            "speaker": "Elara",
+            "text": "Blessings upon you, travelers. I am Elara, keeper of the healing arts. You look like you could use some tending to.",
+            "choices": [
+                {
+                    "label": "Please heal our party.",
+                    "nextNode": "heal"
+                },
+                {
+                    "label": "Do you have any advice?",
+                    "nextNode": "advice"
+                },
+                {
+                    "label": "Is something troubling you?",
+                    "nextNode": "quest_check"
+                },
+                {
+                    "label": "About that quest...",
+                    "nextNode": "quest_chat",
+                    "condition": { "trigger": "quest_lost_amulet_start" }
+                },
+                {
+                    "label": "No thanks, we're fine.",
+                    "nextNode": "farewell"
+                }
+            ]
+        },
+        {
+            "id": "heal",
+            "speaker": "Elara",
+            "text": "Let the light mend your wounds... There. Your party has been fully restored. Be safe out there.",
+            "setTrigger": "healer_used",
+            "nextNode": "farewell",
+            "effect": "heal_party"
+        },
+        {
+            "id": "advice",
+            "speaker": "Elara",
+            "text": "The creatures in the cavern are weak to holy magic. If you have a Cleric in your party, their Smite and Holy Light abilities will serve you well. Also, don't forget to Defend when facing powerful enemies - it can mean the difference between life and death.",
+            "nextNode": "farewell"
+        },
+        {
+            "id": "quest_check",
+            "speaker": "Elara",
+            "condition": { "trigger": "quest_lost_amulet_done" },
+            "text": "Thank you again for finding my amulet. You have my eternal gratitude, and the blessings of the light.",
+            "elseNode": "quest_check_active"
+        },
+        {
+            "id": "quest_check_active",
+            "condition": { "trigger": "quest_lost_amulet_start" },
+            "text": "",
+            "elseNode": "quest_offer",
+            "nextNode": "quest_check_return"
+        },
+        {
+            "id": "quest_check_return",
+            "condition": { "trigger": "has_item_silver_amulet_quest" },
+            "speaker": "Elara",
+            "text": "You found it! My grandmother's amulet! Oh, thank you so much! Please, take this reward - you deserve it!",
+            "effect": "complete_quest_lost_amulet",
+            "nextNode": "farewell",
+            "elseNode": "quest_still_looking"
+        },
+        {
+            "id": "quest_still_looking",
+            "speaker": "Elara",
+            "text": "Any luck finding my amulet? I believe I lost it somewhere in the Dark Cavern, near the bottom passages. Please look carefully - it has my initials on it.",
+            "nextNode": "farewell"
+        },
+        {
+            "id": "quest_chat",
+            "speaker": "Elara",
+            "condition": { "trigger": "quest_lost_amulet_done" },
+            "text": "Thank you again for finding my amulet. You truly are a blessing to this village.",
+            "elseNode": "quest_chat_active"
+        },
+        {
+            "id": "quest_chat_active",
+            "condition": { "trigger": "has_item_silver_amulet_quest" },
+            "speaker": "Elara",
+            "text": "You found it! My grandmother's amulet! Oh, thank you so much! Please, take this reward - you deserve it!",
+            "effect": "complete_quest_lost_amulet",
+            "nextNode": "farewell",
+            "elseNode": "quest_chat_hint"
+        },
+        {
+            "id": "quest_chat_hint",
+            "speaker": "Elara",
+            "text": "My amulet... I'm almost certain I dropped it in the deeper parts of the Dark Cavern. Try searching along the walls - there are hidden crevices where it might have fallen. It has a silver chain with my initials engraved on the back.",
+            "nextNode": "farewell"
+        },
+        {
+            "id": "quest_offer",
+            "speaker": "Elara",
+            "text": "Actually... yes. I lost my grandmother's silver amulet in the Dark Cavern. I was exploring when creatures attacked and I had to flee. It means the world to me. Could you look for it?",
+            "choices": [
+                {
+                    "label": "I'll find your amulet.",
+                    "nextNode": "quest_accept",
+                    "setTrigger": "quest_lost_amulet_start"
+                },
+                {
+                    "label": "Maybe later.",
+                    "nextNode": "farewell"
+                }
+            ]
+        },
+        {
+            "id": "quest_accept",
+            "speaker": "Elara",
+            "text": "Bless you! I think I dropped it somewhere deeper in the cavern. Search carefully along the walls - there are many hidden crevices down there. I'll reward you handsomely!",
+            "effect": "start_quest_lost_amulet",
+            "nextNode": "farewell"
+        },
+        {
+            "id": "farewell",
+            "speaker": "Elara",
+            "text": "May the light guide your path.",
+            "nextNode": null
+        }
+    ]
+}

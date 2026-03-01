@@ -1,0 +1,5 @@
+; Cave Bat - Small enemy sprite (3x2)
+#####
+#/V\#
+# " #
+#####

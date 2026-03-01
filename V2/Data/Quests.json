@@ -1,0 +1,61 @@
+{
+    "quests": [
+        {
+            "id": "goblin_menace",
+            "name": "The Goblin Menace",
+            "description": "Bram says goblins have been raiding from the cavern. Clear out at least one group.",
+            "giver": "tavern_keeper",
+            "triggerStart": "quest_goblin_menace_start",
+            "triggerComplete": "quest_goblin_menace_done",
+            "objectives": [
+                {
+                    "text": "Defeat goblins in the Dark Cavern",
+                    "type": "counter",
+                    "trigger": "goblin_kills",
+                    "target": 3,
+                    "format": "Defeat goblins ({current}/{target})"
+                },
+                {
+                    "text": "Report back to Bram",
+                    "type": "trigger",
+                    "trigger": "quest_goblin_menace_done"
+                }
+            ],
+            "completionCheck": "goblin_kills",
+            "completionTarget": 3,
+            "rewards": {
+                "gold": 50,
+                "exp": 30,
+                "items": ["potion"]
+            },
+            "rewardSummary": "50 Gold, 30 EXP, Potion"
+        },
+        {
+            "id": "lost_amulet",
+            "name": "The Lost Amulet",
+            "description": "Healer Elara lost her silver amulet somewhere in the cavern. Find and return it.",
+            "giver": "healer_elara",
+            "triggerStart": "quest_lost_amulet_start",
+            "triggerComplete": "quest_lost_amulet_done",
+            "objectives": [
+                {
+                    "text": "Find the Silver Amulet in the Dark Cavern",
+                    "type": "trigger",
+                    "trigger": "has_item_silver_amulet_quest"
+                },
+                {
+                    "text": "Return the amulet to Healer Elara",
+                    "type": "trigger",
+                    "trigger": "quest_lost_amulet_done"
+                }
+            ],
+            "completionCheck": "has_item_silver_amulet_quest",
+            "rewards": {
+                "gold": 80,
+                "exp": 50,
+                "items": ["ether", "ether"]
+            },
+            "rewardSummary": "80 Gold, 50 EXP, 2x Ether"
+        }
+    ]
+}

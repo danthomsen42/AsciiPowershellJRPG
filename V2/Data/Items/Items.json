@@ -1,0 +1,252 @@
+{
+    "items": [
+        {
+            "id": "potion",
+            "name": "Potion",
+            "description": "Restores 30 HP to one ally.",
+            "type": "consumable",
+            "effect": "heal",
+            "value": 30,
+            "buyPrice": 25,
+            "sellPrice": 12
+        },
+        {
+            "id": "ether",
+            "name": "Ether",
+            "description": "Restores 20 MP to one ally.",
+            "type": "consumable",
+            "effect": "restoreMP",
+            "value": 20,
+            "buyPrice": 40,
+            "sellPrice": 20
+        },
+        {
+            "id": "herb",
+            "name": "Herb",
+            "description": "Restores 10 HP to one ally. A common remedy.",
+            "type": "consumable",
+            "effect": "heal",
+            "value": 10,
+            "buyPrice": 8,
+            "sellPrice": 4
+        },
+        {
+            "id": "antidote",
+            "name": "Antidote",
+            "description": "Cures poison status.",
+            "type": "consumable",
+            "effect": "curePoison",
+            "value": 0,
+            "buyPrice": 15,
+            "sellPrice": 7
+        },
+        {
+            "id": "phoenix_feather",
+            "name": "Phoenix Feather",
+            "description": "Revives a fallen ally with 25% HP.",
+            "type": "consumable",
+            "effect": "revive",
+            "value": 25,
+            "buyPrice": 100,
+            "sellPrice": 50
+        },
+        {
+            "id": "goblin_ear",
+            "name": "Goblin Ear",
+            "description": "A trophy from a defeated goblin. Can be sold.",
+            "type": "material",
+            "effect": "none",
+            "value": 0,
+            "buyPrice": 0,
+            "sellPrice": 5
+        },
+        {
+            "id": "bat_wing",
+            "name": "Bat Wing",
+            "description": "A leathery bat wing. Used in alchemy.",
+            "type": "material",
+            "effect": "none",
+            "value": 0,
+            "buyPrice": 0,
+            "sellPrice": 3
+        },
+        {
+            "id": "slime_gel",
+            "name": "Slime Gel",
+            "description": "Gelatinous residue. Strangely valuable to alchemists.",
+            "type": "material",
+            "effect": "none",
+            "value": 0,
+            "buyPrice": 0,
+            "sellPrice": 10
+        },
+        {
+            "id": "iron_sword",
+            "name": "Iron Sword",
+            "description": "A sturdy blade. STR+2",
+            "type": "weapon",
+            "effect": "none",
+            "slot": "Weapon",
+            "statBonus": { "Strength": 2 },
+            "value": 0,
+            "buyPrice": 80,
+            "sellPrice": 40
+        },
+        {
+            "id": "steel_sword",
+            "name": "Steel Sword",
+            "description": "A finely forged blade. STR+5",
+            "type": "weapon",
+            "effect": "none",
+            "slot": "Weapon",
+            "statBonus": { "Strength": 5 },
+            "value": 0,
+            "buyPrice": 250,
+            "sellPrice": 125
+        },
+        {
+            "id": "oak_staff",
+            "name": "Oak Staff",
+            "description": "A staff carved from ancient oak. INT+2",
+            "type": "weapon",
+            "effect": "none",
+            "slot": "Weapon",
+            "statBonus": { "Intelligence": 2 },
+            "value": 0,
+            "buyPrice": 70,
+            "sellPrice": 35
+        },
+        {
+            "id": "iron_dagger",
+            "name": "Iron Dagger",
+            "description": "A quick, light blade. STR+1, SPD+1",
+            "type": "weapon",
+            "effect": "none",
+            "slot": "Weapon",
+            "statBonus": { "Strength": 1, "Speed": 1 },
+            "value": 0,
+            "buyPrice": 60,
+            "sellPrice": 30
+        },
+        {
+            "id": "iron_mace",
+            "name": "Iron Mace",
+            "description": "A heavy holy weapon. STR+2, INT+1",
+            "type": "weapon",
+            "effect": "none",
+            "slot": "Weapon",
+            "statBonus": { "Strength": 2, "Intelligence": 1 },
+            "value": 0,
+            "buyPrice": 85,
+            "sellPrice": 42
+        },
+        {
+            "id": "short_bow",
+            "name": "Short Bow",
+            "description": "A reliable ranged weapon. STR+1, ACC+3",
+            "type": "weapon",
+            "effect": "none",
+            "slot": "Weapon",
+            "statBonus": { "Strength": 1, "Accuracy": 3 },
+            "value": 0,
+            "buyPrice": 75,
+            "sellPrice": 37
+        },
+        {
+            "id": "chain_mail",
+            "name": "Chain Mail",
+            "description": "Linked metal rings. DEF+3",
+            "type": "armor",
+            "effect": "none",
+            "slot": "Armor",
+            "statBonus": { "Defense": 3 },
+            "value": 0,
+            "buyPrice": 90,
+            "sellPrice": 45
+        },
+        {
+            "id": "cloth_robe",
+            "name": "Cloth Robe",
+            "description": "A mage's garment. DEF+1, INT+2",
+            "type": "armor",
+            "effect": "none",
+            "slot": "Armor",
+            "statBonus": { "Defense": 1, "Intelligence": 2 },
+            "value": 0,
+            "buyPrice": 65,
+            "sellPrice": 32
+        },
+        {
+            "id": "leather_armor",
+            "name": "Leather Armor",
+            "description": "Light and flexible. DEF+2, SPD+1",
+            "type": "armor",
+            "effect": "none",
+            "slot": "Armor",
+            "statBonus": { "Defense": 2, "Speed": 1 },
+            "value": 0,
+            "buyPrice": 70,
+            "sellPrice": 35
+        },
+        {
+            "id": "scale_mail",
+            "name": "Scale Mail",
+            "description": "Overlapping metal scales. DEF+3, INT+1",
+            "type": "armor",
+            "effect": "none",
+            "slot": "Armor",
+            "statBonus": { "Defense": 3, "Intelligence": 1 },
+            "value": 0,
+            "buyPrice": 100,
+            "sellPrice": 50
+        },
+        {
+            "id": "hide_armor",
+            "name": "Hide Armor",
+            "description": "Rugged wilderness gear. DEF+2, STR+1",
+            "type": "armor",
+            "effect": "none",
+            "slot": "Armor",
+            "statBonus": { "Defense": 2, "Strength": 1 },
+            "value": 0,
+            "buyPrice": 75,
+            "sellPrice": 37
+        },
+        {
+            "id": "bronze_ring",
+            "name": "Bronze Ring",
+            "description": "A simple enchanted ring. DEF+1, ACC+2",
+            "type": "accessory",
+            "effect": "none",
+            "slot": "Accessory",
+            "statBonus": { "Defense": 1, "Accuracy": 2 },
+            "value": 0,
+            "buyPrice": 50,
+            "sellPrice": 25
+        },
+        {
+            "id": "silver_amulet",
+            "name": "Silver Amulet",
+            "description": "Gleaming protective charm. DEF+2, INT+1",
+            "type": "accessory",
+            "effect": "none",
+            "slot": "Accessory",
+            "statBonus": { "Defense": 2, "Intelligence": 1 },
+            "value": 0,
+            "buyPrice": 120,
+            "sellPrice": 60
+        },
+        {
+            "id": "speed_boots",
+            "name": "Speed Boots",
+            "description": "Enchanted boots. SPD+3",
+            "type": "accessory",
+            "effect": "none",
+            "slot": "Accessory",
+            "statBonus": { "Speed": 3 },
+            "value": 0,
+            "buyPrice": 150,
+            "sellPrice": 75
+        }
+    ]
+}

@@ -1,0 +1,49 @@
+{
+    "npcId": "campfire",
+    "name": "Campfire",
+    "entryNode": "start",
+    "nodes": [
+        {
+            "id": "start",
+            "speaker": "",
+            "text": "",
+            "condition": { "trigger": "campfire_vision_seen", "negate": true },
+            "elseNode": "start_seen",
+            "nextNode": "first_look"
+        },
+        {
+            "id": "first_look",
+            "speaker": "Narrator",
+            "text": "The campfire flickers warmly in the evening air. As you stare into it, the flames seem to twist and dance with unnatural purpose...",
+            "speakerColor": "DarkYellow",
+            "textColor": "Yellow",
+            "choices": [
+                { "label": "Gaze into the flames", "nextNode": "vision" },
+                { "label": "Look away", "nextNode": "leave" }
+            ]
+        },
+        {
+            "id": "vision",
+            "speaker": "",
+            "text": "",
+            "effect": "play_cutscene_campfire_vision",
+            "nextNode": null
+        },
+        {
+            "id": "leave",
+            "speaker": "Narrator",
+            "text": "You pull your gaze away from the fire. Probably nothing.",
+            "speakerColor": "DarkYellow",
+            "textColor": "Gray",
+            "nextNode": null
+        },
+        {
+            "id": "start_seen",
+            "speaker": "Narrator",
+            "text": "The campfire crackles softly. You remember the vision you saw in its flames... better not stare too long.",
+            "speakerColor": "DarkYellow",
+            "textColor": "DarkGray",
+            "nextNode": null
+        }
+    ]
+}

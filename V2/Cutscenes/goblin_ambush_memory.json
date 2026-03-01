@@ -1,0 +1,160 @@
+{
+    "id": "goblin_ambush_memory",
+    "name": "Memory - The Goblin Ambush",
+    "steps": [
+        {
+            "type": "narration",
+            "text": "Your mind drifts back to the day it all began. The forest path seemed safe enough...",
+            "textColor": "DarkCyan",
+            "boxed": true,
+            "borderColor": "DarkGray"
+        },
+        {
+            "type": "effect",
+            "effect": "fade_out",
+            "steps": 3,
+            "delayMs": 150
+        },
+        {
+            "type": "map_sequence",
+            "title": "~ A Memory ~",
+            "inlineMap": [
+                "##################################################",
+                "#...T......T...........T.....T..........T.........#",
+                "#..........T....T.............T.......T...........#",
+                "#....T..........T.............T..T......T.........#",
+                "#.......T.....T.......T...........T.......T.......#",
+                "#...T................T........T...................#",
+                "#..........T....T.T...........T.......T...........#",
+                "#....T........T...........T......T................#",
+                "#.......T.....T.......T..........T......T.........#",
+                "#...T.........T...T.....T.......T.....T..........#",
+                "#..........T....T.............T.......T...........#",
+                "#....T..........T.......T.........T...............#",
+                "#.......T....T...........T........T......T........#",
+                "#...T.............T.....T.......T.................#",
+                "##################################################"
+            ],
+            "tileColors": {
+                "#": "DarkGreen",
+                ".": "Green",
+                "T": "DarkYellow"
+            },
+            "entities": [
+                { "id": "mage", "char": "@", "color": "Cyan", "x": 1, "y": 7 },
+                { "id": "goblin1", "char": "G", "color": "Red", "x": -1, "y": -1, "hidden": true },
+                { "id": "goblin2", "char": "G", "color": "Red", "x": -1, "y": -1, "hidden": true },
+                { "id": "goblin3", "char": "G", "color": "Red", "x": -1, "y": -1, "hidden": true }
+            ],
+            "events": [
+                {
+                    "action": "move",
+                    "entity": "mage",
+                    "path": [[2,7],[3,7],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[10,7],[11,7],[12,7],[13,7],[14,7],[15,7],[16,7],[17,7],[18,7]],
+                    "stepDelayMs": 150
+                },
+                {
+                    "action": "dialogue",
+                    "speaker": "You",
+                    "text": "This forest is quiet. Too quiet. I should keep my guard up...",
+                    "speakerColor": "Cyan"
+                },
+                {
+                    "action": "move",
+                    "entity": "mage",
+                    "path": [[19,7],[20,7],[21,7],[22,7],[23,7],[24,7]],
+                    "stepDelayMs": 150
+                },
+                {
+                    "action": "delay",
+                    "ms": 400
+                },
+                {
+                    "action": "dialogue",
+                    "speaker": "You",
+                    "text": "Wait... did I hear something in the bushes?",
+                    "speakerColor": "Cyan"
+                },
+                {
+                    "action": "delay",
+                    "ms": 300
+                },
+                {
+                    "action": "show",
+                    "entity": "goblin1",
+                    "x": 28,
+                    "y": 5,
+                    "delayMs": 200
+                },
+                {
+                    "action": "show",
+                    "entity": "goblin2",
+                    "x": 28,
+                    "y": 7,
+                    "delayMs": 200
+                },
+                {
+                    "action": "show",
+                    "entity": "goblin3",
+                    "x": 28,
+                    "y": 9,
+                    "delayMs": 300
+                },
+                {
+                    "action": "dialogue",
+                    "speaker": "Goblin",
+                    "text": "Heheheh! Fresh meat, boys! Get 'em!",
+                    "speakerColor": "Red",
+                    "textColor": "DarkRed"
+                },
+                {
+                    "action": "move",
+                    "entity": "goblin1",
+                    "path": [[27,5],[27,6],[26,6],[26,7]],
+                    "stepDelayMs": 120
+                },
+                {
+                    "action": "move",
+                    "entity": "goblin2",
+                    "path": [[27,7],[26,7],[25,7]],
+                    "stepDelayMs": 120
+                },
+                {
+                    "action": "move",
+                    "entity": "goblin3",
+                    "path": [[27,9],[27,8],[26,8],[26,7]],
+                    "stepDelayMs": 120
+                },
+                {
+                    "action": "dialogue",
+                    "speaker": "You",
+                    "text": "Three of them?! I need to fight my way out!",
+                    "speakerColor": "Cyan"
+                },
+                {
+                    "action": "delay",
+                    "ms": 500
+                }
+            ]
+        },
+        {
+            "type": "effect",
+            "effect": "flash",
+            "color": "White",
+            "count": 3,
+            "delayMs": 80
+        },
+        {
+            "type": "narration",
+            "text": "The memory fades. That day changed everything. It was the first time you truly had to fight for your life — and it wouldn't be the last.",
+            "textColor": "Gray",
+            "boxed": true,
+            "borderColor": "DarkCyan"
+        },
+        {
+            "type": "set_trigger",
+            "trigger": "goblin_ambush_memory_seen",
+            "value": true
+        }
+    ]
+}
