@@ -48,9 +48,14 @@ function Show-MemberManagement {
         Draw-Box -X 5 -Y 1 -Width 110 -Height 28 -Color ([ConsoleColor]::Cyan) -BgColor ([ConsoleColor]::Black) -Fill
         Set-Text -X 7 -Y 1 -Text " $($member.Name) - $($member.Class) " -FgColor ([ConsoleColor]::Cyan)
 
-        # Show current stats
+        # Show current stats (effective = base + equipment)
+        $eSTR = Get-EffectiveStat -Entity $member -StatName 'Strength'
+        $eINT = Get-EffectiveStat -Entity $member -StatName 'Intelligence'
+        $eSPD = Get-EffectiveStat -Entity $member -StatName 'Speed'
+        $eDEF = Get-EffectiveStat -Entity $member -StatName 'Defense'
+        $eACC = Get-EffectiveStat -Entity $member -StatName 'Accuracy'
         Set-Text -X 8 -Y 3 -Text "HP: $($member.HP)/$($member.MaxHP)  MP: $($member.MP)/$($member.MaxMP)  Lv.$($member.Level)" -FgColor ([ConsoleColor]::Green)
-        Set-Text -X 8 -Y 4 -Text "STR:$($member.Strength)  INT:$($member.Intelligence)  SPD:$($member.Speed)  DEF:$($member.Defense)  ACC:$($member.Accuracy)" -FgColor ([ConsoleColor]::Gray)
+        Set-Text -X 8 -Y 4 -Text "STR:$eSTR  INT:$eINT  SPD:$eSPD  DEF:$eDEF  ACC:$eACC  (with equipment)" -FgColor ([ConsoleColor]::Gray)
         Set-Text -X 8 -Y 5 -Text "Main Attack: $($member.MainAttack)" -FgColor ([ConsoleColor]::White)
         Set-Text -X 8 -Y 6 -Text "Secondary: $(($member.SecondaryAbilities -join ', '))" -FgColor ([ConsoleColor]::DarkGray)
         $weaponName = if ($member.Equipment.Weapon) { $member.Equipment.Weapon } else { '(none)' }
@@ -197,25 +202,17 @@ function Invoke-EquipItem {
         $chosenDef = Get-ItemDefinition -ItemId $chosenInvItem.id
         $chosenName = if ($chosenInvItem.name) { $chosenInvItem.name } else { $chosenInvItem.id }
 
-        # Remove old equipment stat bonuses
+        # Equipment is tracked by name only; effective stats computed dynamically
         $currentEquipName = $Member.Equipment[$Slot]
         if ($currentEquipName) {
-            $oldDef = $Script:ItemDefinitions | Where-Object { $_.name -eq $currentEquipName }
-            if ($oldDef) {
-                $oldBonus = Get-ItemStatBonus -ItemDef $oldDef
-                Apply-StatBonuses -Member $Member -Bonuses $oldBonus -Multiplier -1
-            }
             # Return old equipment to inventory
+            $oldDef = $Script:ItemDefinitions | Where-Object { $_.name -eq $currentEquipName }
             if ($oldDef) {
                 Add-InventoryItem -ItemId $oldDef.id
             }
         }
 
-        # Apply new equipment stat bonuses
-        if ($chosenDef) {
-            $newBonus = Get-ItemStatBonus -ItemDef $chosenDef
-            Apply-StatBonuses -Member $Member -Bonuses $newBonus -Multiplier 1
-        }
+        # Equipment bonuses are computed dynamically via Get-EffectiveStat
 
         $Member.Equipment[$Slot] = $chosenName
 
@@ -239,11 +236,9 @@ function Invoke-UnequipSlot {
         return
     }
 
-    # Remove stat bonuses
+    # Remove stat bonuses (no longer mutate base stats, computed dynamically)
     $def = $Script:ItemDefinitions | Where-Object { $_.name -eq $currentName }
     if ($def) {
-        $bonus = Get-ItemStatBonus -ItemDef $def
-        Apply-StatBonuses -Member $Member -Bonuses $bonus -Multiplier -1
         Add-InventoryItem -ItemId $def.id
     }
 

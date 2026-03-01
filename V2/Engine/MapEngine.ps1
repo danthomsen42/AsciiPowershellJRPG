@@ -352,7 +352,7 @@ function Render-Map {
                             $cFg[$idx] = $waterColors[$offset]
                         }
                         else {
-                            $cFg[$idx] = $colors[0]
+                            $cFg[$idx] = Get-TintedColor $colors[0]
                         }
                     }
                     else {
@@ -405,6 +405,7 @@ function Move-Player {
     $Script:GameState.PlayerPosition.X = $newX
     $Script:GameState.PlayerPosition.Y = $newY
     $Script:GameState.StepCounter++
+    Update-DayCycle
 
     # Check for door / map transition at new position
     $action = Get-TileAction -X $newX -Y $newY -MapConfig $mapConfig
@@ -416,7 +417,9 @@ function Move-Player {
         $Script:GameState.PlayerPosition.Y = $action.TargetY
         Apply-TileOverrides
         Invoke-ForceFullRedraw
+        $Script:GameState.DiscoveredMaps[$action.TargetMap] = $true
         Add-GameMessage "Entered $($Script:GameState.CurrentMapConfig.displayName)."
+        if ($Script:Settings.AutoSave) { Invoke-AutoSave }
         Invoke-CheckCutscenes -EventType 'map_enter' -EventData $action.TargetMap
         return
     }

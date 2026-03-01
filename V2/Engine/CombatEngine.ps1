@@ -33,9 +33,9 @@ $Script:AbilityTable = @{
     'Tidal Wave'    = @{ Type='magic';    Stat='Intelligence'; MP=10; Power=1.0;  AccMod=0;   Target='all';       Desc='A massive wave crashes into every foe.' }
     # ── Rogue ──
     'Backstab'      = @{ Type='physical'; Stat='Strength';     MP=0;  Power=1.2;  AccMod=5;   Target='single';    Desc='A precise strike from the shadows.' }
-    'Poison Strike' = @{ Type='physical'; Stat='Strength';     MP=4;  Power=1.0;  AccMod=0;   Target='single';    Desc='Envenomed blade attack.' }
+    'Poison Strike' = @{ Type='physical'; Stat='Strength';     MP=4;  Power=1.0;  AccMod=0;   Target='single';    Desc='Envenomed blade attack.'; StatusEffect='Poison'; StatusChance=60 }
     'Steal'         = @{ Type='special';  Stat='Speed';        MP=2;  Power=0;    AccMod=10;  Target='single';    Desc='Attempt to steal an item.' }
-    'Smoke Bomb'    = @{ Type='debuff';   Stat='Speed';        MP=3;  Power=0;    AccMod=100; Target='all';       Desc='Lowers enemy accuracy.' }
+    'Smoke Bomb'    = @{ Type='debuff';   Stat='Speed';        MP=3;  Power=0;    AccMod=100; Target='all';       Desc='Lowers enemy accuracy.'; StatusEffect='Blind'; StatusChance=50 }
     'Fan of Knives' = @{ Type='physical'; Stat='Strength';     MP=5;  Power=0.8;  AccMod=-10; Target='random:3';  Desc='Hurls knives at up to 3 random enemies.' }
     # ── Cleric ──
     'Smite'         = @{ Type='magic';    Stat='Intelligence'; MP=3;  Power=1.2;  AccMod=0;   Target='single';    Desc='Holy damage to one foe.' }
@@ -46,20 +46,140 @@ $Script:AbilityTable = @{
     # ── Ranger ──
     'Arrow Shot'    = @{ Type='physical'; Stat='Strength';     MP=0;  Power=1.0;  AccMod=5;   Target='single';    Desc='A precise arrow.' }
     'Multi-Shot'    = @{ Type='physical'; Stat='Strength';     MP=5;  Power=0.7;  AccMod=-5;  Target='random:3';  Desc='Arrows fly at up to 3 random foes.' }
-    'Snare Trap'    = @{ Type='debuff';   Stat='Speed';        MP=3;  Power=0;    AccMod=100; Target='single';    Desc='Slows one enemy.' }
+    'Snare Trap'    = @{ Type='debuff';   Stat='Speed';        MP=3;  Power=0;    AccMod=100; Target='single';    Desc='Slows one enemy.'; StatusEffect='Slow'; StatusChance=70 }
     "Nature's Cure" = @{ Type='heal';     Stat='Intelligence'; MP=4;  Power=1.2;  AccMod=100; Target='ally';      Desc='Herbal healing for one ally.' }
     'Volley'        = @{ Type='physical'; Stat='Strength';     MP=7;  Power=0.6;  AccMod=-5;  Target='all';       Desc='Arrow rain covers every enemy.' }
     # ── Enemy abilities ──
     'Scratch'       = @{ Type='physical'; Stat='Strength';     MP=0;  Power=0.8;  AccMod=0;   Target='single';    Desc='A weak scratch.' }
     'Bite'          = @{ Type='physical'; Stat='Strength';     MP=0;  Power=1.0;  AccMod=0;   Target='single';    Desc='A vicious bite.' }
-    'Screech'       = @{ Type='debuff';   Stat='Speed';        MP=0;  Power=0;    AccMod=100; Target='allAllies'; Desc='A disorienting screech.' }
+    'Screech'       = @{ Type='debuff';   Stat='Speed';        MP=0;  Power=0;    AccMod=100; Target='allAllies'; Desc='A disorienting screech.'; StatusEffect='Stun'; StatusChance=25 }
     'Wing Slash'    = @{ Type='physical'; Stat='Strength';     MP=0;  Power=0.9;  AccMod=5;   Target='single';    Desc='Slash with sharp wings.' }
-    'Acid Spit'     = @{ Type='magic';    Stat='Intelligence'; MP=0;  Power=1.1;  AccMod=-5;  Target='single';    Desc='Corrosive acid.' }
+    'Acid Spit'     = @{ Type='magic';    Stat='Intelligence'; MP=0;  Power=1.1;  AccMod=-5;  Target='single';    Desc='Corrosive acid.'; StatusEffect='Poison'; StatusChance=35 }
     'Absorb'        = @{ Type='magic';    Stat='Intelligence'; MP=0;  Power=0.7;  AccMod=0;   Target='single';    Desc='Drains HP from target.' }
     # ── Boss abilities ──
     'Shadow Slash'  = @{ Type='physical'; Stat='Strength';     MP=0;  Power=1.3;  AccMod=0;   Target='cleave';    Desc='A blade wreathed in darkness cleaves two foes.' }
-    'Dark Pulse'    = @{ Type='magic';    Stat='Intelligence'; MP=0;  Power=1.0;  AccMod=0;   Target='all';       Desc='A wave of shadow energy hits everyone.' }
+    'Dark Pulse'    = @{ Type='magic';    Stat='Intelligence'; MP=0;  Power=1.0;  AccMod=0;   Target='all';       Desc='A wave of shadow energy hits everyone.'; StatusEffect='Blind'; StatusChance=20 }
     'Soul Drain'    = @{ Type='magic';    Stat='Intelligence'; MP=0;  Power=0.9;  AccMod=5;   Target='single';    Desc='Siphons life force from the target.' }
+    # ── New enemy abilities ──
+    'Vine Whip'     = @{ Type='physical'; Stat='Strength';     MP=0;  Power=1.1;  AccMod=0;   Target='cleave';    Desc='A thorny vine lashes out at two targets.'; StatusEffect='Slow'; StatusChance=30 }
+    'Slam'          = @{ Type='physical'; Stat='Strength';     MP=0;  Power=1.4;  AccMod=-15; Target='single';    Desc='A crushing body slam.'; StatusEffect='Stun'; StatusChance=20 }
+}
+
+# ── Status Effect Definitions ────────────────────────────────────────────────────
+$Script:StatusEffectDefs = @{
+    'Poison' = @{ Duration=3; DamagePercent=0.08; Icon='PSN'; Color=[ConsoleColor]::DarkGreen;  Desc='Takes damage each turn' }
+    'Stun'   = @{ Duration=1; SkipTurn=$true;     Icon='STN'; Color=[ConsoleColor]::Yellow;     Desc='Cannot act for 1 turn' }
+    'Blind'  = @{ Duration=2; AccuracyMod=-30;    Icon='BLD'; Color=[ConsoleColor]::DarkGray;   Desc='Accuracy greatly reduced' }
+    'Slow'   = @{ Duration=2; SpeedMod=-50;       Icon='SLW'; Color=[ConsoleColor]::DarkCyan;   Desc='Speed halved for turn order' }
+}
+
+function Apply-StatusEffect {
+    <#
+    .SYNOPSIS Applies a status effect to a target entity. No stacking — refreshes duration.
+    #>
+    param([hashtable]$Target, [string]$EffectName, [string]$TargetName)
+
+    if (-not $Script:Settings.StatusEffects) { return }
+    if (-not $Target.ContainsKey('StatusEffects')) { $Target.StatusEffects = @() }
+    $def = $Script:StatusEffectDefs[$EffectName]
+    if (-not $def) { return }
+
+    # Check if already has this effect — refresh duration
+    $existing = $Target.StatusEffects | Where-Object { $_.Type -eq $EffectName }
+    if ($existing) {
+        $existing.Duration = [int]$def.Duration
+        Add-CombatLog "$TargetName's $EffectName is refreshed!"
+    } else {
+        $Target.StatusEffects += @{ Type = $EffectName; Duration = [int]$def.Duration }
+        Add-CombatLog "$TargetName is afflicted with $EffectName!"
+    }
+}
+
+function Process-StatusEffects {
+    <#
+    .SYNOPSIS
+        Processes all status effects on an entity at the start of their turn.
+        Returns $true if the entity can act, $false if stunned.
+    #>
+    param([hashtable]$Entity, [string]$EntityName)
+
+    if (-not $Script:Settings.StatusEffects) { return $true }
+    if (-not $Entity.ContainsKey('StatusEffects') -or $Entity.StatusEffects.Count -eq 0) { return $true }
+
+    $canAct = $true
+    $newEffects = @()
+
+    foreach ($effect in $Entity.StatusEffects) {
+        $eDef = $Script:StatusEffectDefs[$effect.Type]
+        switch ($effect.Type) {
+            'Poison' {
+                $dmg = [math]::Max(1, [math]::Floor([int]$Entity.MaxHP * $eDef.DamagePercent))
+                $Entity.HP = [math]::Max(1, [int]$Entity.HP - $dmg)
+                Add-CombatLog "$EntityName takes $dmg poison damage!"
+            }
+            'Stun' {
+                Add-CombatLog "$EntityName is stunned and cannot act!"
+                $canAct = $false
+            }
+            'Blind' {
+                # Handled in Test-Hit via GetStatusAccuracyMod
+            }
+            'Slow' {
+                # Handled in turn order via GetStatusSpeedMod
+            }
+        }
+        $effect.Duration = [int]$effect.Duration - 1
+        if ([int]$effect.Duration -gt 0) {
+            $newEffects += $effect
+        } else {
+            Add-CombatLog "$EntityName's $($effect.Type) wears off."
+        }
+    }
+    $Entity.StatusEffects = $newEffects
+    return $canAct
+}
+
+function Get-StatusAccuracyMod {
+    <# Returns accuracy modifier from status effects (e.g., Blind = -30). #>
+    param([hashtable]$Entity)
+    $mod = 0
+    if ($Entity.ContainsKey('StatusEffects')) {
+        foreach ($fx in $Entity.StatusEffects) {
+            $def = $Script:StatusEffectDefs[$fx.Type]
+            if ($def -and $def.AccuracyMod) { $mod += [int]$def.AccuracyMod }
+        }
+    }
+    return $mod
+}
+
+function Get-StatusSpeedMod {
+    <# Returns speed modifier from status effects (Slow = -50%). Returns a multiplier. #>
+    param([hashtable]$Entity)
+    if ($Entity.ContainsKey('StatusEffects')) {
+        foreach ($fx in $Entity.StatusEffects) {
+            if ($fx.Type -eq 'Slow') { return 0.5 }
+        }
+    }
+    return 1.0
+}
+
+function Get-StatusIcons {
+    <# Returns status effect icon string for display (e.g. "PSN SLW"). #>
+    param([hashtable]$Entity)
+    if (-not $Entity.ContainsKey('StatusEffects') -or $Entity.StatusEffects.Count -eq 0) { return '' }
+    $icons = @()
+    foreach ($fx in $Entity.StatusEffects) {
+        $def = $Script:StatusEffectDefs[$fx.Type]
+        if ($def) { $icons += $def.Icon }
+    }
+    return ($icons -join ' ')
+}
+
+function Clear-AllStatusEffects {
+    <# Clears status effects from all party members (called after combat). #>
+    foreach ($m in $Script:GameState.Party) {
+        if ($m.ContainsKey('StatusEffects')) { $m.StatusEffects = @() }
+    }
 }
 
 # ── Multi-Target Resolution ──────────────────────────────────────────────────────
@@ -178,7 +298,7 @@ function Load-EnemyStats {
 
     $jsonPath = Join-Path $Script:GameRoot "Data\Enemies\$SpriteId.json"
     if (-not (Test-Path $jsonPath)) {
-        return @{ Name='Unknown'; HP=10; MaxHP=10; MP=0; Strength=5; Intelligence=3; Speed=5; Defense=3; Accuracy=70; EXP=10; Gold=5; Abilities=@('Scratch'); Drops=@() }
+        return @{ Name='Unknown'; HP=10; MaxHP=10; MP=0; Strength=5; Intelligence=3; Speed=5; Defense=3; Accuracy=70; EXP=10; Gold=5; Abilities=@('Scratch'); Drops=@(); StatusEffects=@() }
     }
 
     $data = Get-Content $jsonPath -Raw | ConvertFrom-Json
@@ -205,7 +325,7 @@ function Load-EnemyStats {
     return @{
         Name=$data.name; HP=$hp; MaxHP=$hp; MP=$mp; Strength=$str; Intelligence=$intl
         Speed=$spd; Defense=$def; Accuracy=$acc; EXP=$exp; Gold=$gld
-        Abilities=$abilities; Drops=$drops
+        Abilities=$abilities; Drops=$drops; StatusEffects=@()
     }
 }
 
@@ -379,9 +499,9 @@ function Get-Damage {
         [bool]$DefenderDefending = $false
     )
 
-    $stat = [int]$Attacker[$Ability.Stat]
+    $stat = Get-EffectiveStat -Entity $Attacker -StatName $Ability.Stat
     $baseDmg = [math]::Max(1, [math]::Floor($stat * [double]$Ability.Power))
-    $defense = [int]$Defender.Defense
+    $defense = Get-EffectiveStat -Entity $Defender -StatName 'Defense'
     if ($DefenderDefending) { $defense = [math]::Floor($defense * 1.5) }
 
     $dmg = [math]::Max(1, $baseDmg - [math]::Floor($defense / 2))
@@ -403,7 +523,7 @@ function Test-Hit {
 
 function Get-HealAmount {
     param([hashtable]$Caster, [hashtable]$Ability)
-    $stat = [int]$Caster[$Ability.Stat]
+    $stat = Get-EffectiveStat -Entity $Caster -StatName $Ability.Stat
     $base = [math]::Max(5, [math]::Floor($stat * [double]$Ability.Power))
     $variance = [math]::Max(1, [math]::Floor($base * 0.1))
     $base += Get-Random -Minimum (-$variance) -Maximum ($variance + 1)
@@ -459,13 +579,21 @@ function Invoke-CombatAction {
                 $isDefending = $false
                 if ($IsPartyActor -and $t.DefBuff) { $isDefending = $true }
                 if (-not $IsPartyActor -and $Script:CombatState.DefendFlags[$tName]) { $isDefending = $true }
-                if (Test-Hit -AttackerAccuracy ([int]$Actor.Accuracy) -AccMod ([int]$ability.AccMod)) {
+                $blindMod = Get-StatusAccuracyMod -Entity $Actor
+                if (Test-Hit -AttackerAccuracy (Get-EffectiveStat -Entity $Actor -StatName 'Accuracy') -AccMod ([int]$ability.AccMod + $blindMod)) {
                     $dmg = Get-Damage -Attacker $Actor -Defender $tStats -Ability $ability -DefenderDefending $isDefending
                     $tStats.HP = [math]::Max(0, [int]$tStats.HP - $dmg)
                     Add-CombatLog "$ActorName uses $AbilityName on $tName for $dmg damage!"
                     if ([int]$tStats.HP -le 0) {
                         if ($IsPartyActor) { $t.Alive = $false }
                         Add-CombatLog "$tName is defeated!"
+                    }
+                    # Apply status effect if ability has one
+                    if ($ability.StatusEffect -and [int]$tStats.HP -gt 0) {
+                        $statusRoll = Get-Random -Minimum 0 -Maximum 100
+                        if ($statusRoll -lt [int]$ability.StatusChance) {
+                            Apply-StatusEffect -Target $tStats -EffectName $ability.StatusEffect -TargetName $tName
+                        }
                     }
                 } else {
                     Add-CombatLog "$ActorName uses $AbilityName on $tName... Miss!"
@@ -479,7 +607,8 @@ function Invoke-CombatAction {
                 $isDefending = $false
                 if ($IsPartyActor -and $t.DefBuff) { $isDefending = $true }
                 if (-not $IsPartyActor -and $Script:CombatState.DefendFlags[$tName]) { $isDefending = $true }
-                if (Test-Hit -AttackerAccuracy ([int]$Actor.Accuracy) -AccMod ([int]$ability.AccMod)) {
+                $blindMod = Get-StatusAccuracyMod -Entity $Actor
+                if (Test-Hit -AttackerAccuracy (Get-EffectiveStat -Entity $Actor -StatName 'Accuracy') -AccMod ([int]$ability.AccMod + $blindMod)) {
                     $dmg = Get-Damage -Attacker $Actor -Defender $tStats -Ability $ability -DefenderDefending $isDefending
                     $tStats.HP = [math]::Max(0, [int]$tStats.HP - $dmg)
                     Add-CombatLog "$ActorName casts $AbilityName on $tName for $dmg damage!"
@@ -492,6 +621,13 @@ function Invoke-CombatAction {
                         $healAmt = [math]::Floor($dmg / 2)
                         $Actor.HP = [math]::Min([int]$Actor.MaxHP, [int]$Actor.HP + $healAmt)
                         Add-CombatLog "$ActorName absorbs $healAmt HP!"
+                    }
+                    # Apply status effect if ability has one
+                    if ($ability.StatusEffect -and [int]$tStats.HP -gt 0) {
+                        $statusRoll = Get-Random -Minimum 0 -Maximum 100
+                        if ($statusRoll -lt [int]$ability.StatusChance) {
+                            Apply-StatusEffect -Target $tStats -EffectName $ability.StatusEffect -TargetName $tName
+                        }
                     }
                 } else {
                     Add-CombatLog "$ActorName casts $AbilityName on $tName... Miss!"
@@ -515,7 +651,21 @@ function Invoke-CombatAction {
         }
         'debuff' {
             Add-CombatLog "$ActorName uses $AbilityName!"
-            # Simple: logged only for narrative, no stat modification persists
+            # Apply status effect if ability has one
+            if ($ability.StatusEffect) {
+                foreach ($t in $Targets) {
+                    $tStats = if ($IsPartyActor) { $t.Stats } else { $t }
+                    $tName  = if ($IsPartyActor) { $t.Name } else { $t.Name }
+                    if ([int]$tStats.HP -gt 0) {
+                        $statusRoll = Get-Random -Minimum 0 -Maximum 100
+                        if ($statusRoll -lt [int]$ability.StatusChance) {
+                            Apply-StatusEffect -Target $tStats -EffectName $ability.StatusEffect -TargetName $tName
+                        } else {
+                            Add-CombatLog "$tName resists the effect!"
+                        }
+                    }
+                }
+            }
         }
         'special' {
             if ($AbilityName -eq 'Steal') {
@@ -573,6 +723,11 @@ function Render-CombatScreen {
             $filledW = [math]::Max(0, [math]::Floor($hpPct * $barW))
             $hpText = "HP:$([int]($e.Stats.HP))/$([int]($e.Stats.MaxHP))"
             Set-Text -X $drawX -Y 3 -Text $hpText -FgColor $hpColor
+            # Status effect icons
+            $statusIcons = Get-StatusIcons -Entity $e.Stats
+            if ($statusIcons) {
+                Set-Text -X $drawX -Y 4 -Text $statusIcons -FgColor ([ConsoleColor]::Magenta)
+            }
         } else {
             Set-Text -X $drawX -Y 3 -Text 'DEFEATED' -FgColor ([ConsoleColor]::DarkGray)
         }
@@ -624,6 +779,11 @@ function Render-CombatScreen {
 
         if ($Script:CombatState.DefendFlags[$m.Name]) {
             Set-Text -X ($Script:COMBAT_PARTY_X + 48) -Y $py -Text 'DEF' -FgColor ([ConsoleColor]::Cyan)
+        }
+        # Status effect icons
+        $statusIcons = Get-StatusIcons -Entity $m
+        if ($statusIcons) {
+            Set-Text -X ($Script:COMBAT_PARTY_X + 52) -Y $py -Text $statusIcons -FgColor ([ConsoleColor]::Magenta)
         }
         $py++
         if ($py -ge ($Script:COMBAT_PARTY_Y + $Script:COMBAT_PARTY_H - 1)) { break }
@@ -776,6 +936,31 @@ function Use-CombatItem {
             $target.HP = [math]::Max(1, [math]::Floor([int]$target.MaxHP * [int]$chosen.value / 100))
             Add-CombatLog "$($Actor.Name) uses $($chosen.name)! $($target.Name) is revived!"
         }
+        'curePoison' {
+            if ($target.ContainsKey('StatusEffects')) {
+                $had = $target.StatusEffects | Where-Object { $_.Type -eq 'Poison' }
+                if ($had) {
+                    $target.StatusEffects = @($target.StatusEffects | Where-Object { $_.Type -ne 'Poison' })
+                    Add-CombatLog "$($Actor.Name) uses $($chosen.name)! $($target.Name)'s poison is cured!"
+                } else {
+                    Add-CombatLog "$($target.Name) isn't poisoned."
+                    return $false
+                }
+            } else {
+                Add-CombatLog "$($target.Name) isn't poisoned."
+                return $false
+            }
+        }
+        'fullRestore' {
+            if ([int]$target.HP -le 0) {
+                Add-CombatLog "$($target.Name) is KO'd! Can't use $($chosen.name)."
+                return $false
+            }
+            $target.HP = [int]$target.MaxHP
+            $target.MP = [int]$target.MaxMP
+            if ($target.ContainsKey('StatusEffects')) { $target.StatusEffects = @() }
+            Add-CombatLog "$($Actor.Name) uses $($chosen.name) on $($target.Name)! Fully restored!"
+        }
         default {
             Add-CombatLog "$($Actor.Name) uses $($chosen.name)... but it has no combat effect."
             return $false
@@ -806,7 +991,8 @@ function Test-RunAttempt {
     }
     if ($aliveCount -gt 0) { $avgEnemySpd = [math]::Floor($avgEnemySpd / $aliveCount) }
 
-    $chance = 40 + ([int]$Member.Speed - $avgEnemySpd) * 2
+    $memberSpd = Get-EffectiveStat -Entity $Member -StatName 'Speed'
+    $chance = 40 + ($memberSpd - $avgEnemySpd) * 2
     $chance = [math]::Max(10, [math]::Min(90, $chance))
     $roll = Get-Random -Minimum 0 -Maximum 100
     return ($roll -lt $chance)
@@ -829,7 +1015,8 @@ function Resolve-Victory {
             foreach ($drop in $e.Stats.Drops) {
                 $roll = Get-Random -Minimum 0 -Maximum 100
                 if ($roll -lt [int]($drop.chance)) {
-                    $dropItems += $drop.item
+                    $rarity = if ($drop.rarity) { $drop.rarity } else { 'common' }
+                    $dropItems += @{ item = $drop.item; rarity = $rarity }
                 }
             }
         }
@@ -847,10 +1034,19 @@ function Resolve-Victory {
     $Script:GameState.Gold += $totalGold
     Add-CombatLog "Victory! Gained $totalEXP EXP and $totalGold Gold."
 
-    # Add drops to inventory
-    foreach ($itemId in $dropItems) {
-        Add-InventoryItem -ItemId $itemId
-        Add-CombatLog "Obtained: $itemId"
+    # Add drops to inventory with rarity labels
+    foreach ($dropInfo in $dropItems) {
+        Add-InventoryItem -ItemId $dropInfo.item
+        $rarityLabel = ''
+        if ($Script:Settings.LootRarityLabels) {
+            $rarityLabel = switch ($dropInfo.rarity) {
+                'uncommon'  { ' [Uncommon]' }
+                'rare'      { ' [Rare!]' }
+                'legendary' { ' [LEGENDARY!]' }
+                default     { '' }
+            }
+        }
+        Add-CombatLog "Obtained: $($dropInfo.item)$rarityLabel"
     }
 
     # Distribute EXP to living party members
@@ -1086,10 +1282,10 @@ function Update-Combat {
         if ($Script:CombatState.RunAttempts.Count -gt 0 -and -not $runSuccess) {
             # Shouldn't reach here but safety
         }
-        # Show escape message
         Render-CombatScreen -ActionPrompt 'Escaped!'
         [System.Threading.Thread]::Sleep(800)
         Add-GameMessage "You fled from battle!"
+        Clear-AllStatusEffects
         $Script:GameState.GameMode = 'Exploration'
         Invoke-ForceFullRedraw
         return
@@ -1113,6 +1309,14 @@ function Update-Combat {
         if ($combatant.Type -eq 'party') {
             $member = $combatant.Ref
             if ([int]$member.HP -le 0) { continue }
+
+            # Process status effects at start of turn
+            $canAct = Process-StatusEffects -Entity $member -EntityName $member.Name
+            if (-not $canAct) {
+                Render-CombatScreen -ActiveMemberName $member.Name
+                [System.Threading.Thread]::Sleep(350)
+                continue
+            }
 
             $action = $partyActions[$member.Name]
             if (-not $action) { continue }
@@ -1166,6 +1370,19 @@ function Update-Combat {
         elseif ($combatant.Type -eq 'enemy') {
             $enemyEntry = $combatant.Ref
             if (-not $enemyEntry.Alive) { continue }
+
+            # Process status effects at start of turn
+            $canAct = Process-StatusEffects -Entity $enemyEntry.Stats -EntityName $enemyEntry.Name
+            if (-not $canAct) {
+                # Check if enemy died from poison
+                if ([int]$enemyEntry.Stats.HP -le 0) {
+                    $enemyEntry.Alive = $false
+                    Add-CombatLog "$($enemyEntry.Name) succumbs to poison!"
+                }
+                Render-CombatScreen
+                [System.Threading.Thread]::Sleep(350)
+                continue
+            }
 
             # Enemy AI: pick random ability, resolve targets based on ability type
             $abilities = @($enemyEntry.Stats.Abilities)
@@ -1222,6 +1439,7 @@ function Update-Combat {
 
         # Check for post-battle cutscenes (boss victories, etc.)
         $battleId = $Script:CombatState.ScriptedBattleId
+        Clear-AllStatusEffects
         $Script:GameState.GameMode = 'Exploration'
         Invoke-ForceFullRedraw
         if ($battleId) {
@@ -1241,6 +1459,7 @@ function Update-Combat {
         foreach ($m in $Script:GameState.Party) {
             if ([int]$m.HP -le 0) { $m.HP = 1 }
         }
+        Clear-AllStatusEffects
         $Script:GameState.GameMode = 'Exploration'
         Invoke-ForceFullRedraw
         return

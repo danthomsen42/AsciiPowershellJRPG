@@ -4,6 +4,51 @@
 # Set to $true to enable the F9 debug cutscene player.
 $Script:DebugMode = $true
 
+# ── Settings ─────────────────────────────────────────────────────────────────────
+
+$Script:SettingsDefaults = @{
+    DayNightCycle    = $true
+    StatusEffects    = $true
+    AutoSave         = $true
+    LootRarityLabels = $true
+    WorldMap         = $true
+}
+
+function Load-Settings {
+    <# Loads settings from Data/Settings.json, falling back to defaults. #>
+    $path = Join-Path $PSScriptRoot '..\Data\Settings.json'
+    $Script:Settings = @{}
+    foreach ($k in $Script:SettingsDefaults.Keys) {
+        $Script:Settings[$k] = $Script:SettingsDefaults[$k]
+    }
+    if (Test-Path $path) {
+        try {
+            $json = Get-Content $path -Raw | ConvertFrom-Json
+            foreach ($prop in $json.PSObject.Properties) {
+                if ($prop.Name -ne '_comment' -and $Script:Settings.ContainsKey($prop.Name)) {
+                    $Script:Settings[$prop.Name] = [bool]$prop.Value
+                }
+            }
+        } catch { <# silently use defaults #> }
+    }
+}
+
+function Save-Settings {
+    <# Persists current settings to Data/Settings.json. #>
+    $path = Join-Path $PSScriptRoot '..\Data\Settings.json'
+    $obj = [ordered]@{
+        _comment         = 'Game settings - toggle features on/off. Editable here or via in-game Settings menu.'
+        DayNightCycle    = $Script:Settings.DayNightCycle
+        StatusEffects    = $Script:Settings.StatusEffects
+        AutoSave         = $Script:Settings.AutoSave
+        LootRarityLabels = $Script:Settings.LootRarityLabels
+        WorldMap         = $Script:Settings.WorldMap
+    }
+    $obj | ConvertTo-Json | Set-Content $path -Encoding UTF8
+}
+
+Load-Settings
+
 # ── Global Game State ────────────────────────────────────────────────────────────
 
 $Script:GameState = @{
@@ -20,6 +65,87 @@ $Script:GameState = @{
     Messages         = @()
     StepCounter      = 0
     DialogueTarget   = $null
+    TimeOfDay        = 'Day'           # Dawn | Day | Dusk | Night
+    DayCycleStep     = 0               # Steps within current phase
+    DiscoveredMaps   = @{}             # Track visited maps for world map
+}
+
+# ── Day/Night Cycle ──────────────────────────────────────────────────────────────
+
+$Script:DayCyclePhases = @('Dawn', 'Day', 'Dusk', 'Night')
+$Script:DayCycleStepsPerPhase = 80   # Steps per phase (320 steps = full day)
+
+# Color tinting map: maps ConsoleColor to a darker/lighter variant for night/dawn/dusk
+$Script:NightColorMap = @{
+    [ConsoleColor]::White     = [ConsoleColor]::Gray
+    [ConsoleColor]::Gray      = [ConsoleColor]::DarkGray
+    [ConsoleColor]::DarkGray  = [ConsoleColor]::DarkGray
+    [ConsoleColor]::Cyan      = [ConsoleColor]::DarkCyan
+    [ConsoleColor]::DarkCyan  = [ConsoleColor]::DarkBlue
+    [ConsoleColor]::Green     = [ConsoleColor]::DarkGreen
+    [ConsoleColor]::DarkGreen = [ConsoleColor]::DarkGreen
+    [ConsoleColor]::Yellow    = [ConsoleColor]::DarkYellow
+    [ConsoleColor]::DarkYellow= [ConsoleColor]::DarkYellow
+    [ConsoleColor]::Red       = [ConsoleColor]::DarkRed
+    [ConsoleColor]::DarkRed   = [ConsoleColor]::DarkRed
+    [ConsoleColor]::Blue      = [ConsoleColor]::DarkBlue
+    [ConsoleColor]::DarkBlue  = [ConsoleColor]::DarkBlue
+    [ConsoleColor]::Magenta   = [ConsoleColor]::DarkMagenta
+    [ConsoleColor]::DarkMagenta = [ConsoleColor]::DarkMagenta
+}
+
+$Script:DuskColorMap = @{
+    [ConsoleColor]::White     = [ConsoleColor]::Yellow
+    [ConsoleColor]::Gray      = [ConsoleColor]::DarkYellow
+    [ConsoleColor]::Cyan      = [ConsoleColor]::DarkCyan
+    [ConsoleColor]::Green     = [ConsoleColor]::DarkYellow
+}
+
+function Update-DayCycle {
+    <# Advances the day/night cycle by one step. Call from Move-Player. #>
+    if (-not $Script:Settings.DayNightCycle) { return }
+    $Script:GameState.DayCycleStep++
+    if ($Script:GameState.DayCycleStep -ge $Script:DayCycleStepsPerPhase) {
+        $Script:GameState.DayCycleStep = 0
+        $idx = $Script:DayCyclePhases.IndexOf($Script:GameState.TimeOfDay)
+        $idx = ($idx + 1) % 4
+        $Script:GameState.TimeOfDay = $Script:DayCyclePhases[$idx]
+        $phaseName = $Script:GameState.TimeOfDay
+        switch ($phaseName) {
+            'Dawn'  { Add-GameMessage 'The first light of dawn breaks over the horizon.' }
+            'Day'   { Add-GameMessage 'The sun climbs high. Daytime has arrived.' }
+            'Dusk'  { Add-GameMessage 'The sun sets, painting the sky in warm hues.' }
+            'Night' { Add-GameMessage 'Darkness falls. The night is upon you...' }
+        }
+        # Invalidate tile color cache for tint change
+        $Script:_tileColorCache = $null
+    }
+}
+
+function Get-TimeOfDayIcon {
+    switch ($Script:GameState.TimeOfDay) {
+        'Dawn'  { return '*' }
+        'Day'   { return 'o' }
+        'Dusk'  { return '*' }
+        'Night' { return '.' }
+    }
+    return '?'
+}
+
+function Get-TintedColor {
+    <# Returns a color tinted for current time of day. Only Night affects colors. #>
+    param([ConsoleColor]$Color)
+    if (-not $Script:Settings.DayNightCycle) { return $Color }
+    $phase = $Script:GameState.TimeOfDay
+    if ($phase -eq 'Night') {
+        $mapped = $Script:NightColorMap[$Color]
+        if ($mapped) { return $mapped }
+    }
+    elseif ($phase -eq 'Dusk') {
+        $mapped = $Script:DuskColorMap[$Color]
+        if ($mapped) { return $mapped }
+    }
+    return $Color
 }
 
 # ── Initialization ───────────────────────────────────────────────────────────────
@@ -122,6 +248,7 @@ function Invoke-LoadStartingMap {
     $Script:GameState.CurrentMap       = Load-Map       -MapName    "Map-TestTown-1"
     $Script:GameState.CurrentMapConfig = Load-MapConfig -ConfigName "MapConfig-TestTown-1"
     $Script:GameState.CurrentMapName   = "Map-TestTown-1"
+    $Script:GameState.DiscoveredMaps["Map-TestTown-1"] = $true
 
     $config = $Script:GameState.CurrentMapConfig
     if ($config.startPosition) {
@@ -151,6 +278,19 @@ function Update-Exploration {
     # ── Header bar (row 0) ──
     $locName = if ($config.displayName) { $config.displayName } else { $Script:GameState.CurrentMapName }
     Set-Text -X 1 -Y 0 -Text $locName -FgColor ([ConsoleColor]::Cyan)
+
+    # Time of day indicator (only when day/night cycle enabled)
+    if ($Script:Settings.DayNightCycle) {
+        $timeIcon = Get-TimeOfDayIcon
+        $timeText = "[$timeIcon] $($Script:GameState.TimeOfDay)"
+        $timeColor = switch ($Script:GameState.TimeOfDay) {
+            'Dawn'  { [ConsoleColor]::Yellow }
+            'Day'   { [ConsoleColor]::White }
+            'Dusk'  { [ConsoleColor]::DarkYellow }
+            'Night' { [ConsoleColor]::DarkCyan }
+        }
+        Set-Text -X 50 -Y 0 -Text $timeText -FgColor $timeColor
+    }
 
     $stepText = "Steps: $($Script:GameState.StepCounter)"
     Set-Text -X ($Script:SCREEN_WIDTH - $stepText.Length - 1) -Y 0 -Text $stepText -FgColor ([ConsoleColor]::DarkGray)
@@ -340,30 +480,86 @@ function Render-MessageBar {
 function Show-GameMenu {
     Clear-FrameBuffer
 
-    $menuOptions = @("Party Status", "Party Management", "Inventory", "Quest Log", "Save Game", "Return to Game", "Quit to Title")
+    $menuOptions = @("Party Status", "Party Management", "Inventory", "Quest Log")
+    if ($Script:Settings.WorldMap) { $menuOptions += "World Map" }
+    $menuOptions += @("Settings", "Save Game", "Return to Game", "Quit to Title")
 
     $selected = Draw-SelectionMenu -X 35 -Y 6 -Width 50 -Title "Menu" `
                                     -Options $menuOptions `
                                     -BorderColor ([ConsoleColor]::White) `
                                     -TextColor ([ConsoleColor]::Yellow)
 
-    switch ($selected) {
-        0 { Show-PartyStatus }
-        1 { Show-PartyManagement }
-        2 { Show-Inventory }
-        3 { Show-QuestLog }
-        4 {
+    $choice = $menuOptions[$selected]
+    switch ($choice) {
+        'Party Status'      { Show-PartyStatus }
+        'Party Management'  { Show-PartyManagement }
+        'Inventory'         { Show-Inventory }
+        'Quest Log'         { Show-QuestLog }
+        'World Map'         { Show-WorldMap }
+        'Settings'          { Show-SettingsMenu }
+        'Save Game'         {
             $result = Show-SavePicker
             if ($result) {
                 Add-GameMessage "Saved to '$result'!"
             }
             $Script:GameState.GameMode = 'Exploration'
         }
-        5 { $Script:GameState.GameMode = 'Exploration' }
-        6 { $Script:GameState.GameMode = 'TitleScreen' }
+        'Return to Game'    { $Script:GameState.GameMode = 'Exploration' }
+        'Quit to Title'     { $Script:GameState.GameMode = 'TitleScreen' }
     }
 
     Invoke-ForceFullRedraw
+}
+
+# ── Settings Menu ────────────────────────────────────────────────────────────────
+
+function Show-SettingsMenu {
+    $settingKeys = @(
+        @{ Key = 'DayNightCycle';    Label = 'Day/Night Cycle' }
+        @{ Key = 'StatusEffects';    Label = 'Status Effects' }
+        @{ Key = 'AutoSave';         Label = 'Auto-Save on Map Transitions' }
+        @{ Key = 'LootRarityLabels'; Label = 'Loot Rarity Labels' }
+        @{ Key = 'WorldMap';         Label = 'World Map Menu Option' }
+    )
+
+    $running = $true
+    while ($running) {
+        Clear-FrameBuffer
+
+        Draw-TextBox -X 20 -Y 3 -Width 80 -Height 22 -Title "Settings" `
+                     -BorderColor ([ConsoleColor]::Yellow) -BgColor ([ConsoleColor]::Black)
+
+        $y = 5
+        $options = @()
+        foreach ($s in $settingKeys) {
+            $val = $Script:Settings[$s.Key]
+            $state = if ($val) { '[ON]  ' } else { '[OFF] ' }
+            $options += "$state $($s.Label)"
+        }
+        $options += 'Back'
+
+        $sel = Draw-SelectionMenu -X 30 -Y 6 -Width 60 -Title "Toggle Features" `
+                                   -Options $options `
+                                   -BorderColor ([ConsoleColor]::Yellow) `
+                                   -TextColor ([ConsoleColor]::White)
+
+        if ($sel -ge 0 -and $sel -lt $settingKeys.Count) {
+            $key = $settingKeys[$sel].Key
+            $Script:Settings[$key] = -not $Script:Settings[$key]
+            # When disabling day/night mid-game, reset to Day to clear tinting
+            if ($key -eq 'DayNightCycle' -and -not $Script:Settings[$key]) {
+                $Script:GameState.TimeOfDay  = 'Day'
+                $Script:GameState.DayCycleStep = 0
+                $Script:_tileColorCache = $null
+            }
+            Save-Settings
+        }
+        else {
+            $running = $false
+        }
+    }
+
+    $Script:GameState.GameMode = 'Menu'
 }
 
 function Show-PartyStatus {
@@ -380,7 +576,19 @@ function Show-PartyStatus {
         $y++
         Set-Text -X 10 -Y $y -Text "HP: $($member.HP)/$($member.MaxHP)  MP: $($member.MP)/$($member.MaxMP)  EXP: $($member.EXP)/$($member.EXPToNext)" -FgColor ([ConsoleColor]::Green)
         $y++
-        Set-Text -X 10 -Y $y -Text "STR: $($member.Strength)  INT: $($member.Intelligence)  SPD: $($member.Speed)  DEF: $($member.Defense)  ACC: $($member.Accuracy)" -FgColor ([ConsoleColor]::Gray)
+        # Show effective stats with equipment bonuses
+        $bonuses = Get-AllEquipmentBonuses -Character $member
+        $strB = if ($bonuses.Strength -gt 0) { "(+$($bonuses.Strength))" } else { '' }
+        $intB = if ($bonuses.Intelligence -gt 0) { "(+$($bonuses.Intelligence))" } else { '' }
+        $spdB = if ($bonuses.Speed -gt 0) { "(+$($bonuses.Speed))" } else { '' }
+        $defB = if ($bonuses.Defense -gt 0) { "(+$($bonuses.Defense))" } else { '' }
+        $accB = if ($bonuses.Accuracy -gt 0) { "(+$($bonuses.Accuracy))" } else { '' }
+        $eSTR = Get-EffectiveStat -Entity $member -StatName 'Strength'
+        $eINT = Get-EffectiveStat -Entity $member -StatName 'Intelligence'
+        $eSPD = Get-EffectiveStat -Entity $member -StatName 'Speed'
+        $eDEF = Get-EffectiveStat -Entity $member -StatName 'Defense'
+        $eACC = Get-EffectiveStat -Entity $member -StatName 'Accuracy'
+        Set-Text -X 10 -Y $y -Text "STR:$eSTR$strB  INT:$eINT$intB  SPD:$eSPD$spdB  DEF:$eDEF$defB  ACC:$eACC$accB" -FgColor ([ConsoleColor]::Gray)
         $y++
         Set-Text -X 10 -Y $y -Text "Weapon: $($member.Equipment.Weapon)  Armor: $($member.Equipment.Armor)  Accessory: $(if($member.Equipment.Accessory){$member.Equipment.Accessory}else{'(none)'})" -FgColor ([ConsoleColor]::DarkGray)
         $y++
@@ -389,6 +597,97 @@ function Show-PartyStatus {
     }
 
     Set-Text -X 8 -Y 26 -Text "Press any key to return..." -FgColor ([ConsoleColor]::DarkGray)
+    Invoke-RenderFrame
+    Wait-ForKey | Out-Null
+    $Script:GameState.GameMode = 'Menu'
+}
+
+# ── World Map ────────────────────────────────────────────────────────────────────
+
+# Defines all locations and their ASCII-art positions/connections for the world map
+$Script:WorldMapData = @(
+    @{ Id = 'Map-TestTown-1';     Name = 'Thornvale Village';       X = 20;  Y = 12; Connections = @('Map-DarkCavern-1','Map-Shop-1','Map-CastleTown-1','Map-WhisperForest-1') }
+    @{ Id = 'Map-Shop-1';         Name = 'General Store';           X = 20;  Y = 6;  Connections = @('Map-TestTown-1') }
+    @{ Id = 'Map-DarkCavern-1';   Name = 'Dark Cavern';             X = 55;  Y = 18; Connections = @('Map-TestTown-1','Map-CastleTown-1','Map-DeepCavern-1') }
+    @{ Id = 'Map-CastleTown-1';   Name = 'Castle Town';             X = 55;  Y = 6;  Connections = @('Map-TestTown-1','Map-DarkCavern-1','Map-Shop-1') }
+    @{ Id = 'Map-WhisperForest-1'; Name = 'Whispering Forest';      X = 20;  Y = 20; Connections = @('Map-TestTown-1') }
+    @{ Id = 'Map-DeepCavern-1';   Name = 'Deep Cavern';             X = 82;  Y = 18; Connections = @('Map-DarkCavern-1') }
+)
+
+function Show-WorldMap {
+    Clear-FrameBuffer
+
+    Draw-TextBox -X 3 -Y 0 -Width 114 -Height 29 -Title "World Map" `
+                 -BorderColor ([ConsoleColor]::Cyan) -BgColor ([ConsoleColor]::Black)
+
+    $discovered = $Script:GameState.DiscoveredMaps
+    $currentMap = $Script:GameState.CurrentMapName
+
+    # Draw connections first (lines between locations)
+    foreach ($loc in $Script:WorldMapData) {
+        $isFound = $discovered.ContainsKey($loc.Id)
+        if (-not $isFound) { continue }
+
+        $sx = $loc.X + 4   # center of node box
+        $sy = $loc.Y + 1
+
+        foreach ($connId in $loc.Connections) {
+            $target = $Script:WorldMapData | Where-Object { $_.Id -eq $connId }
+            if (-not $target) { continue }
+            $targetFound = $discovered.ContainsKey($connId)
+            if (-not $targetFound) { continue }
+
+            $tx = $target.X + 4
+            $ty = $target.Y + 1
+
+            # Draw simple orthogonal path: vertical then horizontal
+            $lineColor = [ConsoleColor]::DarkGray
+            $midY = [math]::Floor(($sy + $ty) / 2)
+
+            # Vertical segment from source
+            $yStart = [math]::Min($sy, $midY)
+            $yEnd   = [math]::Max($sy, $midY)
+            for ($y = $yStart; $y -le $yEnd; $y++) {
+                Set-Text -X $sx -Y $y -Text '|' -FgColor $lineColor
+            }
+            # Horizontal segment
+            $xStart = [math]::Min($sx, $tx)
+            $xEnd   = [math]::Max($sx, $tx)
+            for ($x = $xStart; $x -le $xEnd; $x++) {
+                Set-Text -X $x -Y $midY -Text '-' -FgColor $lineColor
+            }
+            # Vertical segment to target
+            $yStart2 = [math]::Min($midY, $ty)
+            $yEnd2   = [math]::Max($midY, $ty)
+            for ($y = $yStart2; $y -le $yEnd2; $y++) {
+                Set-Text -X $tx -Y $y -Text '|' -FgColor $lineColor
+            }
+        }
+    }
+
+    # Draw location nodes on top
+    foreach ($loc in $Script:WorldMapData) {
+        $isFound = $discovered.ContainsKey($loc.Id)
+        $isCurrent = ($loc.Id -eq $currentMap)
+
+        if ($isFound) {
+            $nameText = $loc.Name
+            $nodeColor = if ($isCurrent) { [ConsoleColor]::Yellow } else { [ConsoleColor]::White }
+            $marker    = if ($isCurrent) { '>>>' } else { ' * ' }
+
+            Set-Text -X $loc.X -Y $loc.Y -Text $marker -FgColor $nodeColor
+            Set-Text -X ($loc.X + 3) -Y $loc.Y -Text " $nameText " -FgColor $nodeColor
+        }
+        else {
+            Set-Text -X $loc.X -Y $loc.Y -Text ' ? ' -FgColor ([ConsoleColor]::DarkGray)
+            Set-Text -X ($loc.X + 3) -Y $loc.Y -Text ' ???' -FgColor ([ConsoleColor]::DarkGray)
+        }
+    }
+
+    # Legend
+    Set-Text -X 6 -Y 25 -Text '>>> = Current Location    * = Discovered    ? = Unknown' -FgColor ([ConsoleColor]::DarkGray)
+    Set-Text -X 6 -Y 27 -Text 'Press any key to return...' -FgColor ([ConsoleColor]::DarkGray)
+
     Invoke-RenderFrame
     Wait-ForKey | Out-Null
     $Script:GameState.GameMode = 'Menu'

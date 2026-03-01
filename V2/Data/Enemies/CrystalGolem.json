@@ -1,0 +1,24 @@
+{
+    "name": "Crystal Golem",
+    "spriteFile": "CrystalGolem.txt",
+    "size": "large",
+    "color": "Cyan",
+    "baseHP": 55,
+    "baseMP": 15,
+    "baseStrength": 14,
+    "baseIntelligence": 8,
+    "baseSpeed": 3,
+    "baseDefense": 14,
+    "baseAccuracy": 60,
+    "baseEXP": 55,
+    "baseGold": 25,
+    "abilities": ["Slam", "Dark Pulse"],
+    "drops": [
+        { "item": "Crystal Shard", "chance": 55, "rarity": "common" },
+        { "item": "Dark Shard", "chance": 15, "rarity": "uncommon" },
+        { "item": "Silver Sword", "chance": 2, "rarity": "legendary" }
+    ],
+    "levelScaling": {
+        "HP": 10, "Strength": 3, "Defense": 4, "Speed": 1, "EXP": 15, "Gold": 8
+    }
+}

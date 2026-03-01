@@ -1,0 +1,24 @@
+{
+    "name": "Treant",
+    "spriteFile": "Treant.txt",
+    "size": "large",
+    "color": "Green",
+    "baseHP": 45,
+    "baseMP": 10,
+    "baseStrength": 12,
+    "baseIntelligence": 6,
+    "baseSpeed": 4,
+    "baseDefense": 10,
+    "baseAccuracy": 65,
+    "baseEXP": 40,
+    "baseGold": 15,
+    "abilities": ["Vine Whip", "Screech"],
+    "drops": [
+        { "item": "Ancient Wood", "chance": 50, "rarity": "common" },
+        { "item": "Herb", "chance": 35, "rarity": "common" },
+        { "item": "Enchanted Ring", "chance": 3, "rarity": "legendary" }
+    ],
+    "levelScaling": {
+        "HP": 8, "Strength": 3, "Defense": 3, "Speed": 1, "EXP": 12, "Gold": 6
+    }
+}

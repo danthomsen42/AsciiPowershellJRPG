@@ -45,6 +45,12 @@
             "targetMap": "Map-TestTown-1",
             "targetConfig": "MapConfig-TestTown-1",
             "targetPosition": { "x": 22, "y": 19 }
+        },
+        "deeper_passage": {
+            "position": { "x": 14, "y": 19 },
+            "targetMap": "Map-DeepCavern-1",
+            "targetConfig": "MapConfig-DeepCavern-1",
+            "targetPosition": { "x": 20, "y": 1 }
         }
     },
     "tileOverrides": [

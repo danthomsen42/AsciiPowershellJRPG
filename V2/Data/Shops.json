@@ -9,18 +9,22 @@
                 "herb",
                 "antidote",
                 "phoenix_feather",
+                "elixir",
                 "iron_sword",
                 "oak_staff",
                 "iron_dagger",
                 "iron_mace",
                 "short_bow",
+                "silver_sword",
                 "chain_mail",
                 "cloth_robe",
                 "leather_armor",
                 "scale_mail",
                 "hide_armor",
+                "forest_cloak",
                 "bronze_ring",
-                "silver_amulet"
+                "silver_amulet",
+                "enchanted_ring"
             ]
         }
     }

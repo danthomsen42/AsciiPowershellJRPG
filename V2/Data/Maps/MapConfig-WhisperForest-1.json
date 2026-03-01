@@ -1,0 +1,69 @@
+{
+    "displayName": "Whispering Forest",
+    "startPosition": { "x": 25, "y": 22 },
+    "tiles": {
+        "#": {
+            "color": "DarkGreen",
+            "passable": false,
+            "name": "Dense Thicket"
+        },
+        ".": {
+            "color": "DarkGreen",
+            "bgColor": "Black",
+            "passable": true,
+            "name": "Forest Floor"
+        },
+        "T": {
+            "color": "Green",
+            "passable": false,
+            "name": "Tree"
+        },
+        "~": {
+            "color": "Cyan",
+            "bgColor": "DarkBlue",
+            "passable": false,
+            "name": "Forest Stream",
+            "animated": true
+        },
+        "W": {
+            "color": "Yellow",
+            "passable": false,
+            "name": "Old Hermit",
+            "action": {
+                "type": "npc",
+                "npcId": "forest_hermit"
+            }
+        },
+        "G": {
+            "color": "DarkYellow",
+            "passable": false,
+            "name": "Treasure Chest",
+            "action": {
+                "type": "sign",
+                "text": "You found an Elixir in the old chest!"
+            }
+        },
+        "D": {
+            "color": "DarkGray",
+            "passable": true,
+            "name": "Path to Thornvale"
+        }
+    },
+    "connections": {
+        "exit_south": {
+            "position": { "x": 25, "y": 23 },
+            "targetMap": "Map-TestTown-1",
+            "targetConfig": "MapConfig-TestTown-1",
+            "targetPosition": { "x": 8, "y": 2 }
+        }
+    },
+    "encounters": {
+        "enabled": true,
+        "chance": 15,
+        "enemies": [
+            { "name": "Forest Wolf", "spriteId": "ForestWolf", "chance": 55, "minCount": 1, "maxCount": 3, "minLevel": 2, "maxLevel": 4 },
+            { "name": "Treant", "spriteId": "Treant", "chance": 20, "minCount": 1, "maxCount": 1, "minLevel": 3, "maxLevel": 5 },
+            { "name": "Goblin", "spriteId": "Goblin", "chance": 35, "minCount": 2, "maxCount": 4, "minLevel": 2, "maxLevel": 4 }
+        ]
+    }
+}

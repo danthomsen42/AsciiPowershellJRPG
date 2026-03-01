@@ -28,6 +28,13 @@
 19. [Tile Overrides](#19-tile-overrides)
 20. [Multi-Target Abilities](#20-multi-target-abilities)
 21. [Animated & Scripted Cutscenes](#21-animated--scripted-cutscenes)
+22. [Equipment Stat Bonuses](#22-equipment-stat-bonuses)
+23. [Status Effects System](#23-status-effects-system)
+24. [Enemy Loot Rarity Tiers](#24-enemy-loot-rarity-tiers)
+25. [Day/Night Cycle](#25-daynight-cycle)
+26. [World Map](#26-world-map)
+27. [Auto-Save System](#27-auto-save-system)
+28. [Settings System](#28-settings-system)
 
 ---
 
@@ -2097,6 +2104,258 @@ You can mix `animated_art`, `map_sequence`, and all other step types freely:
 - Paths should be smooth (no teleporting) — step-by-step [x,y] arrays.
 - Mix `move` + `dialogue` for impactful pacing.
 - The `show` action with `delayMs` creates dramatic enemy reveals.
+
+---
+
+*Happy modding! The world of Thornvale awaits your creativity.*
+
+---
+
+## 22. Equipment Stat Bonuses
+
+Equipment bonuses are now computed **dynamically** — base stats are never mutated. This means equipping/unequipping is always clean.
+
+### How It Works
+
+- `Get-EffectiveStat -Entity $character -StatName 'Strength'` returns base + equipment bonuses.
+- `Get-AllEquipmentBonuses -Character $member` returns a hashtable of all bonus totals.
+- Combat uses `Get-EffectiveStat` for damage, defense, accuracy, and speed calculations.
+
+### Defining Stat Bonuses on Items
+
+In `Items.json`, equipment entries have a `statBonus` object:
+
+```json
+{
+    "id": "silver_sword",
+    "name": "Silver Sword",
+    "type": "weapon",
+    "slot": "Weapon",
+    "statBonus": { "Strength": 5, "Accuracy": 5 },
+    "buyPrice": 350,
+    "sellPrice": 150
+}
+```
+
+Supported stat keys: `Strength`, `Intelligence`, `Speed`, `Defense`, `Accuracy`.
+
+### Display
+
+- **Party Status** screen shows effective stats with `(+N)` bonus indicators.
+- **Party Management** shows per-slot bonuses when viewing equipment.
+
+---
+
+## 23. Status Effects System
+
+Four status effects can be applied during combat:
+
+| Effect | Duration | Behavior | Icon |
+|--------|----------|----------|------|
+| **Poison** | 3 turns | 8% of MaxHP damage per turn | PSN |
+| **Stun** | 1 turn | Skip next turn entirely | STN |
+| **Blind** | 2 turns | -30 accuracy on all attacks | BLD |
+| **Slow** | 2 turns | Speed halved for turn order | SLW |
+
+### Applying Status Effects via Abilities
+
+Add `StatusEffect` and `StatusChance` to any ability definition:
+
+```powershell
+'Poison Strike' = @{
+    Type='physical'; Stat='Strength'; MP=4; Power=1.0; AccMod=0; Target='single';
+    Desc='Envenomed blade attack.';
+    StatusEffect='Poison'; StatusChance=60
+}
+```
+
+- The effect triggers only on a **successful hit**.
+- Debuff-type abilities (`Type='debuff'`) apply their status to all targets.
+- No stacking — the same effect refreshes its duration instead.
+
+### Curing Status Effects
+
+- **Antidote** item: cures Poison in combat.
+- **Elixir** item: fully restores HP, MP, and clears all status effects.
+- All status effects are automatically cleared when combat ends (victory, defeat, or escape).
+
+### Adding New Status Effects
+
+Add to `$Script:StatusEffectDefs` in `CombatEngine.ps1`:
+
+```powershell
+'Burn' = @{ Duration=2; DamagePercent=0.10; Icon='BRN'; Color=[ConsoleColor]::Red; Desc='Burns each turn' }
+```
+
+---
+
+## 24. Enemy Loot Rarity Tiers
+
+Drops now have a `rarity` field that controls display formatting:
+
+```json
+"drops": [
+    { "item": "Herb", "chance": 30, "rarity": "common" },
+    { "item": "Iron Dagger", "chance": 5, "rarity": "rare" },
+    { "item": "Shadow Cloak", "chance": 10, "rarity": "legendary" }
+]
+```
+
+### Rarity Labels in Victory Screen
+
+| Rarity | Display |
+|--------|---------|
+| `common` | (no label) |
+| `uncommon` | `[Uncommon]` |
+| `rare` | `[Rare!]` |
+| `legendary` | `[LEGENDARY!]` |
+
+---
+
+## 25. Day/Night Cycle
+
+The game has a 4-phase day/night cycle that advances with player movement.
+
+### Phases
+
+| Phase | Icon | Steps | Effect |
+|-------|------|-------|--------|
+| Dawn | `☀` | 80 | Transition from night |
+| Day | `☀` | 80 | Normal colors |
+| Dusk | `☾` | 80 | Warm tinting on some colors |
+| Night | `☾` | 80 | Dark tinting on all colors |
+
+### Configuration
+
+In `Core.ps1`:
+- `$Script:DayCycleStepsPerPhase = 80` — steps per phase (320 = full day)
+- `$Script:NightColorMap` — maps each ConsoleColor to a darker variant
+- `$Script:DuskColorMap` — maps select colors to warm-tinted variants
+
+### How It Works
+
+- `Update-DayCycle` is called every step in `Move-Player`.
+- `Get-TintedColor` is applied to map tile foreground colors in `Render-Map`.
+- The current time is displayed in the exploration header bar.
+- Time of day is saved/loaded with game state.
+
+### GameState Properties
+
+| Property | Description |
+|----------|-------------|
+| `TimeOfDay` | Current phase string: Dawn, Day, Dusk, Night |
+| `DayCycleStep` | Step counter within current phase (0 to StepsPerPhase) |
+
+---
+
+## 26. World Map
+
+Accessible from the game menu, the World Map shows discovered locations and connections.
+
+### How It Works
+
+- Locations are defined in `$Script:WorldMapData` in `Core.ps1`.
+- Only visited maps appear (tracked via `GameState.DiscoveredMaps`).
+- Undiscovered locations show as `?` with `???` label.
+- Current location is highlighted with `>>>`.
+
+### Adding New Locations
+
+```powershell
+@{ Id = 'Map-NewArea-1'; Name = 'New Area'; X = 40; Y = 14; Connections = @('Map-TestTown-1') }
+```
+
+- `Id`: Must match the map file name.
+- `X`, `Y`: Position on the world map screen (col, row).
+- `Connections`: Array of connected map IDs (for drawing path lines).
+
+### Discovery
+
+Maps are added to `DiscoveredMaps` automatically when:
+- A new game starts (starting map is discovered).
+- The player transitions through a door.
+
+---
+
+## 27. Auto-Save System
+
+The game automatically saves when transitioning between maps.
+
+### How It Works
+
+- `Invoke-AutoSave` in `SaveLoad.ps1` silently saves to a slot named `"Autosave"`.
+- Called after every door transition in `Move-Player`.
+- The autosave slot appears alongside manual saves in the Load Game menu.
+- Never overwrites manual save slots.
+
+### New Maps Added
+
+Two new areas have been added:
+
+| Map | Enemies | Connection |
+|-----|---------|------------|
+| **Whispering Forest** | Forest Wolf, Treant, Goblin | North exit from Thornvale Village |
+| **Deep Cavern - Floor 2** | Cave Bat, Crystal Golem, Slime | "E" tile in Dark Cavern Floor 1 |
+
+### New Enemies
+
+| Enemy | HP | STR | DEF | SPD | Notable |
+|-------|----|-----|-----|-----|---------|
+| Forest Wolf | 18 | 9 | 5 | 14 | Fast, drops Wolf Pelt |
+| Treant | 45 | 12 | 10 | 4 | Tanky, uses Vine Whip |
+| Crystal Golem | 55 | 14 | 14 | 3 | Very tough, drops Crystal Shard |
+
+### New Items
+
+| Item | Type | Stats/Effect | Buy Price |
+|------|------|-------------|-----------|
+| Silver Sword | Weapon | STR+5, ACC+5 | 350g |
+| Forest Cloak | Armor | DEF+3, SPD+1 | 200g |
+| Enchanted Ring | Accessory | INT+3, ACC+5 | 280g |
+| Elixir | Consumable | Full HP+MP restore | 500g |
+
+---
+
+## 28. Settings System
+
+Features can be toggled on or off via `Data/Settings.json` or the in-game **Settings** menu (accessible from the pause menu).
+
+### Settings File
+
+```json
+{
+    "_comment": "Game settings — toggle features on/off.",
+    "DayNightCycle": true,
+    "StatusEffects": true,
+    "AutoSave": true,
+    "LootRarityLabels": true,
+    "WorldMap": true
+}
+```
+
+### Available Toggles
+
+| Setting | Default | What It Controls |
+|---------|---------|------------------|
+| `DayNightCycle` | `true` | 4-phase time cycle, color tinting, time-of-day header display |
+| `StatusEffects` | `true` | Poison, Stun, Blind, Slow — application and processing in combat |
+| `AutoSave` | `true` | Silent auto-save to "Autosave" slot on map transitions |
+| `LootRarityLabels` | `true` | [Uncommon], [Rare!], [LEGENDARY!] labels on combat drops |
+| `WorldMap` | `true` | World Map option in the pause menu |
+
+### How It Works
+
+- Settings are loaded from `Data/Settings.json` at startup via `Load-Settings` in `Core.ps1`.
+- Missing keys gracefully fall back to defaults (all enabled).
+- The in-game Settings menu toggles values and calls `Save-Settings` to persist immediately.
+- Disabling Day/Night Cycle mid-game resets time to Day and clears color tinting.
+
+### Adding New Toggleable Features
+
+1. Add a key to `$Script:SettingsDefaults` in `Core.ps1`.
+2. Add the key to `Data/Settings.json`.
+3. Add an entry to the `$settingKeys` array in `Show-SettingsMenu`.
+4. Guard the feature code with `if (-not $Script:Settings.YourKey) { return }`.
 
 ---
 

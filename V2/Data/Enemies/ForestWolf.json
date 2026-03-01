@@ -1,0 +1,24 @@
+{
+    "name": "Forest Wolf",
+    "spriteFile": "ForestWolf.txt",
+    "size": "small",
+    "color": "DarkYellow",
+    "baseHP": 18,
+    "baseMP": 0,
+    "baseStrength": 9,
+    "baseIntelligence": 3,
+    "baseSpeed": 14,
+    "baseDefense": 5,
+    "baseAccuracy": 75,
+    "baseEXP": 22,
+    "baseGold": 8,
+    "abilities": ["Bite", "Scratch"],
+    "drops": [
+        { "item": "Wolf Pelt", "chance": 45, "rarity": "common" },
+        { "item": "Herb", "chance": 20, "rarity": "common" },
+        { "item": "Forest Cloak", "chance": 4, "rarity": "rare" }
+    ],
+    "levelScaling": {
+        "HP": 5, "Strength": 2, "Defense": 2, "Speed": 2, "EXP": 7, "Gold": 4
+    }
+}

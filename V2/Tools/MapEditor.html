@@ -1,0 +1,2613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASCII JRPG Map Editor</title>
+<style>
+/* ═══════════════════════════════════════════════════
+   CSS — Dark theme inspired by VS Code
+   ═══════════════════════════════════════════════════ */
+:root {
+    --bg:           #1e1e1e;
+    --bg-sidebar:   #252526;
+    --bg-toolbar:   #2d2d30;
+    --bg-input:     #3c3c3c;
+    --bg-hover:     #2a2d2e;
+    --bg-modal:     #2d2d30;
+    --border:       #3e3e42;
+    --text:         #cccccc;
+    --text-dim:     #808080;
+    --text-bright:  #ffffff;
+    --accent:       #0e639c;
+    --accent-hover: #1177bb;
+    --danger:       #c14646;
+    --success:      #4ec94e;
+    --warning:      #cca700;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 40px 1fr 28px;
+    grid-template-columns: 280px 1fr;
+    grid-template-areas:
+        "toolbar toolbar"
+        "sidebar main"
+        "status  status";
+    user-select: none;
+}
+
+/* Toolbar */
+#toolbar {
+    grid-area: toolbar;
+    background: var(--bg-toolbar);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    gap: 4px;
+}
+#toolbar .sep {
+    width: 1px;
+    height: 22px;
+    background: var(--border);
+    margin: 0 6px;
+}
+.tb-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text);
+    padding: 4px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.tb-btn:hover { background: var(--bg-hover); border-color: var(--border); }
+.tb-btn.active { background: var(--accent); color: #fff; }
+.tb-btn.primary { background: var(--accent); color: #fff; }
+.tb-btn.primary:hover { background: var(--accent-hover); }
+#toolbar .map-name {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+/* Sidebar */
+#sidebar {
+    grid-area: sidebar;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 0;
+}
+.panel {
+    border-bottom: 1px solid var(--border);
+}
+.panel-header {
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.panel-header:hover { color: var(--text); }
+.panel-header .arrow { font-size: 10px; transition: transform 0.15s; }
+.panel-header.collapsed .arrow { transform: rotate(-90deg); }
+.panel-body { padding: 8px 12px 12px; }
+.panel-body.hidden { display: none; }
+
+/* Form controls */
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.form-row label {
+    font-size: 12px;
+    color: var(--text-dim);
+    min-width: 70px;
+    flex-shrink: 0;
+}
+.form-row input[type="text"],
+.form-row input[type="number"],
+.form-row select,
+.form-row textarea {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: inherit;
+}
+.form-row input:focus,
+.form-row select:focus,
+.form-row textarea:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+.form-row input[type="checkbox"] { margin-right: 4px; accent-color: var(--accent); }
+.form-row textarea { min-height: 48px; resize: vertical; }
+
+/* Tile palette */
+#palette-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-bottom: 8px;
+}
+.palette-cell {
+    width: 28px;
+    height: 28px;
+    background: #111;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 2px;
+}
+.palette-cell:hover { border-color: var(--accent); }
+.palette-cell.selected { border-color: var(--accent); background: #0e639c33; box-shadow: 0 0 0 1px var(--accent); }
+
+/* Special char modal grid */
+.char-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px;
+}
+.char-cell {
+    width: 32px;
+    height: 32px;
+    background: #111;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 2px;
+    color: var(--text);
+}
+.char-cell:hover { border-color: var(--accent); background: #0e639c33; }
+
+/* Connections and encounters lists */
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 6px;
+    background: var(--bg-input);
+    border-radius: 3px;
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+.list-item .label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-item button {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 12px;
+}
+.list-item button:hover { color: var(--danger); }
+.add-btn {
+    background: var(--bg-input);
+    border: 1px dashed var(--border);
+    color: var(--text-dim);
+    width: 100%;
+    padding: 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    text-align: center;
+}
+.add-btn:hover { border-color: var(--accent); color: var(--text); }
+
+/* Color swatch */
+.color-swatch {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* Main canvas area */
+#main {
+    grid-area: main;
+    overflow: auto;
+    background: #111;
+    position: relative;
+}
+#map-canvas {
+    image-rendering: pixelated;
+    cursor: crosshair;
+}
+#grid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+.welcome-msg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--text-dim);
+}
+.welcome-msg h2 { font-size: 20px; margin-bottom: 8px; color: var(--text); }
+.welcome-msg p { font-size: 13px; margin-bottom: 4px; }
+
+/* Status bar */
+#status {
+    grid-area: status;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 12px;
+    color: #fff;
+    gap: 16px;
+}
+#status .s-right { margin-left: auto; display: flex; gap: 16px; }
+
+/* Context menu */
+#ctx-menu {
+    position: fixed;
+    background: var(--bg-modal);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 0;
+    min-width: 180px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: none;
+}
+#ctx-menu .ctx-item {
+    padding: 6px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#ctx-menu .ctx-item:hover { background: var(--accent); color: #fff; }
+#ctx-menu .ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* Modals */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 900;
+    justify-content: center;
+    align-items: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+    background: var(--bg-modal);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 420px;
+    max-width: 90vw;
+    max-height: 85vh;
+    overflow: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+.modal-title {
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+}
+.modal-body { padding: 16px; }
+.modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+.modal-footer .btn {
+    padding: 5px 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+}
+.modal-footer .btn:hover { background: var(--bg-hover); }
+.modal-footer .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.modal-footer .btn.primary:hover { background: var(--accent-hover); }
+
+/* Tab navigation for modals */
+.tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+}
+.tab-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text-bright); border-color: var(--accent); }
+.tab-page { display: none; }
+.tab-page.active { display: block; }
+
+/* Connection mini-map canvas */
+#conn-preview-canvas {
+    border: 1px solid var(--border);
+    background: #111;
+    cursor: crosshair;
+    max-width: 100%;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg-input); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* Tooltip */
+.tooltip {
+    position: fixed;
+    background: #1e1e1e;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 800;
+    white-space: nowrap;
+    display: none;
+}
+
+/* Tile preview large */
+#tile-preview {
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 28px;
+    margin: 0 auto 8px;
+}
+
+/* Selected tools highlight */
+.tool-group { display: flex; gap: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ TOOLBAR ═══════════════ -->
+<div id="toolbar">
+    <button class="tb-btn" onclick="showNewMapDialog()" title="Create a new map">📄 New</button>
+    <button class="tb-btn" onclick="openFolder()" title="Open Maps folder (read/write maps directly)">📂 Open Folder</button>
+    <button class="tb-btn" onclick="importFiles()" title="Import map files">📥 Import</button>
+    <div class="sep"></div>
+    <button class="tb-btn" id="btn-save" onclick="saveMap()" title="Save to folder (requires Open Folder)">💾 Save</button>
+    <button class="tb-btn" onclick="exportDownload()" title="Download .txt and .json files">📤 Export</button>
+    <div class="sep"></div>
+    <div class="tool-group">
+        <button class="tb-btn active" id="tool-paint" onclick="setTool('paint')" title="Paint tiles (Alt+P)">🖌️ Paint</button>
+        <button class="tb-btn" id="tool-erase" onclick="setTool('erase')" title="Erase tiles (Alt+E)">🧹 Erase</button>
+        <button class="tb-btn" id="tool-fill" onclick="setTool('fill')" title="Flood fill area (Alt+F)">🪣 Fill</button>
+        <button class="tb-btn" id="tool-pick" onclick="setTool('pick')" title="Pick tile from grid (Alt+I)">💉 Pick</button>
+    </div>
+    <div class="sep"></div>
+    <button class="tb-btn" onclick="showResizeDialog()" title="Resize map dimensions">↔️ Resize</button>
+    <button class="tb-btn" onclick="shrinkToFit()" title="Auto-shrink to fit content">🔲 Shrink to Fit</button>
+    <div class="sep"></div>
+    <button class="tb-btn" onclick="zoomIn()" title="Zoom in">🔍+</button>
+    <button class="tb-btn" onclick="zoomOut()" title="Zoom out">🔍−</button>
+    <button class="tb-btn" onclick="toggleGridLines()" id="btn-gridlines" title="Toggle grid lines (Alt+G)">⊞ Grid</button>
+    <span class="map-name" id="toolbar-map-name">No map loaded</span>
+</div>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<div id="sidebar">
+    <!-- Current Tile -->
+    <div class="panel">
+        <div class="panel-header" onclick="togglePanel(this)">
+            Current Tile <span class="arrow">▾</span>
+        </div>
+        <div class="panel-body" id="current-tile-panel">
+            <div id="tile-preview" style="color:#808080; background:#111;">.</div>
+            <div class="form-row">
+                <label>Char</label>
+                <input type="text" id="sel-char" maxlength="1" value="." style="width:30px; flex:0; text-align:center; font-family:Consolas,monospace; font-size:16px;">
+                <button class="tb-btn" onclick="showSpecialChars()" title="Browse special characters">⌨️</button>
+            </div>
+            <div class="form-row">
+                <label>Name</label>
+                <input type="text" id="sel-name" placeholder="Tile name">
+            </div>
+            <div class="form-row">
+                <label>Color</label>
+                <select id="sel-color"></select>
+                <span class="color-swatch" id="swatch-fg"></span>
+            </div>
+            <div class="form-row">
+                <label>BgColor</label>
+                <select id="sel-bgcolor"></select>
+                <span class="color-swatch" id="swatch-bg"></span>
+            </div>
+            <div class="form-row">
+                <label>Passable</label>
+                <input type="checkbox" id="sel-passable">
+            </div>
+            <div class="form-row">
+                <label>Animated</label>
+                <input type="checkbox" id="sel-animated">
+            </div>
+            <div class="form-row">
+                <label>Action</label>
+                <select id="sel-action-type">
+                    <option value="">None</option>
+                    <option value="npc">NPC</option>
+                    <option value="sign">Sign</option>
+                    <option value="shop">Shop</option>
+                    <option value="trigger">Trigger</option>
+                </select>
+            </div>
+            <div id="action-fields"></div>
+            <button class="tb-btn primary" onclick="applyTileDef()" style="width:100%; margin-top:6px;">Apply Tile Definition</button>
+        </div>
+    </div>
+
+    <!-- Tile Palette -->
+    <div class="panel">
+        <div class="panel-header" onclick="togglePanel(this)">
+            Tile Palette <span class="arrow">▾</span>
+        </div>
+        <div class="panel-body">
+            <div id="palette-grid"></div>
+            <button class="add-btn" onclick="showSpecialChars()">+ Special Characters...</button>
+        </div>
+    </div>
+
+    <!-- Map Properties -->
+    <div class="panel">
+        <div class="panel-header" onclick="togglePanel(this)">
+            Map Properties <span class="arrow">▾</span>
+        </div>
+        <div class="panel-body">
+            <div class="form-row">
+                <label>Map Name</label>
+                <input type="text" id="prop-mapname" placeholder="Map-MyMap-1">
+            </div>
+            <div class="form-row">
+                <label>Display</label>
+                <input type="text" id="prop-display" placeholder="My Map">
+            </div>
+            <div class="form-row">
+                <label>Description</label>
+                <textarea id="prop-desc" placeholder="Optional description for the header comment"></textarea>
+            </div>
+            <div class="form-row">
+                <label>Start X</label>
+                <input type="number" id="prop-startx" value="1" min="0" style="width:60px;">
+            </div>
+            <div class="form-row">
+                <label>Start Y</label>
+                <input type="number" id="prop-starty" value="1" min="0" style="width:60px;">
+            </div>
+            <div class="form-row" style="margin-top:4px;">
+                <label></label>
+                <button class="tb-btn" onclick="pickStartPosition()" title="Click on the map to set start position">🎯 Pick on Map</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connections -->
+    <div class="panel">
+        <div class="panel-header" onclick="togglePanel(this)">
+            Connections <span class="arrow">▾</span>
+        </div>
+        <div class="panel-body">
+            <div id="conn-list"></div>
+            <button class="add-btn" onclick="showConnectionDialog()">+ Add Connection</button>
+        </div>
+    </div>
+
+    <!-- Tile Overrides -->
+    <div class="panel">
+        <div class="panel-header" onclick="togglePanel(this)">
+            Tile Overrides <span class="arrow">▾</span>
+        </div>
+        <div class="panel-body">
+            <div id="override-list"></div>
+            <button class="add-btn" onclick="showOverrideDialog()">+ Add Override</button>
+        </div>
+    </div>
+
+    <!-- Encounters -->
+    <div class="panel">
+        <div class="panel-header" onclick="togglePanel(this)">
+            Encounters <span class="arrow">▾</span>
+        </div>
+        <div class="panel-body">
+            <div class="form-row">
+                <label>Enabled</label>
+                <input type="checkbox" id="enc-enabled">
+            </div>
+            <div class="form-row">
+                <label>Chance %</label>
+                <input type="number" id="enc-chance" value="10" min="1" max="100" style="width:60px;">
+            </div>
+            <div id="enemy-list"></div>
+            <button class="add-btn" onclick="showEnemyDialog()">+ Add Enemy</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ MAIN GRID AREA ═══════════════ -->
+<div id="main">
+    <canvas id="map-canvas" width="0" height="0"></canvas>
+    <div class="welcome-msg" id="welcome">
+        <h2>ASCII JRPG Map Editor</h2>
+        <p>Click <strong>New</strong> to create a map, or <strong>Open Folder</strong> to load existing maps.</p>
+        <p style="margin-top:12px; font-size:11px; color:var(--text-dim);">Tip: Hover over a cell and type any key to place it. Right-click for connections, NPCs, and more.</p>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+</div>
+
+<!-- ═══════════════ STATUS BAR ═══════════════ -->
+<div id="status">
+    <span id="s-status">Ready</span>
+    <span class="s-right">
+        <span id="s-size">-</span>
+        <span id="s-cursor">-</span>
+        <span id="s-zoom">100%</span>
+        <span id="s-tile">-</span>
+    </span>
+</div>
+
+<!-- ═══════════════ CONTEXT MENU ═══════════════ -->
+<div id="ctx-menu">
+    <div class="ctx-item" onclick="ctxSetStart()">🎯 Set Start Position Here</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" onclick="ctxAddConnection()">🚪 Add/Edit Connection</div>
+    <div class="ctx-item" onclick="ctxAddOverride()">🔄 Add Tile Override</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" onclick="ctxTogglePassable()">🧱 Toggle Passable</div>
+    <div class="ctx-item" onclick="ctxSetAction('npc')">🧑 Set as NPC</div>
+    <div class="ctx-item" onclick="ctxSetAction('sign')">📜 Set as Sign</div>
+    <div class="ctx-item" onclick="ctxSetAction('shop')">🏪 Set as Shop</div>
+    <div class="ctx-item" onclick="ctxSetAction('trigger')">⚡ Set as Trigger</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" onclick="ctxCopyTile()">📋 Copy Tile</div>
+    <div class="ctx-item" onclick="ctxPasteTile()">📌 Paste Tile</div>
+</div>
+
+<!-- ═══════════════ NEW MAP MODAL ═══════════════ -->
+<div class="modal-overlay" id="modal-newmap">
+    <div class="modal" style="min-width:460px;">
+        <div class="modal-title">New Map</div>
+        <div class="modal-body">
+            <div class="form-row">
+                <label style="min-width:100px;">Map Name</label>
+                <input type="text" id="new-mapname" placeholder="Map-MyMap-1" value="Map-NewMap-1">
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Display Name</label>
+                <input type="text" id="new-display" placeholder="My New Map" value="New Map">
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Description</label>
+                <textarea id="new-desc" placeholder="Optional description"></textarea>
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Size Preset</label>
+                <select id="new-preset" onchange="applyPreset()">
+                    <option value="">Custom</option>
+                    <option value="80,25" selected>Standard (80×25)</option>
+                    <option value="40,20">Small Room (40×20)</option>
+                    <option value="16,12">Tiny Interior (16×12)</option>
+                    <option value="120,30">Large Area (120×30)</option>
+                    <option value="60,40">Tall Map (60×40)</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Width</label>
+                <input type="number" id="new-width" value="80" min="5" max="500">
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Height</label>
+                <input type="number" id="new-height" value="25" min="5" max="500">
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Fill Border</label>
+                <input type="checkbox" id="new-border" checked>
+                <span style="font-size:11px; color:var(--text-dim);">Surround with # walls</span>
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Floor Char</label>
+                <input type="text" id="new-floor" value="." maxlength="1" style="width:30px; text-align:center; font-family:Consolas; font-size:16px;">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('modal-newmap')">Cancel</button>
+            <button class="btn primary" onclick="createNewMap()">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ RESIZE MODAL ═══════════════ -->
+<div class="modal-overlay" id="modal-resize">
+    <div class="modal" style="min-width:380px;">
+        <div class="modal-title">Resize Map</div>
+        <div class="modal-body">
+            <p style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">
+                Expand or contract the map. Positive values add space, negative values remove from that edge.
+            </p>
+            <div class="form-row"><label style="min-width:80px;">Add Top</label><input type="number" id="resize-top" value="0"></div>
+            <div class="form-row"><label style="min-width:80px;">Add Bottom</label><input type="number" id="resize-bottom" value="0"></div>
+            <div class="form-row"><label style="min-width:80px;">Add Left</label><input type="number" id="resize-left" value="0"></div>
+            <div class="form-row"><label style="min-width:80px;">Add Right</label><input type="number" id="resize-right" value="0"></div>
+            <p style="font-size:11px; color:var(--text-dim); margin-top:8px;" id="resize-info"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('modal-resize')">Cancel</button>
+            <button class="btn primary" onclick="applyResize()">Resize</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ SPECIAL CHARACTERS MODAL ═══════════════ -->
+<div class="modal-overlay" id="modal-chars">
+    <div class="modal" style="min-width:520px;">
+        <div class="modal-title">Special Characters</div>
+        <div class="tab-bar" id="char-tabs"></div>
+        <div class="modal-body" id="char-body" style="min-height:200px;"></div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('modal-chars')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ CONNECTION MODAL ═══════════════ -->
+<div class="modal-overlay" id="modal-connection">
+    <div class="modal" style="min-width:560px;">
+        <div class="modal-title">Edit Connection</div>
+        <div class="modal-body">
+            <div class="form-row">
+                <label style="min-width:100px;">Conn. Name</label>
+                <input type="text" id="conn-name" placeholder="e.g. exit_north">
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Position</label>
+                <span id="conn-pos-display" style="font-size:12px;">Click on map first</span>
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Target Map</label>
+                <select id="conn-target-map" onchange="loadConnTargetPreview()">
+                    <option value="">-- Select or type below --</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;"></label>
+                <input type="text" id="conn-target-map-custom" placeholder="Or type: Map-Name-1">
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Target Config</label>
+                <input type="text" id="conn-target-config" placeholder="MapConfig-Name-1 (auto-filled)">
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Spawn X</label>
+                <input type="number" id="conn-target-x" value="1" min="0">
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Spawn Y</label>
+                <input type="number" id="conn-target-y" value="1" min="0">
+            </div>
+            <p style="font-size:11px; color:var(--text-dim); margin:8px 0 4px;">Click on the preview below to set spawn position:</p>
+            <canvas id="conn-preview-canvas" width="0" height="0"></canvas>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="deleteConnection()" style="margin-right:auto; color:var(--danger);">🗑 Delete</button>
+            <button class="btn" onclick="closeModal('modal-connection')">Cancel</button>
+            <button class="btn primary" onclick="saveConnection()">Save Connection</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ ENEMY DIALOG ═══════════════ -->
+<div class="modal-overlay" id="modal-enemy">
+    <div class="modal" style="min-width:420px;">
+        <div class="modal-title" id="enemy-modal-title">Add Enemy Encounter</div>
+        <div class="modal-body">
+            <div class="form-row"><label style="min-width:100px;">Name</label><input type="text" id="enemy-name" placeholder="Goblin"></div>
+            <div class="form-row"><label style="min-width:100px;">Sprite ID</label><input type="text" id="enemy-sprite" placeholder="Goblin"></div>
+            <div class="form-row"><label style="min-width:100px;">Chance %</label><input type="number" id="enemy-chance" value="50" min="1" max="100"></div>
+            <div class="form-row"><label style="min-width:100px;">Min Count</label><input type="number" id="enemy-mincount" value="1" min="1"></div>
+            <div class="form-row"><label style="min-width:100px;">Max Count</label><input type="number" id="enemy-maxcount" value="3" min="1"></div>
+            <div class="form-row"><label style="min-width:100px;">Min Level</label><input type="number" id="enemy-minlvl" value="1" min="1"></div>
+            <div class="form-row"><label style="min-width:100px;">Max Level</label><input type="number" id="enemy-maxlvl" value="3" min="1"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('modal-enemy')">Cancel</button>
+            <button class="btn primary" onclick="saveEnemy()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ TILE OVERRIDE DIALOG ═══════════════ -->
+<div class="modal-overlay" id="modal-override">
+    <div class="modal" style="min-width:420px;">
+        <div class="modal-title">Tile Override</div>
+        <div class="modal-body">
+            <div class="form-row">
+                <label style="min-width:100px;">Position</label>
+                <span id="ovr-pos-display">Click on map first</span>
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Trigger</label>
+                <input type="text" id="ovr-trigger" placeholder="e.g. boss_defeated">
+            </div>
+            <div class="form-row">
+                <label style="min-width:100px;">Replace Tile</label>
+                <input type="text" id="ovr-replace" value="." maxlength="1" style="width:30px; text-align:center; font-family:Consolas; font-size:16px;">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="deleteOverride()" style="margin-right:auto; color:var(--danger);">🗑 Delete</button>
+            <button class="btn" onclick="closeModal('modal-override')">Cancel</button>
+            <button class="btn primary" onclick="saveOverride()">Save Override</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ MAP PICKER (for Open Folder) ═══════════════ -->
+<div class="modal-overlay" id="modal-maplist">
+    <div class="modal" style="min-width:400px;">
+        <div class="modal-title">Open Map from Folder</div>
+        <div class="modal-body">
+            <p style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">Select a map to open:</p>
+            <div id="maplist-items" style="max-height:300px; overflow-y:auto;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('modal-maplist')">Cancel</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+"use strict";
+
+/* ──────────────────────────────────────────
+   CONSTANTS
+   ────────────────────────────────────────── */
+
+const PS_COLORS = {
+    'Black':       '#000000',
+    'DarkBlue':    '#000080',
+    'DarkGreen':   '#008000',
+    'DarkCyan':    '#008080',
+    'DarkRed':     '#800000',
+    'DarkMagenta': '#800080',
+    'DarkYellow':  '#808000',
+    'Gray':        '#C0C0C0',
+    'DarkGray':    '#808080',
+    'Blue':        '#0000FF',
+    'Green':       '#00FF00',
+    'Cyan':        '#00FFFF',
+    'Red':         '#FF0000',
+    'Magenta':     '#FF00FF',
+    'Yellow':      '#FFFF00',
+    'White':       '#FFFFFF'
+};
+
+const SPECIAL_CHARS = {
+    'Box Drawing': '═║╔╗╚╝╠╣╦╩╬─│┌┐└┘├┤┬┴┼',
+    'Block Elements': '█▓▒░▄▀▌▐■□▪▫',
+    'Arrows': '←→↑↓↔↕◄►▲▼',
+    'Symbols': '●○◆◇★☆♦♣♠♥♪♫§¶±×÷≈≠≤≥°ºª',
+    'Math & Currency': '¢£¥€∞√∑∆∏∫≡≈≠≤≥«»',
+    'Greek': 'αβγδεζηθικλμνξπρστυφχψωΩΣΔΠ',
+    'Misc': '†‡•…‰™©®¿¡¬¦ƒ‹›†‡·¸˛˜ˆ'
+};
+
+const DEFAULT_PALETTE = '#.~+TSDBVPEIWGCRHºXO@^*=|_><{}[]()';
+
+const DEFAULT_TILES = {
+    '#': { color: 'DarkGray', passable: false, name: 'Wall' },
+    '.': { color: 'DarkGray', passable: true, name: 'Ground' },
+    '~': { color: 'Cyan', bgColor: 'DarkBlue', passable: false, name: 'Water', animated: true },
+    '+': { color: 'DarkYellow', passable: false, name: 'Campfire' },
+    ' ': { color: 'DarkGray', passable: true, name: 'Empty' }
+};
+
+/* ──────────────────────────────────────────
+   APPLICATION STATE
+   ────────────────────────────────────────── */
+
+const state = {
+    // Map data
+    mapName: '',
+    displayName: '',
+    description: '',
+    width: 0,
+    height: 0,
+    grid: [],           // [row][col] = char string
+    tileDefs: {},       // char -> { color, bgColor, passable, name, animated, action }
+    connections: {},    // id -> { position:{x,y}, targetMap, targetConfig, targetPosition:{x,y} }
+    tileOverrides: [],  // [{ position:{x,y}, condition:{trigger:str}, replaceTile:str }]
+    encounters: { enabled: false, chance: 10, enemies: [] },
+    startPosition: { x: 1, y: 1 },
+
+    // Editor state
+    selectedChar: '#',
+    tool: 'paint',
+    zoom: 1.0,
+    cellSize: 24,
+    showGrid: true,
+    cursor: { x: -1, y: -1 },
+    isPainting: false,
+    clipboard: null,    // { char, def }
+    pickingStart: false,
+    pickingConnPos: false,
+    editingConnId: null,
+    editingEnemyIdx: -1,
+    editingOverrideIdx: -1,
+    ctxCell: { x: 0, y: 0 },
+    dirty: false,
+
+    // File system
+    dirHandle: null,
+    knownMaps: [],      // [{ name:'Map-X-1', mapFile, configFile, config }]
+};
+
+/* ──────────────────────────────────────────
+   INITIALIZATION
+   ────────────────────────────────────────── */
+
+const canvas = document.getElementById('map-canvas');
+const ctx = canvas.getContext('2d');
+const mainEl = document.getElementById('main');
+
+function init() {
+    populateColorDropdowns();
+    buildPalette();
+    setupCanvasEvents();
+    setupKeyboard();
+    setupActionTypeChange();
+    updateSidebar();
+    window.addEventListener('resize', () => { if (state.width) renderGrid(); });
+    document.addEventListener('click', () => hideCtxMenu());
+}
+
+function populateColorDropdowns() {
+    const fgSel = document.getElementById('sel-color');
+    const bgSel = document.getElementById('sel-bgcolor');
+    bgSel.innerHTML = '<option value="">(none)</option>';
+    for (const [name, hex] of Object.entries(PS_COLORS)) {
+        const opt = `<option value="${name}" style="color:${hex}; background:#222;">${name}</option>`;
+        fgSel.innerHTML += opt;
+        bgSel.innerHTML += opt;
+    }
+    fgSel.value = 'DarkGray';
+    fgSel.addEventListener('change', () => {
+        document.getElementById('swatch-fg').style.background = PS_COLORS[fgSel.value] || 'transparent';
+    });
+    bgSel.addEventListener('change', () => {
+        document.getElementById('swatch-bg').style.background = PS_COLORS[bgSel.value] || 'transparent';
+    });
+    document.getElementById('swatch-fg').style.background = PS_COLORS['DarkGray'];
+}
+
+function buildPalette() {
+    const grid = document.getElementById('palette-grid');
+    grid.innerHTML = '';
+    const chars = DEFAULT_PALETTE;
+    for (const ch of chars) {
+        const cell = document.createElement('div');
+        cell.className = 'palette-cell' + (ch === state.selectedChar ? ' selected' : '');
+        cell.textContent = ch;
+        const def = state.tileDefs[ch] || DEFAULT_TILES[ch];
+        if (def) {
+            cell.style.color = PS_COLORS[def.color] || '#ccc';
+            if (def.bgColor) cell.style.background = PS_COLORS[def.bgColor];
+        } else {
+            cell.style.color = '#ccc';
+        }
+        cell.onclick = () => selectPaletteTile(ch);
+        grid.appendChild(cell);
+    }
+    // Also add chars used on current map that aren't in default palette
+    if (state.width > 0) {
+        const used = new Set();
+        for (let r = 0; r < state.height; r++)
+            for (let c = 0; c < state.width; c++)
+                if (state.grid[r] && state.grid[r][c]) used.add(state.grid[r][c]);
+        for (const ch of used) {
+            if (chars.includes(ch) || ch === ' ') continue;
+            const cell = document.createElement('div');
+            cell.className = 'palette-cell' + (ch === state.selectedChar ? ' selected' : '');
+            cell.textContent = ch;
+            const def = state.tileDefs[ch];
+            if (def) {
+                cell.style.color = PS_COLORS[def.color] || '#ccc';
+                if (def.bgColor) cell.style.background = PS_COLORS[def.bgColor];
+            } else {
+                cell.style.color = '#ccc';
+            }
+            cell.onclick = () => selectPaletteTile(ch);
+            grid.appendChild(cell);
+        }
+    }
+}
+
+function selectPaletteTile(ch) {
+    state.selectedChar = ch;
+    // Load definition into sidebar
+    const def = state.tileDefs[ch] || DEFAULT_TILES[ch] || { color: 'Gray', passable: true, name: '' };
+    document.getElementById('sel-char').value = ch;
+    document.getElementById('sel-name').value = def.name || '';
+    document.getElementById('sel-color').value = def.color || 'Gray';
+    document.getElementById('sel-bgcolor').value = def.bgColor || '';
+    document.getElementById('sel-passable').checked = !!def.passable;
+    document.getElementById('sel-animated').checked = !!def.animated;
+    document.getElementById('sel-action-type').value = def.action ? def.action.type : '';
+    updateActionFields(def.action);
+    updateTilePreview();
+    updateSwatches();
+    buildPalette();
+}
+
+function updateTilePreview() {
+    const prev = document.getElementById('tile-preview');
+    const ch = document.getElementById('sel-char').value || '.';
+    const fg = PS_COLORS[document.getElementById('sel-color').value] || '#808080';
+    const bg = PS_COLORS[document.getElementById('sel-bgcolor').value] || '#111';
+    prev.textContent = ch;
+    prev.style.color = fg;
+    prev.style.background = bg;
+}
+
+function updateSwatches() {
+    document.getElementById('swatch-fg').style.background = PS_COLORS[document.getElementById('sel-color').value] || 'transparent';
+    document.getElementById('swatch-bg').style.background = PS_COLORS[document.getElementById('sel-bgcolor').value] || 'transparent';
+}
+
+function setupActionTypeChange() {
+    document.getElementById('sel-action-type').addEventListener('change', function() {
+        updateActionFields();
+    });
+}
+
+function updateActionFields(action) {
+    const type = document.getElementById('sel-action-type').value;
+    const container = document.getElementById('action-fields');
+    container.innerHTML = '';
+    if (type === 'npc') {
+        container.innerHTML = `<div class="form-row"><label>NPC ID</label><input type="text" id="act-npcid" value="${action && action.npcId ? action.npcId : ''}" placeholder="npc_id"></div>`;
+    } else if (type === 'sign') {
+        container.innerHTML = `<div class="form-row"><label>Sign Text</label><textarea id="act-signtext" placeholder="Text to display">${action && action.text ? action.text : ''}</textarea></div>`;
+    } else if (type === 'shop') {
+        container.innerHTML = `
+            <div class="form-row"><label>NPC ID</label><input type="text" id="act-npcid" value="${action && action.npcId ? action.npcId : ''}" placeholder="shopkeeper_id"></div>
+            <div class="form-row"><label>Shop ID</label><input type="text" id="act-shopid" value="${action && action.shopId ? action.shopId : ''}" placeholder="shop_id"></div>`;
+    } else if (type === 'trigger') {
+        container.innerHTML = `<div class="form-row"><label>Trigger</label><input type="text" id="act-trigger" value="${action && action.trigger ? action.trigger : ''}" placeholder="trigger_name"></div>`;
+    }
+}
+
+function applyTileDef() {
+    const ch = document.getElementById('sel-char').value;
+    if (!ch) return;
+    const def = {
+        color: document.getElementById('sel-color').value || 'Gray',
+        passable: document.getElementById('sel-passable').checked,
+        name: document.getElementById('sel-name').value || ''
+    };
+    const bgc = document.getElementById('sel-bgcolor').value;
+    if (bgc) def.bgColor = bgc;
+    if (document.getElementById('sel-animated').checked) def.animated = true;
+    const actionType = document.getElementById('sel-action-type').value;
+    if (actionType) {
+        def.action = { type: actionType };
+        if (actionType === 'npc') {
+            const el = document.getElementById('act-npcid');
+            if (el) def.action.npcId = el.value;
+        } else if (actionType === 'sign') {
+            const el = document.getElementById('act-signtext');
+            if (el) def.action.text = el.value;
+        } else if (actionType === 'shop') {
+            const npc = document.getElementById('act-npcid');
+            const shop = document.getElementById('act-shopid');
+            if (npc) def.action.npcId = npc.value;
+            if (shop) def.action.shopId = shop.value;
+        } else if (actionType === 'trigger') {
+            const el = document.getElementById('act-trigger');
+            if (el) def.action.trigger = el.value;
+        }
+    }
+    state.tileDefs[ch] = def;
+    state.selectedChar = ch;
+    state.dirty = true;
+    buildPalette();
+    renderGrid();
+    setStatus(`Tile '${ch}' definition updated.`);
+}
+
+/* ──────────────────────────────────────────
+   CANVAS RENDERING
+   ────────────────────────────────────────── */
+
+function renderGrid() {
+    if (!state.width || !state.height) return;
+    const cs = Math.round(state.cellSize * state.zoom);
+    const w = state.width * cs;
+    const h = state.height * cs;
+    canvas.width = w;
+    canvas.height = h;
+
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.font = `${Math.max(8, cs - 6)}px Consolas, 'Courier New', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (let r = 0; r < state.height; r++) {
+        for (let c = 0; c < state.width; c++) {
+            const ch = state.grid[r][c] || ' ';
+            const def = state.tileDefs[ch] || DEFAULT_TILES[ch];
+            const x = c * cs;
+            const y = r * cs;
+
+            // Background
+            if (def && def.bgColor) {
+                ctx.fillStyle = PS_COLORS[def.bgColor] || '#111';
+            } else {
+                ctx.fillStyle = '#111';
+            }
+            ctx.fillRect(x, y, cs, cs);
+
+            // Character
+            if (ch !== ' ') {
+                ctx.fillStyle = def ? (PS_COLORS[def.color] || '#808080') : '#808080';
+                ctx.fillText(ch, x + cs / 2, y + cs / 2 + 1);
+            }
+        }
+    }
+
+    // Grid lines
+    if (state.showGrid && cs >= 8) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let c = 0; c <= state.width; c++) {
+            ctx.moveTo(c * cs + 0.5, 0);
+            ctx.lineTo(c * cs + 0.5, h);
+        }
+        for (let r = 0; r <= state.height; r++) {
+            ctx.moveTo(0, r * cs + 0.5);
+            ctx.lineTo(w, r * cs + 0.5);
+        }
+        ctx.stroke();
+    }
+
+    // Start position marker
+    const sx = state.startPosition.x;
+    const sy = state.startPosition.y;
+    if (sx >= 0 && sx < state.width && sy >= 0 && sy < state.height) {
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(sx * cs + 1, sy * cs + 1, cs - 2, cs - 2);
+        ctx.fillStyle = '#00ff00';
+        ctx.font = `bold ${Math.max(6, cs * 0.4)}px sans-serif`;
+        ctx.fillText('S', sx * cs + cs / 2, sy * cs + cs * 0.2 + 1);
+        ctx.font = `${Math.max(8, cs - 6)}px Consolas, 'Courier New', monospace`;
+    }
+
+    // Connection markers
+    for (const [id, conn] of Object.entries(state.connections)) {
+        const cx = conn.position.x;
+        const cy = conn.position.y;
+        if (cx >= 0 && cx < state.width && cy >= 0 && cy < state.height) {
+            ctx.strokeStyle = '#ff8800';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(cx * cs + 1, cy * cs + 1, cs - 2, cs - 2);
+            ctx.fillStyle = '#ff8800';
+            ctx.font = `bold ${Math.max(6, cs * 0.35)}px sans-serif`;
+            ctx.fillText('⇨', cx * cs + cs / 2, cy * cs + cs * 0.2 + 1);
+            ctx.font = `${Math.max(8, cs - 6)}px Consolas, 'Courier New', monospace`;
+        }
+    }
+
+    // Override markers
+    state.tileOverrides.forEach((ovr, i) => {
+        const ox = ovr.position.x;
+        const oy = ovr.position.y;
+        if (ox >= 0 && ox < state.width && oy >= 0 && oy < state.height) {
+            ctx.strokeStyle = '#aa44ff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([3, 2]);
+            ctx.strokeRect(ox * cs + 1, oy * cs + 1, cs - 2, cs - 2);
+            ctx.setLineDash([]);
+        }
+    });
+
+    // Hover highlight
+    if (state.cursor.x >= 0 && state.cursor.y >= 0 && state.cursor.x < state.width && state.cursor.y < state.height) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(state.cursor.x * cs + 1, state.cursor.y * cs + 1, cs - 2, cs - 2);
+    }
+}
+
+/* ──────────────────────────────────────────
+   CANVAS EVENTS
+   ────────────────────────────────────────── */
+
+function getCellFromEvent(e) {
+    const rect = canvas.getBoundingClientRect();
+    const cs = Math.round(state.cellSize * state.zoom);
+    const x = Math.floor((e.clientX - rect.left) / cs);
+    const y = Math.floor((e.clientY - rect.top) / cs);
+    return { x: Math.max(0, Math.min(x, state.width - 1)), y: Math.max(0, Math.min(y, state.height - 1)) };
+}
+
+function setupCanvasEvents() {
+    canvas.addEventListener('mousemove', (e) => {
+        if (!state.width) return;
+        const cell = getCellFromEvent(e);
+        state.cursor = cell;
+        if (state.isPainting) {
+            paintCell(cell.x, cell.y);
+        }
+        updateStatusBar();
+        renderGrid();
+
+        // Tooltip
+        const ch = state.grid[cell.y] && state.grid[cell.y][cell.x] || ' ';
+        const def = state.tileDefs[ch] || DEFAULT_TILES[ch] || {};
+        const tip = document.getElementById('tooltip');
+        tip.textContent = `(${cell.x},${cell.y}) '${ch}' ${def.name || ''}`;
+        tip.style.display = 'block';
+        tip.style.left = (e.clientX + 14) + 'px';
+        tip.style.top = (e.clientY + 14) + 'px';
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        state.cursor = { x: -1, y: -1 };
+        document.getElementById('tooltip').style.display = 'none';
+        renderGrid();
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (!state.width || e.button === 2) return;
+        if (e.button === 0) {
+            const cell = getCellFromEvent(e);
+
+            // Special pick modes
+            if (state.pickingStart) {
+                state.startPosition = { x: cell.x, y: cell.y };
+                document.getElementById('prop-startx').value = cell.x;
+                document.getElementById('prop-starty').value = cell.y;
+                state.pickingStart = false;
+                canvas.style.cursor = 'crosshair';
+                state.dirty = true;
+                setStatus(`Start position set to (${cell.x}, ${cell.y})`);
+                renderGrid();
+                return;
+            }
+            if (state.pickingConnPos) {
+                document.getElementById('conn-pos-display').textContent = `(${cell.x}, ${cell.y})`;
+                state.pickingConnPos = false;
+                canvas.style.cursor = 'crosshair';
+                return;
+            }
+
+            state.isPainting = true;
+            paintCell(cell.x, cell.y);
+        }
+    });
+
+    canvas.addEventListener('mouseup', () => { state.isPainting = false; });
+    document.addEventListener('mouseup', () => { state.isPainting = false; });
+
+    canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (!state.width) return;
+        const cell = getCellFromEvent(e);
+        state.ctxCell = cell;
+        showCtxMenu(e.clientX, e.clientY);
+    });
+}
+
+function paintCell(x, y) {
+    if (x < 0 || x >= state.width || y < 0 || y >= state.height) return;
+    if (state.tool === 'paint') {
+        if (state.grid[y][x] !== state.selectedChar) {
+            state.grid[y][x] = state.selectedChar;
+            state.dirty = true;
+            autoExpand(x, y);
+            renderGrid();
+        }
+    } else if (state.tool === 'erase') {
+        if (state.grid[y][x] !== ' ') {
+            state.grid[y][x] = ' ';
+            state.dirty = true;
+            renderGrid();
+        }
+    } else if (state.tool === 'fill') {
+        floodFill(x, y, state.grid[y][x], state.selectedChar);
+        state.dirty = true;
+        state.isPainting = false; // don't drag-fill
+        renderGrid();
+    } else if (state.tool === 'pick') {
+        const ch = state.grid[y][x] || ' ';
+        selectPaletteTile(ch);
+        setTool('paint');
+        state.isPainting = false;
+    }
+}
+
+function floodFill(x, y, oldChar, newChar) {
+    if (oldChar === newChar) return;
+    if (x < 0 || x >= state.width || y < 0 || y >= state.height) return;
+    if (state.grid[y][x] !== oldChar) return;
+    state.grid[y][x] = newChar;
+    floodFill(x + 1, y, oldChar, newChar);
+    floodFill(x - 1, y, oldChar, newChar);
+    floodFill(x, y + 1, oldChar, newChar);
+    floodFill(x, y - 1, oldChar, newChar);
+}
+
+function autoExpand(x, y) {
+    // If painting within 1 cell of edge, expand by 5 in that direction
+    const pad = 5;
+    let top = 0, bottom = 0, left = 0, right = 0;
+    if (y <= 0) top = pad;
+    if (y >= state.height - 1) bottom = pad;
+    if (x <= 0) left = pad;
+    if (x >= state.width - 1) right = pad;
+    if (top || bottom || left || right) {
+        resizeGrid(top, bottom, left, right);
+        setStatus(`Grid auto-expanded to ${state.width}×${state.height}`);
+    }
+}
+
+/* ──────────────────────────────────────────
+   KEYBOARD SHORTCUTS
+   ────────────────────────────────────────── */
+
+function setupKeyboard() {
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+        // ── Ctrl / Alt shortcuts (always handled first) ──
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault(); saveMap(); return;
+        }
+        if (e.ctrlKey && e.key === 'n') {
+            e.preventDefault(); showNewMapDialog(); return;
+        }
+        if (e.ctrlKey && e.key === 'z') {
+            e.preventDefault(); /* TODO: undo */ return;
+        }
+
+        // ── Modal open? Don't process further ──
+        if (document.querySelector('.modal-overlay.show')) return;
+
+        // ── Tool shortcuts (Alt+key so they never collide with typing) ──
+        if (e.altKey) {
+            if (e.key === 'p' || e.key === 'b') { setTool('paint'); e.preventDefault(); }
+            else if (e.key === 'e') { setTool('erase'); e.preventDefault(); }
+            else if (e.key === 'f') { setTool('fill');  e.preventDefault(); }
+            else if (e.key === 'i') { setTool('pick');  e.preventDefault(); }
+            else if (e.key === 'g') { toggleGridLines(); e.preventDefault(); }
+            return;
+        }
+
+        // ── Zoom (always available) ──
+        if (e.key === '+' || (e.key === '=' && !e.shiftKey && state.cursor.x < 0)) { zoomIn(); return; }
+        if (e.key === '-' && state.cursor.x < 0) { zoomOut(); return; }
+
+        // ── Delete / Backspace to erase cell under cursor ──
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            if (state.width && state.cursor.x >= 0) {
+                e.preventDefault();
+                state.grid[state.cursor.y][state.cursor.x] = ' ';
+                state.dirty = true;
+                renderGrid();
+            }
+            return;
+        }
+
+        // ── Arrow keys to move cursor on the grid ──
+        if (e.key.startsWith('Arrow') && state.width && state.cursor.x >= 0) {
+            e.preventDefault();
+            if (e.key === 'ArrowLeft')  state.cursor.x = Math.max(0, state.cursor.x - 1);
+            if (e.key === 'ArrowRight') state.cursor.x = Math.min(state.width - 1, state.cursor.x + 1);
+            if (e.key === 'ArrowUp')    state.cursor.y = Math.max(0, state.cursor.y - 1);
+            if (e.key === 'ArrowDown')  state.cursor.y = Math.min(state.height - 1, state.cursor.y + 1);
+            updateStatusBar();
+            renderGrid();
+            return;
+        }
+
+        // ── Escape clears cursor / cancels pick modes ──
+        if (e.key === 'Escape') return; // handled by the global Escape listener
+
+        // ── Direct character input to grid ──
+        // Any single printable character (length 1) typed while cursor is on
+        // the grid will be placed at the cursor cell and selected as the
+        // active painting tile.  This lets you type '#', '.', '~', 'T', etc.
+        // directly without touching the palette.
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && state.width && state.cursor.x >= 0) {
+            const ch = e.key;
+            e.preventDefault();
+
+            // Place on grid
+            state.grid[state.cursor.y][state.cursor.x] = ch;
+            state.dirty = true;
+
+            // Also select as active tile so continued painting uses it
+            state.selectedChar = ch;
+            if (!state.tileDefs[ch] && !DEFAULT_TILES[ch]) {
+                // Auto-create a minimal definition for new chars
+                state.tileDefs[ch] = { color: 'Gray', passable: true, name: '' };
+            }
+            selectPaletteTile(ch);
+
+            renderGrid();
+            setStatus(`Typed '${ch}' at (${state.cursor.x}, ${state.cursor.y})`);
+        }
+    });
+}
+
+/* ──────────────────────────────────────────
+   TOOLS
+   ────────────────────────────────────────── */
+
+function setTool(tool) {
+    state.tool = tool;
+    document.querySelectorAll('.tool-group .tb-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('tool-' + tool);
+    if (btn) btn.classList.add('active');
+    canvas.style.cursor = tool === 'pick' ? 'pointer' : tool === 'fill' ? 'cell' : 'crosshair';
+}
+
+function zoomIn() {
+    state.zoom = Math.min(4, state.zoom + 0.25);
+    document.getElementById('s-zoom').textContent = Math.round(state.zoom * 100) + '%';
+    renderGrid();
+}
+
+function zoomOut() {
+    state.zoom = Math.max(0.25, state.zoom - 0.25);
+    document.getElementById('s-zoom').textContent = Math.round(state.zoom * 100) + '%';
+    renderGrid();
+}
+
+function toggleGridLines() {
+    state.showGrid = !state.showGrid;
+    document.getElementById('btn-gridlines').classList.toggle('active', state.showGrid);
+    renderGrid();
+}
+
+/* ──────────────────────────────────────────
+   CONTEXT MENU
+   ────────────────────────────────────────── */
+
+function showCtxMenu(x, y) {
+    const menu = document.getElementById('ctx-menu');
+    menu.style.display = 'block';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    // Keep on screen
+    const r = menu.getBoundingClientRect();
+    if (r.right > window.innerWidth) menu.style.left = (x - r.width) + 'px';
+    if (r.bottom > window.innerHeight) menu.style.top = (y - r.height) + 'px';
+}
+
+function hideCtxMenu() {
+    document.getElementById('ctx-menu').style.display = 'none';
+}
+
+function ctxSetStart() {
+    state.startPosition = { x: state.ctxCell.x, y: state.ctxCell.y };
+    document.getElementById('prop-startx').value = state.ctxCell.x;
+    document.getElementById('prop-starty').value = state.ctxCell.y;
+    state.dirty = true;
+    renderGrid();
+    setStatus(`Start position set to (${state.ctxCell.x}, ${state.ctxCell.y})`);
+}
+
+function ctxAddConnection() {
+    // Check if there's already a connection at this position
+    let existingId = null;
+    for (const [id, conn] of Object.entries(state.connections)) {
+        if (conn.position.x === state.ctxCell.x && conn.position.y === state.ctxCell.y) {
+            existingId = id;
+            break;
+        }
+    }
+    showConnectionDialog(existingId, state.ctxCell.x, state.ctxCell.y);
+}
+
+function ctxAddOverride() {
+    let existingIdx = state.tileOverrides.findIndex(o =>
+        o.position.x === state.ctxCell.x && o.position.y === state.ctxCell.y);
+    showOverrideDialog(existingIdx >= 0 ? existingIdx : null, state.ctxCell.x, state.ctxCell.y);
+}
+
+function ctxTogglePassable() {
+    const ch = state.grid[state.ctxCell.y][state.ctxCell.x];
+    if (!ch || ch === ' ') return;
+    if (!state.tileDefs[ch]) {
+        state.tileDefs[ch] = { ...(DEFAULT_TILES[ch] || { color: 'Gray', passable: true, name: '' }) };
+    }
+    state.tileDefs[ch].passable = !state.tileDefs[ch].passable;
+    state.dirty = true;
+    setStatus(`'${ch}' passable: ${state.tileDefs[ch].passable}`);
+    selectPaletteTile(ch);
+}
+
+function ctxSetAction(type) {
+    const ch = state.grid[state.ctxCell.y][state.ctxCell.x];
+    if (!ch || ch === ' ') return;
+    if (!state.tileDefs[ch]) {
+        state.tileDefs[ch] = { ...(DEFAULT_TILES[ch] || { color: 'Gray', passable: false, name: '' }) };
+    }
+    state.tileDefs[ch].action = { type };
+    selectPaletteTile(ch);
+    document.getElementById('sel-action-type').value = type;
+    updateActionFields(state.tileDefs[ch].action);
+    setStatus(`Set '${ch}' action to ${type} — fill in details in sidebar.`);
+}
+
+function ctxCopyTile() {
+    const ch = state.grid[state.ctxCell.y][state.ctxCell.x];
+    const def = state.tileDefs[ch] || DEFAULT_TILES[ch] || null;
+    state.clipboard = { char: ch, def: def ? JSON.parse(JSON.stringify(def)) : null };
+    setStatus(`Copied tile '${ch}'`);
+}
+
+function ctxPasteTile() {
+    if (!state.clipboard) { setStatus('Nothing to paste'); return; }
+    state.grid[state.ctxCell.y][state.ctxCell.x] = state.clipboard.char;
+    if (state.clipboard.def) {
+        state.tileDefs[state.clipboard.char] = JSON.parse(JSON.stringify(state.clipboard.def));
+    }
+    state.dirty = true;
+    renderGrid();
+    setStatus(`Pasted tile '${state.clipboard.char}' at (${state.ctxCell.x}, ${state.ctxCell.y})`);
+}
+
+/* ──────────────────────────────────────────
+   MAP CREATION & RESIZE
+   ────────────────────────────────────────── */
+
+function showNewMapDialog() {
+    document.getElementById('modal-newmap').classList.add('show');
+}
+
+function applyPreset() {
+    const val = document.getElementById('new-preset').value;
+    if (!val) return;
+    const [w, h] = val.split(',').map(Number);
+    document.getElementById('new-width').value = w;
+    document.getElementById('new-height').value = h;
+}
+
+function createNewMap() {
+    const name = document.getElementById('new-mapname').value.trim() || 'Map-NewMap-1';
+    const display = document.getElementById('new-display').value.trim() || 'New Map';
+    const desc = document.getElementById('new-desc').value.trim();
+    const w = parseInt(document.getElementById('new-width').value) || 80;
+    const h = parseInt(document.getElementById('new-height').value) || 25;
+    const border = document.getElementById('new-border').checked;
+    const floor = document.getElementById('new-floor').value || '.';
+
+    state.mapName = name;
+    state.displayName = display;
+    state.description = desc;
+    state.width = w;
+    state.height = h;
+    state.grid = [];
+    state.tileDefs = JSON.parse(JSON.stringify(DEFAULT_TILES));
+    state.connections = {};
+    state.tileOverrides = [];
+    state.encounters = { enabled: false, chance: 10, enemies: [] };
+    state.startPosition = { x: Math.floor(w / 2), y: Math.floor(h / 2) };
+    state.dirty = false;
+
+    for (let r = 0; r < h; r++) {
+        state.grid[r] = [];
+        for (let c = 0; c < w; c++) {
+            if (border && (r === 0 || r === h - 1 || c === 0 || c === w - 1)) {
+                state.grid[r][c] = '#';
+            } else {
+                state.grid[r][c] = floor;
+            }
+        }
+    }
+
+    // Update UI
+    document.getElementById('prop-mapname').value = name;
+    document.getElementById('prop-display').value = display;
+    document.getElementById('prop-desc').value = desc;
+    document.getElementById('prop-startx').value = state.startPosition.x;
+    document.getElementById('prop-starty').value = state.startPosition.y;
+    document.getElementById('enc-enabled').checked = false;
+    document.getElementById('enc-chance').value = 10;
+
+    closeModal('modal-newmap');
+    document.getElementById('welcome').style.display = 'none';
+    updateSidebar();
+    buildPalette();
+    renderGrid();
+    updateStatusBar();
+    document.getElementById('toolbar-map-name').textContent = display;
+    setStatus(`Created new map: ${display} (${w}×${h})`);
+}
+
+function showResizeDialog() {
+    if (!state.width) { setStatus('No map loaded'); return; }
+    document.getElementById('resize-top').value = 0;
+    document.getElementById('resize-bottom').value = 0;
+    document.getElementById('resize-left').value = 0;
+    document.getElementById('resize-right').value = 0;
+    document.getElementById('resize-info').textContent = `Current size: ${state.width}×${state.height}`;
+    document.getElementById('modal-resize').classList.add('show');
+}
+
+function applyResize() {
+    const top = parseInt(document.getElementById('resize-top').value) || 0;
+    const bottom = parseInt(document.getElementById('resize-bottom').value) || 0;
+    const left = parseInt(document.getElementById('resize-left').value) || 0;
+    const right = parseInt(document.getElementById('resize-right').value) || 0;
+    resizeGrid(top, bottom, left, right);
+    closeModal('modal-resize');
+    renderGrid();
+    setStatus(`Resized to ${state.width}×${state.height}`);
+}
+
+function resizeGrid(top, bottom, left, right) {
+    const newW = state.width + left + right;
+    const newH = state.height + top + bottom;
+    if (newW < 3 || newH < 3) { setStatus('Map too small!'); return; }
+
+    const newGrid = [];
+    for (let r = 0; r < newH; r++) {
+        newGrid[r] = [];
+        for (let c = 0; c < newW; c++) {
+            const srcR = r - top;
+            const srcC = c - left;
+            if (srcR >= 0 && srcR < state.height && srcC >= 0 && srcC < state.width) {
+                newGrid[r][c] = state.grid[srcR][srcC];
+            } else {
+                newGrid[r][c] = ' ';
+            }
+        }
+    }
+    state.grid = newGrid;
+    state.width = newW;
+    state.height = newH;
+
+    // Offset connections and start position
+    if (left !== 0 || top !== 0) {
+        state.startPosition.x += left;
+        state.startPosition.y += top;
+        for (const conn of Object.values(state.connections)) {
+            conn.position.x += left;
+            conn.position.y += top;
+        }
+        for (const ovr of state.tileOverrides) {
+            ovr.position.x += left;
+            ovr.position.y += top;
+        }
+        document.getElementById('prop-startx').value = state.startPosition.x;
+        document.getElementById('prop-starty').value = state.startPosition.y;
+    }
+    state.dirty = true;
+    updateStatusBar();
+}
+
+function shrinkToFit() {
+    if (!state.width) return;
+    let minX = state.width, minY = state.height, maxX = -1, maxY = -1;
+    for (let r = 0; r < state.height; r++) {
+        for (let c = 0; c < state.width; c++) {
+            if (state.grid[r][c] && state.grid[r][c] !== ' ') {
+                minX = Math.min(minX, c);
+                minY = Math.min(minY, r);
+                maxX = Math.max(maxX, c);
+                maxY = Math.max(maxY, r);
+            }
+        }
+    }
+    if (maxX < 0) { setStatus('Map is empty!'); return; }
+
+    const trimLeft = -minX;
+    const trimTop = -minY;
+    const trimRight = -(state.width - 1 - maxX);
+    const trimBottom = -(state.height - 1 - maxY);
+
+    if (trimLeft === 0 && trimTop === 0 && trimRight === 0 && trimBottom === 0) {
+        setStatus('Map already fits content.');
+        return;
+    }
+
+    resizeGrid(trimTop, trimBottom, trimLeft, trimRight);
+    renderGrid();
+    setStatus(`Shrunk to ${state.width}×${state.height}`);
+}
+
+/* ──────────────────────────────────────────
+   START POSITION PICKER
+   ────────────────────────────────────────── */
+
+function pickStartPosition() {
+    if (!state.width) return;
+    state.pickingStart = true;
+    canvas.style.cursor = 'cell';
+    setStatus('Click on the map to set the start position...');
+}
+
+/* ──────────────────────────────────────────
+   CONNECTIONS
+   ────────────────────────────────────────── */
+
+function updateConnectionsList() {
+    const container = document.getElementById('conn-list');
+    container.innerHTML = '';
+    for (const [id, conn] of Object.entries(state.connections)) {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+            <span class="label" title="${id}: (${conn.position.x},${conn.position.y}) → ${conn.targetMap}">
+                🚪 ${id} → ${conn.targetMap.replace('Map-','').replace('-1','')}
+            </span>
+            <button onclick="showConnectionDialog('${id}')" title="Edit">✏️</button>
+            <button onclick="removeConnection('${id}')" title="Delete">✕</button>
+        `;
+        container.appendChild(item);
+    }
+}
+
+function showConnectionDialog(existingId, posX, posY) {
+    state.editingConnId = existingId || null;
+    const modal = document.getElementById('modal-connection');
+
+    // Populate target map dropdown
+    const sel = document.getElementById('conn-target-map');
+    sel.innerHTML = '<option value="">-- Select or type below --</option>';
+    for (const m of state.knownMaps) {
+        sel.innerHTML += `<option value="${m.name}">${m.name}</option>`;
+    }
+
+    if (existingId && state.connections[existingId]) {
+        const conn = state.connections[existingId];
+        document.getElementById('conn-name').value = existingId;
+        document.getElementById('conn-pos-display').textContent = `(${conn.position.x}, ${conn.position.y})`;
+        document.getElementById('conn-target-map-custom').value = conn.targetMap;
+        document.getElementById('conn-target-config').value = conn.targetConfig || '';
+        document.getElementById('conn-target-x').value = conn.targetPosition.x;
+        document.getElementById('conn-target-y').value = conn.targetPosition.y;
+        // Try to select in dropdown
+        sel.value = conn.targetMap;
+    } else {
+        document.getElementById('conn-name').value = 'connection_' + (Object.keys(state.connections).length + 1);
+        document.getElementById('conn-pos-display').textContent = posX !== undefined ? `(${posX}, ${posY})` : 'Click on map first';
+        document.getElementById('conn-target-map-custom').value = '';
+        document.getElementById('conn-target-config').value = '';
+        document.getElementById('conn-target-x').value = 1;
+        document.getElementById('conn-target-y').value = 1;
+    }
+
+    // Store position for saving
+    if (posX !== undefined) {
+        modal.dataset.posX = posX;
+        modal.dataset.posY = posY;
+    } else if (existingId && state.connections[existingId]) {
+        modal.dataset.posX = state.connections[existingId].position.x;
+        modal.dataset.posY = state.connections[existingId].position.y;
+    }
+
+    loadConnTargetPreview();
+    modal.classList.add('show');
+}
+
+async function loadConnTargetPreview() {
+    const canvasEl = document.getElementById('conn-preview-canvas');
+    const ctxPrev = canvasEl.getContext('2d');
+    const targetName = document.getElementById('conn-target-map').value || document.getElementById('conn-target-map-custom').value;
+
+    // Auto-fill config name
+    if (targetName) {
+        const configName = targetName.replace('Map-', 'MapConfig-');
+        document.getElementById('conn-target-config').value = configName;
+    }
+
+    if (!targetName) {
+        canvasEl.width = 0;
+        canvasEl.height = 0;
+        return;
+    }
+
+    // Try to load from known maps
+    let mapData = null;
+    let mapConfig = null;
+
+    // First check if it's the current map
+    if (targetName === state.mapName) {
+        mapData = { grid: state.grid, width: state.width, height: state.height };
+        mapConfig = state.tileDefs;
+    } else {
+        // Try loading from directory handle
+        const known = state.knownMaps.find(m => m.name === targetName);
+        if (known && known.grid) {
+            mapData = { grid: known.grid, width: known.width, height: known.height };
+            mapConfig = known.tileDefs || {};
+        } else if (state.dirHandle) {
+            try {
+                const txtFile = await state.dirHandle.getFileHandle(targetName + '.txt');
+                const txt = await (await txtFile.getFile()).text();
+                const parsed = parseMapText(txt);
+                const configName = targetName.replace('Map-', 'MapConfig-');
+                let tileDefs = {};
+                try {
+                    const cfgFile = await state.dirHandle.getFileHandle(configName + '.json');
+                    const cfgJson = JSON.parse(await (await cfgFile.getFile()).text());
+                    tileDefs = cfgJson.tiles || {};
+                } catch(e) {}
+                mapData = parsed;
+                mapConfig = tileDefs;
+            } catch (e) {
+                canvasEl.width = 0;
+                canvasEl.height = 0;
+                return;
+            }
+        }
+    }
+
+    if (!mapData) {
+        canvasEl.width = 0;
+        canvasEl.height = 0;
+        return;
+    }
+
+    // Render mini preview
+    const cs = 12;
+    canvasEl.width = mapData.width * cs;
+    canvasEl.height = mapData.height * cs;
+    ctxPrev.fillStyle = '#111';
+    ctxPrev.fillRect(0, 0, canvasEl.width, canvasEl.height);
+    ctxPrev.font = `${cs - 2}px Consolas, monospace`;
+    ctxPrev.textAlign = 'center';
+    ctxPrev.textBaseline = 'middle';
+
+    for (let r = 0; r < mapData.height; r++) {
+        for (let c = 0; c < mapData.width; c++) {
+            const ch = mapData.grid[r][c] || ' ';
+            const def = mapConfig[ch] || DEFAULT_TILES[ch];
+            if (def && def.bgColor) {
+                ctxPrev.fillStyle = PS_COLORS[def.bgColor] || '#111';
+                ctxPrev.fillRect(c * cs, r * cs, cs, cs);
+            }
+            if (ch !== ' ') {
+                ctxPrev.fillStyle = def ? (PS_COLORS[def.color] || '#555') : '#555';
+                ctxPrev.fillText(ch, c * cs + cs / 2, r * cs + cs / 2);
+            }
+        }
+    }
+
+    // Draw target position
+    const tx = parseInt(document.getElementById('conn-target-x').value) || 0;
+    const ty = parseInt(document.getElementById('conn-target-y').value) || 0;
+    ctxPrev.strokeStyle = '#00ff00';
+    ctxPrev.lineWidth = 2;
+    ctxPrev.strokeRect(tx * cs, ty * cs, cs, cs);
+
+    // Click handler for setting spawn
+    canvasEl.onclick = (e) => {
+        const rect = canvasEl.getBoundingClientRect();
+        const cx = Math.floor((e.clientX - rect.left) / cs);
+        const cy = Math.floor((e.clientY - rect.top) / cs);
+        document.getElementById('conn-target-x').value = cx;
+        document.getElementById('conn-target-y').value = cy;
+        loadConnTargetPreview(); // redraw marker
+    };
+}
+
+function saveConnection() {
+    const name = document.getElementById('conn-name').value.trim();
+    if (!name) { alert('Connection name is required.'); return; }
+    const modal = document.getElementById('modal-connection');
+    const posX = parseInt(modal.dataset.posX);
+    const posY = parseInt(modal.dataset.posY);
+    if (isNaN(posX) || isNaN(posY)) { alert('Position not set. Right-click a map tile first.'); return; }
+
+    const targetMap = document.getElementById('conn-target-map').value || document.getElementById('conn-target-map-custom').value.trim();
+    const targetConfig = document.getElementById('conn-target-config').value.trim() || targetMap.replace('Map-', 'MapConfig-');
+    const targetX = parseInt(document.getElementById('conn-target-x').value) || 0;
+    const targetY = parseInt(document.getElementById('conn-target-y').value) || 0;
+
+    if (!targetMap) { alert('Please select or enter a target map.'); return; }
+
+    // If editing, delete old key first
+    if (state.editingConnId && state.editingConnId !== name) {
+        delete state.connections[state.editingConnId];
+    }
+
+    state.connections[name] = {
+        position: { x: posX, y: posY },
+        targetMap: targetMap,
+        targetConfig: targetConfig,
+        targetPosition: { x: targetX, y: targetY }
+    };
+
+    state.dirty = true;
+    updateConnectionsList();
+    closeModal('modal-connection');
+    renderGrid();
+    setStatus(`Connection '${name}' saved.`);
+}
+
+function deleteConnection() {
+    if (state.editingConnId && state.connections[state.editingConnId]) {
+        delete state.connections[state.editingConnId];
+        state.dirty = true;
+        updateConnectionsList();
+        renderGrid();
+    }
+    closeModal('modal-connection');
+}
+
+function removeConnection(id) {
+    delete state.connections[id];
+    state.dirty = true;
+    updateConnectionsList();
+    renderGrid();
+}
+
+/* ──────────────────────────────────────────
+   TILE OVERRIDES
+   ────────────────────────────────────────── */
+
+function updateOverridesList() {
+    const container = document.getElementById('override-list');
+    container.innerHTML = '';
+    state.tileOverrides.forEach((ovr, i) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+            <span class="label" title="(${ovr.position.x},${ovr.position.y}) trigger:${ovr.condition.trigger} → '${ovr.replaceTile}'">
+                🔄 (${ovr.position.x},${ovr.position.y}) → '${ovr.replaceTile}'
+            </span>
+            <button onclick="showOverrideDialog(${i})" title="Edit">✏️</button>
+            <button onclick="removeOverride(${i})" title="Delete">✕</button>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function showOverrideDialog(idx, posX, posY) {
+    state.editingOverrideIdx = idx != null ? idx : -1;
+    if (idx != null && state.tileOverrides[idx]) {
+        const ovr = state.tileOverrides[idx];
+        document.getElementById('ovr-pos-display').textContent = `(${ovr.position.x}, ${ovr.position.y})`;
+        document.getElementById('ovr-trigger').value = ovr.condition.trigger;
+        document.getElementById('ovr-replace').value = ovr.replaceTile;
+        document.getElementById('modal-override').dataset.posX = ovr.position.x;
+        document.getElementById('modal-override').dataset.posY = ovr.position.y;
+    } else {
+        document.getElementById('ovr-pos-display').textContent = posX !== undefined ? `(${posX}, ${posY})` : 'Click on map first';
+        document.getElementById('ovr-trigger').value = '';
+        document.getElementById('ovr-replace').value = '.';
+        if (posX !== undefined) {
+            document.getElementById('modal-override').dataset.posX = posX;
+            document.getElementById('modal-override').dataset.posY = posY;
+        }
+    }
+    document.getElementById('modal-override').classList.add('show');
+}
+
+function saveOverride() {
+    const modal = document.getElementById('modal-override');
+    const posX = parseInt(modal.dataset.posX);
+    const posY = parseInt(modal.dataset.posY);
+    if (isNaN(posX) || isNaN(posY)) { alert('Position not set.'); return; }
+    const trigger = document.getElementById('ovr-trigger').value.trim();
+    if (!trigger) { alert('Trigger name is required.'); return; }
+    const replaceTile = document.getElementById('ovr-replace').value || '.';
+
+    const obj = {
+        position: { x: posX, y: posY },
+        condition: { trigger: trigger },
+        replaceTile: replaceTile
+    };
+
+    if (state.editingOverrideIdx >= 0) {
+        state.tileOverrides[state.editingOverrideIdx] = obj;
+    } else {
+        state.tileOverrides.push(obj);
+    }
+    state.dirty = true;
+    updateOverridesList();
+    closeModal('modal-override');
+    renderGrid();
+}
+
+function deleteOverride() {
+    if (state.editingOverrideIdx >= 0) {
+        state.tileOverrides.splice(state.editingOverrideIdx, 1);
+        state.dirty = true;
+        updateOverridesList();
+        renderGrid();
+    }
+    closeModal('modal-override');
+}
+
+function removeOverride(idx) {
+    state.tileOverrides.splice(idx, 1);
+    state.dirty = true;
+    updateOverridesList();
+    renderGrid();
+}
+
+/* ──────────────────────────────────────────
+   ENCOUNTERS / ENEMIES
+   ────────────────────────────────────────── */
+
+function updateEnemyList() {
+    const container = document.getElementById('enemy-list');
+    container.innerHTML = '';
+    state.encounters.enemies.forEach((en, i) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+            <span class="label" title="${en.name}: ${en.chance}% chance, ${en.minCount}-${en.maxCount} count, Lv${en.minLevel}-${en.maxLevel}">
+                👾 ${en.name} (${en.chance}%, Lv${en.minLevel}-${en.maxLevel})
+            </span>
+            <button onclick="showEnemyDialog(${i})" title="Edit">✏️</button>
+            <button onclick="removeEnemy(${i})" title="Delete">✕</button>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function showEnemyDialog(idx) {
+    if (idx !== undefined && idx >= 0) {
+        state.editingEnemyIdx = idx;
+        const en = state.encounters.enemies[idx];
+        document.getElementById('enemy-modal-title').textContent = 'Edit Enemy Encounter';
+        document.getElementById('enemy-name').value = en.name;
+        document.getElementById('enemy-sprite').value = en.spriteId;
+        document.getElementById('enemy-chance').value = en.chance;
+        document.getElementById('enemy-mincount').value = en.minCount;
+        document.getElementById('enemy-maxcount').value = en.maxCount;
+        document.getElementById('enemy-minlvl').value = en.minLevel;
+        document.getElementById('enemy-maxlvl').value = en.maxLevel;
+    } else {
+        state.editingEnemyIdx = -1;
+        document.getElementById('enemy-modal-title').textContent = 'Add Enemy Encounter';
+        document.getElementById('enemy-name').value = '';
+        document.getElementById('enemy-sprite').value = '';
+        document.getElementById('enemy-chance').value = 50;
+        document.getElementById('enemy-mincount').value = 1;
+        document.getElementById('enemy-maxcount').value = 3;
+        document.getElementById('enemy-minlvl').value = 1;
+        document.getElementById('enemy-maxlvl').value = 3;
+    }
+    document.getElementById('modal-enemy').classList.add('show');
+}
+
+function saveEnemy() {
+    const en = {
+        name: document.getElementById('enemy-name').value.trim(),
+        spriteId: document.getElementById('enemy-sprite').value.trim(),
+        chance: parseInt(document.getElementById('enemy-chance').value) || 50,
+        minCount: parseInt(document.getElementById('enemy-mincount').value) || 1,
+        maxCount: parseInt(document.getElementById('enemy-maxcount').value) || 3,
+        minLevel: parseInt(document.getElementById('enemy-minlvl').value) || 1,
+        maxLevel: parseInt(document.getElementById('enemy-maxlvl').value) || 3
+    };
+    if (!en.name) { alert('Enemy name is required.'); return; }
+    if (!en.spriteId) en.spriteId = en.name;
+
+    if (state.editingEnemyIdx >= 0) {
+        state.encounters.enemies[state.editingEnemyIdx] = en;
+    } else {
+        state.encounters.enemies.push(en);
+    }
+    state.dirty = true;
+    updateEnemyList();
+    closeModal('modal-enemy');
+}
+
+function removeEnemy(idx) {
+    state.encounters.enemies.splice(idx, 1);
+    state.dirty = true;
+    updateEnemyList();
+}
+
+/* ──────────────────────────────────────────
+   SPECIAL CHARACTERS MODAL
+   ────────────────────────────────────────── */
+
+function showSpecialChars() {
+    const tabs = document.getElementById('char-tabs');
+    const body = document.getElementById('char-body');
+    tabs.innerHTML = '';
+    body.innerHTML = '';
+
+    const categories = Object.keys(SPECIAL_CHARS);
+    categories.forEach((cat, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
+        btn.textContent = cat;
+        btn.onclick = () => {
+            tabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderCharCategory(cat);
+        };
+        tabs.appendChild(btn);
+    });
+
+    renderCharCategory(categories[0]);
+    document.getElementById('modal-chars').classList.add('show');
+
+    function renderCharCategory(cat) {
+        body.innerHTML = '';
+        const grid = document.createElement('div');
+        grid.className = 'char-grid';
+        for (const ch of SPECIAL_CHARS[cat]) {
+            const cell = document.createElement('div');
+            cell.className = 'char-cell';
+            cell.textContent = ch;
+            cell.title = `U+${ch.codePointAt(0).toString(16).toUpperCase().padStart(4,'0')} — Click to select`;
+            cell.onclick = () => {
+                state.selectedChar = ch;
+                document.getElementById('sel-char').value = ch;
+                updateTilePreview();
+                if (!state.tileDefs[ch]) {
+                    state.tileDefs[ch] = { color: 'Gray', passable: false, name: '' };
+                }
+                selectPaletteTile(ch);
+                closeModal('modal-chars');
+            };
+            grid.appendChild(cell);
+        }
+        body.appendChild(grid);
+    }
+}
+
+/* ──────────────────────────────────────────
+   FILE I/O — File System Access API
+   ────────────────────────────────────────── */
+
+async function openFolder() {
+    if (!('showDirectoryPicker' in window)) {
+        alert('Your browser does not support the File System Access API.\nPlease use Chrome or Edge.\n\nAlternatively, use Import/Export buttons.');
+        return;
+    }
+
+    try {
+        state.dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    } catch (e) {
+        return; // user cancelled
+    }
+
+    // Scan for existing maps
+    state.knownMaps = [];
+    try {
+        for await (const entry of state.dirHandle.values()) {
+            if (entry.kind === 'file' && entry.name.startsWith('Map-') && entry.name.endsWith('.txt')) {
+                const baseName = entry.name.replace('.txt', '');
+                const mapEntry = { name: baseName, filename: entry.name };
+
+                // Try to load map grid
+                try {
+                    const file = await entry.getFile();
+                    const text = await file.text();
+                    const parsed = parseMapText(text);
+                    mapEntry.grid = parsed.grid;
+                    mapEntry.width = parsed.width;
+                    mapEntry.height = parsed.height;
+                } catch (e) {}
+
+                // Try to load config
+                const configName = baseName.replace('Map-', 'MapConfig-') + '.json';
+                try {
+                    const cfgHandle = await state.dirHandle.getFileHandle(configName);
+                    const cfgFile = await cfgHandle.getFile();
+                    const cfgJson = JSON.parse(await cfgFile.text());
+                    mapEntry.config = cfgJson;
+                    mapEntry.tileDefs = cfgJson.tiles || {};
+                } catch (e) {}
+
+                state.knownMaps.push(mapEntry);
+            }
+        }
+    } catch (e) {
+        console.error('Error scanning folder:', e);
+    }
+
+    state.knownMaps.sort((a, b) => a.name.localeCompare(b.name));
+    setStatus(`Opened folder with ${state.knownMaps.length} map(s). Select a map to edit.`);
+
+    // Show map picker
+    if (state.knownMaps.length > 0) {
+        showMapPicker();
+    }
+}
+
+function showMapPicker() {
+    const container = document.getElementById('maplist-items');
+    container.innerHTML = '';
+    for (const m of state.knownMaps) {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.style.cursor = 'pointer';
+        item.style.padding = '8px 12px';
+        const displayName = m.config ? m.config.displayName : m.name;
+        const size = m.width ? `${m.width}×${m.height}` : '?';
+        item.innerHTML = `<span class="label">📄 <strong>${displayName}</strong> <span style="color:var(--text-dim)">(${m.name}, ${size})</span></span>`;
+        item.onclick = () => {
+            loadMapFromKnown(m);
+            closeModal('modal-maplist');
+        };
+        container.appendChild(item);
+    }
+    // Add separator and new map option
+    const newItem = document.createElement('div');
+    newItem.className = 'list-item';
+    newItem.style.cursor = 'pointer';
+    newItem.style.padding = '8px 12px';
+    newItem.style.borderTop = '1px solid var(--border)';
+    newItem.style.marginTop = '4px';
+    newItem.innerHTML = `<span class="label">➕ <strong>Create New Map</strong></span>`;
+    newItem.onclick = () => { closeModal('modal-maplist'); showNewMapDialog(); };
+    container.appendChild(newItem);
+
+    document.getElementById('modal-maplist').classList.add('show');
+}
+
+function loadMapFromKnown(mapEntry) {
+    if (!mapEntry.grid) {
+        setStatus('Could not load map grid.');
+        return;
+    }
+
+    state.mapName = mapEntry.name;
+    state.grid = mapEntry.grid;
+    state.width = mapEntry.width;
+    state.height = mapEntry.height;
+
+    if (mapEntry.config) {
+        const cfg = mapEntry.config;
+        state.displayName = cfg.displayName || mapEntry.name;
+        state.startPosition = cfg.startPosition ? { x: cfg.startPosition.x, y: cfg.startPosition.y } : { x: 1, y: 1 };
+
+        // Load tile definitions
+        state.tileDefs = {};
+        if (cfg.tiles) {
+            for (const [ch, def] of Object.entries(cfg.tiles)) {
+                state.tileDefs[ch] = { ...def };
+            }
+        }
+
+        // Load connections
+        state.connections = {};
+        if (cfg.connections) {
+            for (const [id, conn] of Object.entries(cfg.connections)) {
+                state.connections[id] = {
+                    position: { x: conn.position.x, y: conn.position.y },
+                    targetMap: conn.targetMap,
+                    targetConfig: conn.targetConfig,
+                    targetPosition: { x: conn.targetPosition.x, y: conn.targetPosition.y }
+                };
+            }
+        }
+
+        // Load tile overrides
+        state.tileOverrides = [];
+        if (cfg.tileOverrides) {
+            for (const ovr of cfg.tileOverrides) {
+                state.tileOverrides.push({
+                    position: { x: ovr.position.x, y: ovr.position.y },
+                    condition: { trigger: ovr.condition.trigger },
+                    replaceTile: ovr.replaceTile
+                });
+            }
+        }
+
+        // Load encounters
+        state.encounters = { enabled: false, chance: 10, enemies: [] };
+        if (cfg.encounters) {
+            state.encounters.enabled = !!cfg.encounters.enabled;
+            state.encounters.chance = cfg.encounters.chance || 10;
+            if (cfg.encounters.enemies) {
+                state.encounters.enemies = cfg.encounters.enemies.map(e => ({
+                    name: e.name,
+                    spriteId: e.spriteId,
+                    chance: e.chance,
+                    minCount: e.minCount,
+                    maxCount: e.maxCount,
+                    minLevel: e.minLevel,
+                    maxLevel: e.maxLevel
+                }));
+            }
+        }
+    } else {
+        state.displayName = mapEntry.name;
+        state.tileDefs = JSON.parse(JSON.stringify(DEFAULT_TILES));
+        state.connections = {};
+        state.tileOverrides = [];
+        state.encounters = { enabled: false, chance: 10, enemies: [] };
+        state.startPosition = { x: 1, y: 1 };
+    }
+
+    state.description = '';
+    state.dirty = false;
+
+    // Update UI
+    document.getElementById('welcome').style.display = 'none';
+    document.getElementById('prop-mapname').value = state.mapName;
+    document.getElementById('prop-display').value = state.displayName;
+    document.getElementById('prop-desc').value = '';
+    document.getElementById('prop-startx').value = state.startPosition.x;
+    document.getElementById('prop-starty').value = state.startPosition.y;
+    document.getElementById('enc-enabled').checked = state.encounters.enabled;
+    document.getElementById('enc-chance').value = state.encounters.chance;
+    document.getElementById('toolbar-map-name').textContent = state.displayName;
+
+    updateSidebar();
+    buildPalette();
+    renderGrid();
+    updateStatusBar();
+    setStatus(`Loaded: ${state.displayName} (${state.width}×${state.height})`);
+}
+
+function parseMapText(text) {
+    const lines = text.split(/\r?\n/);
+    const tileRows = [];
+    for (const line of lines) {
+        if (!line.trim() || line.trim().startsWith(';')) continue;
+        tileRows.push(line);
+    }
+    const height = tileRows.length;
+    const width = Math.max(...tileRows.map(r => r.length));
+    const grid = [];
+    for (let r = 0; r < height; r++) {
+        grid[r] = [];
+        for (let c = 0; c < width; c++) {
+            grid[r][c] = c < tileRows[r].length ? tileRows[r][c] : ' ';
+        }
+    }
+    return { grid, width, height };
+}
+
+/* ──────────────────────────────────────────
+   FILE I/O — Import via File Input
+   ────────────────────────────────────────── */
+
+function importFiles() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '.txt,.json';
+    input.onchange = async () => {
+        const files = Array.from(input.files);
+        let mapText = null, configJson = null, mapFileName = '';
+
+        for (const f of files) {
+            if (f.name.startsWith('Map-') && f.name.endsWith('.txt')) {
+                mapText = await f.text();
+                mapFileName = f.name.replace('.txt', '');
+            } else if (f.name.startsWith('MapConfig-') && f.name.endsWith('.json')) {
+                configJson = JSON.parse(await f.text());
+            }
+        }
+
+        if (!mapText) {
+            alert('Please select at least a Map-*.txt file.');
+            return;
+        }
+
+        const parsed = parseMapText(mapText);
+        const entry = {
+            name: mapFileName,
+            grid: parsed.grid,
+            width: parsed.width,
+            height: parsed.height,
+            config: configJson,
+            tileDefs: configJson ? configJson.tiles || {} : {}
+        };
+
+        // Add to known maps
+        const existing = state.knownMaps.findIndex(m => m.name === mapFileName);
+        if (existing >= 0) state.knownMaps[existing] = entry;
+        else state.knownMaps.push(entry);
+
+        loadMapFromKnown(entry);
+    };
+    input.click();
+}
+
+/* ──────────────────────────────────────────
+   SAVE — Write to Folder via FSAPI
+   ────────────────────────────────────────── */
+
+async function saveMap() {
+    if (!state.width) { setStatus('No map to save.'); return; }
+    syncPropsFromUI();
+
+    if (!state.dirHandle) {
+        // Fall back to export download
+        exportDownload();
+        return;
+    }
+
+    try {
+        const { mapText, configJson } = generateExport();
+        const mapFileName = state.mapName + '.txt';
+        const configFileName = state.mapName.replace('Map-', 'MapConfig-') + '.json';
+
+        // Write map .txt
+        const mapHandle = await state.dirHandle.getFileHandle(mapFileName, { create: true });
+        const mapWritable = await mapHandle.createWritable();
+        await mapWritable.write(mapText);
+        await mapWritable.close();
+
+        // Write config .json
+        const cfgHandle = await state.dirHandle.getFileHandle(configFileName, { create: true });
+        const cfgWritable = await cfgHandle.createWritable();
+        await cfgWritable.write(configJson);
+        await cfgWritable.close();
+
+        state.dirty = false;
+        setStatus(`Saved ${mapFileName} and ${configFileName}`);
+    } catch (e) {
+        console.error('Save error:', e);
+        setStatus('Save failed: ' + e.message);
+    }
+}
+
+/* ──────────────────────────────────────────
+   EXPORT — Download Files
+   ────────────────────────────────────────── */
+
+function exportDownload() {
+    if (!state.width) { setStatus('No map to export.'); return; }
+    syncPropsFromUI();
+    const { mapText, configJson } = generateExport();
+
+    // Download map .txt
+    downloadFile(state.mapName + '.txt', mapText, 'text/plain');
+    // Download config .json
+    setTimeout(() => {
+        downloadFile(state.mapName.replace('Map-', 'MapConfig-') + '.json', configJson, 'application/json');
+    }, 200);
+
+    setStatus(`Exported ${state.mapName}.txt and config .json`);
+}
+
+function downloadFile(filename, content, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function syncPropsFromUI() {
+    state.mapName = document.getElementById('prop-mapname').value.trim() || state.mapName;
+    state.displayName = document.getElementById('prop-display').value.trim() || state.displayName;
+    state.description = document.getElementById('prop-desc').value.trim();
+    state.startPosition.x = parseInt(document.getElementById('prop-startx').value) || 0;
+    state.startPosition.y = parseInt(document.getElementById('prop-starty').value) || 0;
+    state.encounters.enabled = document.getElementById('enc-enabled').checked;
+    state.encounters.chance = parseInt(document.getElementById('enc-chance').value) || 10;
+}
+
+function generateExport() {
+    // ── Generate Map .txt ──
+    const headerLines = [];
+    const sepLine = '; ' + '═'.repeat(60);
+    headerLines.push(sepLine);
+    headerLines.push(`; ${state.mapName} : ${state.displayName}`);
+    if (state.description) {
+        for (const line of state.description.split('\n')) {
+            headerLines.push(`; ${line}`);
+        }
+    }
+    headerLines.push(sepLine);
+
+    const gridLines = [];
+    for (let r = 0; r < state.height; r++) {
+        let line = '';
+        for (let c = 0; c < state.width; c++) {
+            line += state.grid[r][c] || ' ';
+        }
+        gridLines.push(line);
+    }
+    const mapText = headerLines.join('\n') + '\n' + gridLines.join('\n') + '\n';
+
+    // ── Generate MapConfig .json ──
+    // Collect unique chars used on the map
+    const usedChars = new Set();
+    for (let r = 0; r < state.height; r++) {
+        for (let c = 0; c < state.width; c++) {
+            const ch = state.grid[r][c];
+            if (ch && ch !== ' ') usedChars.add(ch);
+        }
+    }
+
+    // Build tiles object (only chars used on the map)
+    const tiles = {};
+    for (const ch of usedChars) {
+        const def = state.tileDefs[ch] || DEFAULT_TILES[ch] || { color: 'Gray', passable: true, name: '' };
+        const tileDef = {
+            color: def.color || 'Gray',
+            passable: !!def.passable,
+            name: def.name || ''
+        };
+        if (def.bgColor) tileDef.bgColor = def.bgColor;
+        if (def.animated) tileDef.animated = true;
+        if (def.action) tileDef.action = { ...def.action };
+        tiles[ch] = tileDef;
+    }
+
+    const config = {
+        displayName: state.displayName,
+        startPosition: { x: state.startPosition.x, y: state.startPosition.y },
+        tiles: tiles
+    };
+
+    if (Object.keys(state.connections).length > 0) {
+        config.connections = {};
+        for (const [id, conn] of Object.entries(state.connections)) {
+            config.connections[id] = {
+                position: { x: conn.position.x, y: conn.position.y },
+                targetMap: conn.targetMap,
+                targetConfig: conn.targetConfig,
+                targetPosition: { x: conn.targetPosition.x, y: conn.targetPosition.y }
+            };
+        }
+    }
+
+    if (state.tileOverrides.length > 0) {
+        config.tileOverrides = state.tileOverrides.map(ovr => ({
+            position: { x: ovr.position.x, y: ovr.position.y },
+            condition: { trigger: ovr.condition.trigger },
+            replaceTile: ovr.replaceTile
+        }));
+    }
+
+    config.encounters = {
+        enabled: state.encounters.enabled,
+    };
+    if (state.encounters.enabled) {
+        config.encounters.chance = state.encounters.chance;
+        config.encounters.enemies = state.encounters.enemies.map(e => ({
+            name: e.name,
+            spriteId: e.spriteId,
+            chance: e.chance,
+            minCount: e.minCount,
+            maxCount: e.maxCount,
+            minLevel: e.minLevel,
+            maxLevel: e.maxLevel
+        }));
+    }
+
+    const configJson = JSON.stringify(config, null, 4) + '\n';
+    return { mapText, configJson };
+}
+
+/* ──────────────────────────────────────────
+   SIDEBAR UPDATES
+   ────────────────────────────────────────── */
+
+function updateSidebar() {
+    updateConnectionsList();
+    updateOverridesList();
+    updateEnemyList();
+}
+
+function updateStatusBar() {
+    document.getElementById('s-size').textContent = state.width ? `${state.width}×${state.height}` : '-';
+    document.getElementById('s-cursor').textContent = state.cursor.x >= 0 ? `(${state.cursor.x}, ${state.cursor.y})` : '-';
+    document.getElementById('s-zoom').textContent = Math.round(state.zoom * 100) + '%';
+    if (state.cursor.x >= 0 && state.grid[state.cursor.y]) {
+        const ch = state.grid[state.cursor.y][state.cursor.x] || ' ';
+        const def = state.tileDefs[ch] || DEFAULT_TILES[ch] || {};
+        document.getElementById('s-tile').textContent = `'${ch}' ${def.name || ''}`;
+    } else {
+        document.getElementById('s-tile').textContent = '-';
+    }
+}
+
+/* ──────────────────────────────────────────
+   PANEL TOGGLE
+   ────────────────────────────────────────── */
+
+function togglePanel(header) {
+    header.classList.toggle('collapsed');
+    const body = header.nextElementSibling;
+    body.classList.toggle('hidden');
+}
+
+/* ──────────────────────────────────────────
+   MODAL HELPERS
+   ────────────────────────────────────────── */
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+}
+
+function setStatus(msg) {
+    document.getElementById('s-status').textContent = msg;
+}
+
+// Close modals on Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+        hideCtxMenu();
+        if (state.pickingStart) { state.pickingStart = false; canvas.style.cursor = 'crosshair'; }
+        if (state.pickingConnPos) { state.pickingConnPos = false; canvas.style.cursor = 'crosshair'; }
+    }
+});
+
+// Warn before unload if dirty
+window.addEventListener('beforeunload', (e) => {
+    if (state.dirty) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+/* ──────────────────────────────────────────
+   INIT
+   ────────────────────────────────────────── */
+init();
+
+</script>
+</body>
+</html>

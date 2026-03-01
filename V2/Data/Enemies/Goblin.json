@@ -14,8 +14,9 @@
     "baseGold": 5,
     "abilities": ["Scratch", "Bite"],
     "drops": [
-        { "item": "Herb", "chance": 30 },
-        { "item": "Goblin Ear", "chance": 50 }
+        { "item": "Herb", "chance": 30, "rarity": "common" },
+        { "item": "Goblin Ear", "chance": 50, "rarity": "common" },
+        { "item": "Iron Dagger", "chance": 5, "rarity": "rare" }
     ],
     "levelScaling": {
         "HP": 4,

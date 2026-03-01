@@ -1,0 +1,8 @@
+{
+    "_comment": "Game settings — toggle features on/off. Editable here or via in-game Settings menu.",
+    "DayNightCycle": true,
+    "StatusEffects": true,
+    "AutoSave": true,
+    "LootRarityLabels": true,
+    "WorldMap": true
+}

@@ -14,8 +14,9 @@
     "baseGold": 40,
     "abilities": ["Shadow Slash", "Dark Pulse", "Soul Drain"],
     "drops": [
-        { "item": "Potion", "chance": 100 },
-        { "item": "Dark Shard", "chance": 50 }
+        { "item": "Potion", "chance": 100, "rarity": "common" },
+        { "item": "Dark Shard", "chance": 50, "rarity": "rare" },
+        { "item": "Shadow Cloak", "chance": 10, "rarity": "legendary" }
     ],
     "levelScaling": {
         "HP": 12,

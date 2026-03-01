@@ -50,7 +50,55 @@ function New-PartyMember {
             Armor     = $classDef.startingArmor
             Accessory = $null
         }
+        StatusEffects      = @()
     }
+}
+
+# ── Effective Stats (base + equipment bonuses) ───────────────────────────────────
+
+function Get-EffectiveStat {
+    <#
+    .SYNOPSIS
+        Returns the effective value of a stat, including equipment bonuses.
+        Works for both party members (have Equipment) and enemies (plain stats hash).
+    #>
+    param([hashtable]$Entity, [string]$StatName)
+    $base = [int]$Entity[$StatName]
+    if ($Entity.ContainsKey('Equipment') -and $Entity.Equipment) {
+        foreach ($slot in @('Weapon', 'Armor', 'Accessory')) {
+            $eqName = $Entity.Equipment[$slot]
+            if (-not $eqName) { continue }
+            $itemDef = Get-ItemDefinition -ItemId $eqName
+            if ($itemDef -and $itemDef.statBonus -and $itemDef.statBonus.PSObject) {
+                $bonusProp = $itemDef.statBonus.PSObject.Properties[$StatName]
+                if ($bonusProp) { $base += [int]$bonusProp.Value }
+            }
+        }
+    }
+    return $base
+}
+
+function Get-AllEquipmentBonuses {
+    <#
+    .SYNOPSIS
+        Returns a hashtable of all stat bonuses from a character's equipment.
+    #>
+    param([hashtable]$Character)
+    $bonuses = @{ Strength = 0; Intelligence = 0; Speed = 0; Defense = 0; Accuracy = 0 }
+    if (-not $Character.ContainsKey('Equipment') -or -not $Character.Equipment) { return $bonuses }
+    foreach ($slot in @('Weapon', 'Armor', 'Accessory')) {
+        $eqName = $Character.Equipment[$slot]
+        if (-not $eqName) { continue }
+        $itemDef = Get-ItemDefinition -ItemId $eqName
+        if ($itemDef -and $itemDef.statBonus -and $itemDef.statBonus.PSObject) {
+            foreach ($prop in $itemDef.statBonus.PSObject.Properties) {
+                if ($bonuses.ContainsKey($prop.Name)) {
+                    $bonuses[$prop.Name] += [int]$prop.Value
+                }
+            }
+        }
+    }
+    return $bonuses
 }
 
 # ── Leveling ─────────────────────────────────────────────────────────────────────

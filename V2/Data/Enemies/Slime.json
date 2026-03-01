@@ -14,8 +14,9 @@
     "baseGold": 8,
     "abilities": ["Acid Spit", "Absorb"],
     "drops": [
-        { "item": "Slime Gel", "chance": 50 },
-        { "item": "Potion", "chance": 15 }
+        { "item": "Slime Gel", "chance": 50, "rarity": "common" },
+        { "item": "Potion", "chance": 15, "rarity": "uncommon" },
+        { "item": "Ether", "chance": 8, "rarity": "uncommon" }
     ],
     "levelScaling": {
         "HP": 6,

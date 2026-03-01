@@ -1,0 +1,59 @@
+{
+    "displayName": "Deep Cavern - Floor 2",
+    "startPosition": { "x": 20, "y": 1 },
+    "tiles": {
+        "#": {
+            "color": "DarkGray",
+            "passable": false,
+            "name": "Cavern Wall"
+        },
+        ".": {
+            "color": "Gray",
+            "passable": true,
+            "name": "Cave Floor"
+        },
+        "~": {
+            "color": "Blue",
+            "bgColor": "DarkBlue",
+            "passable": false,
+            "name": "Underground River",
+            "animated": true
+        },
+        "*": {
+            "color": "Cyan",
+            "passable": false,
+            "name": "Crystal Formation"
+        },
+        "C": {
+            "color": "Magenta",
+            "passable": false,
+            "name": "Giant Crystal",
+            "action": {
+                "type": "sign",
+                "text": "A massive crystal pulses with inner light. You feel its power resonating..."
+            }
+        },
+        "D": {
+            "color": "DarkYellow",
+            "passable": true,
+            "name": "Exit to Upper Cavern"
+        }
+    },
+    "connections": {
+        "exit_upper": {
+            "position": { "x": 20, "y": 1 },
+            "targetMap": "Map-DarkCavern-1",
+            "targetConfig": "MapConfig-DarkCavern-1",
+            "targetPosition": { "x": 14, "y": 18 }
+        }
+    },
+    "encounters": {
+        "enabled": true,
+        "chance": 18,
+        "enemies": [
+            { "name": "Cave Bat", "spriteId": "CaveBat", "chance": 40, "minCount": 2, "maxCount": 5, "minLevel": 3, "maxLevel": 5 },
+            { "name": "Crystal Golem", "spriteId": "CrystalGolem", "chance": 25, "minCount": 1, "maxCount": 2, "minLevel": 4, "maxLevel": 6 },
+            { "name": "Slime", "spriteId": "Slime", "chance": 35, "minCount": 2, "maxCount": 3, "minLevel": 3, "maxLevel": 5 }
+        ]
+    }
+}

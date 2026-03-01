@@ -73,6 +73,16 @@
             "color": "Green",
             "passable": true,
             "name": "Shop Entrance"
+        },
+        "F": {
+            "color": "Green",
+            "passable": true,
+            "name": "Forest Path"
+        },
+        "C": {
+            "color": "White",
+            "passable": true,
+            "name": "Castle Road"
         }
     },
     "connections": {
@@ -93,6 +103,12 @@
             "targetMap": "Map-CastleTown-1",
             "targetConfig": "MapConfig-CastleTown-1",
             "targetPosition": { "x": 17, "y": 3 }
+        },
+        "forest_entrance": {
+            "position": { "x": 8, "y": 1 },
+            "targetMap": "Map-WhisperForest-1",
+            "targetConfig": "MapConfig-WhisperForest-1",
+            "targetPosition": { "x": 25, "y": 22 }
         }
     },
     "encounters": {

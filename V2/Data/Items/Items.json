@@ -246,7 +246,112 @@
             "statBonus": { "Speed": 3 },
             "value": 0,
             "buyPrice": 150,
-            "sellPrice": 75
+            "sellPrice": 75,
+            "rarity": "uncommon"
+        },
+        {
+            "id": "dark_shard",
+            "name": "Dark Shard",
+            "description": "A fragment of crystallized shadow energy. Valuable to collectors.",
+            "type": "material",
+            "effect": "none",
+            "value": 0,
+            "buyPrice": 0,
+            "sellPrice": 75,
+            "rarity": "rare"
+        },
+        {
+            "id": "shadow_cloak",
+            "name": "Shadow Cloak",
+            "description": "A cloak woven from living shadows. DEF+4, SPD+2, INT+2",
+            "type": "armor",
+            "effect": "none",
+            "slot": "Armor",
+            "statBonus": { "Defense": 4, "Speed": 2, "Intelligence": 2 },
+            "value": 0,
+            "buyPrice": 0,
+            "sellPrice": 200,
+            "rarity": "legendary"
+        },
+        {
+            "id": "wolf_pelt",
+            "name": "Wolf Pelt",
+            "description": "A thick fur pelt from a forest wolf.",
+            "type": "material",
+            "effect": "none",
+            "value": 0,
+            "buyPrice": 0,
+            "sellPrice": 15
+        },
+        {
+            "id": "ancient_wood",
+            "name": "Ancient Wood",
+            "description": "Petrified wood from an ancient treant.",
+            "type": "material",
+            "effect": "none",
+            "value": 0,
+            "buyPrice": 0,
+            "sellPrice": 25
+        },
+        {
+            "id": "crystal_shard",
+            "name": "Crystal Shard",
+            "description": "A glowing fragment of deep-cavern crystal.",
+            "type": "material",
+            "effect": "none",
+            "value": 0,
+            "buyPrice": 0,
+            "sellPrice": 40
+        },
+        {
+            "id": "silver_sword",
+            "name": "Silver Sword",
+            "description": "A finely-crafted silver blade. STR+5, ACC+5",
+            "type": "weapon",
+            "effect": "none",
+            "slot": "Weapon",
+            "statBonus": { "Strength": 5, "Accuracy": 5 },
+            "value": 0,
+            "buyPrice": 350,
+            "sellPrice": 150,
+            "rarity": "rare"
+        },
+        {
+            "id": "forest_cloak",
+            "name": "Forest Cloak",
+            "description": "A cloak of woven leaves. DEF+3, SPD+1",
+            "type": "armor",
+            "effect": "none",
+            "slot": "Armor",
+            "statBonus": { "Defense": 3, "Speed": 1 },
+            "value": 0,
+            "buyPrice": 200,
+            "sellPrice": 85,
+            "rarity": "uncommon"
+        },
+        {
+            "id": "enchanted_ring",
+            "name": "Enchanted Ring",
+            "description": "A ring pulsing with arcane energy. INT+3, ACC+5",
+            "type": "accessory",
+            "effect": "none",
+            "slot": "Accessory",
+            "statBonus": { "Intelligence": 3, "Accuracy": 5 },
+            "value": 0,
+            "buyPrice": 280,
+            "sellPrice": 120,
+            "rarity": "rare"
+        },
+        {
+            "id": "elixir",
+            "name": "Elixir",
+            "description": "A legendary potion that fully restores HP and MP.",
+            "type": "consumable",
+            "effect": "fullRestore",
+            "value": 999,
+            "buyPrice": 500,
+            "sellPrice": 200,
+            "rarity": "rare"
         }
     ]
 }

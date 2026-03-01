@@ -1,0 +1,99 @@
+{
+    "npcId": "forest_hermit",
+    "name": "Old Hermit Galen",
+    "entryNode": "start",
+    "nodes": [
+        {
+            "id": "start",
+            "speaker": "Galen",
+            "text": "Hmm? Visitors are rare in these woods. The trees have been restless lately... whispering about something stirring in the deep caverns below.",
+            "choices": [
+                {
+                    "label": "What's in the deep caverns?",
+                    "nextNode": "caverns"
+                },
+                {
+                    "label": "Why do you live out here?",
+                    "nextNode": "hermit_life"
+                },
+                {
+                    "label": "Any advice for travelers?",
+                    "nextNode": "advice"
+                },
+                {
+                    "label": "Goodbye.",
+                    "nextNode": "farewell"
+                }
+            ]
+        },
+        {
+            "id": "caverns",
+            "speaker": "Galen",
+            "text": "Crystal golems guard the deepest chambers. Ancient creatures of living stone and gemstone. They say a great crystal heart pulses at the very bottom... if you can survive the journey.",
+            "choices": [
+                {
+                    "label": "How do I get there?",
+                    "nextNode": "directions"
+                },
+                {
+                    "label": "Thanks for the warning.",
+                    "nextNode": "farewell"
+                }
+            ]
+        },
+        {
+            "id": "directions",
+            "speaker": "Galen",
+            "text": "Enter the Dark Cavern south of Thornvale. On the lowest floor, look for a passage leading deeper. But be prepared — the enemies down there are far stronger than surface goblins.",
+            "choices": [
+                {
+                    "label": "I'll be careful.",
+                    "nextNode": "farewell"
+                }
+            ]
+        },
+        {
+            "id": "hermit_life",
+            "speaker": "Galen",
+            "text": "I was an adventurer once, long ago. These old bones don't move like they used to. The forest keeps me company. The treants are gentle... unless you threaten their grove.",
+            "choices": [
+                {
+                    "label": "Tell me about the treants.",
+                    "nextNode": "treants"
+                },
+                {
+                    "label": "Farewell, old man.",
+                    "nextNode": "farewell"
+                }
+            ]
+        },
+        {
+            "id": "treants",
+            "speaker": "Galen",
+            "text": "Ancient tree spirits. Slow, but incredibly tough. Their bark is like armor. If you must fight them, use fire or magic — physical blades barely scratch them. They sometimes carry enchanted trinkets from ages past.",
+            "choices": [
+                {
+                    "label": "Good to know.",
+                    "nextNode": "farewell"
+                }
+            ]
+        },
+        {
+            "id": "advice",
+            "speaker": "Galen",
+            "text": "Keep your equipment upgraded and your potions stocked. Watch the time of day — the forest wolves hunt at dusk and night. And always check your party's status effects after battle. Poison is a silent killer.",
+            "choices": [
+                {
+                    "label": "Thanks for the tips!",
+                    "nextNode": "farewell"
+                }
+            ]
+        },
+        {
+            "id": "farewell",
+            "speaker": "Galen",
+            "text": "Safe travels, young one. May the forest guide your path.",
+            "action": "end"
+        }
+    ]
+}

@@ -1,6 +1,16 @@
 # Engine/SaveLoad.ps1 - Save and Load Game State (Multi-Slot)
 # Serializes game state to named JSON files in the Saves/ directory.
 
+# ── Auto-Save ────────────────────────────────────────────────────────────────────
+
+function Invoke-AutoSave {
+    <#
+    .SYNOPSIS
+        Silently auto-saves to the "Autosave" slot. Called on map transitions.
+    #>
+    Save-GameState -SaveName 'Autosave' | Out-Null
+}
+
 # ── Save Slot Discovery ─────────────────────────────────────────────────────────
 
 function Get-SaveSlots {
@@ -103,6 +113,9 @@ function Save-GameState {
         Gold           = $Script:GameState.Gold
         Triggers       = $Script:GameState.Triggers
         StepCounter    = $Script:GameState.StepCounter
+        TimeOfDay      = $Script:GameState.TimeOfDay
+        DayCycleStep   = $Script:GameState.DayCycleStep
+        DiscoveredMaps = $Script:GameState.DiscoveredMaps
         Messages       = @($Script:GameState.Messages | Select-Object -Last 10)
     }
 
@@ -183,6 +196,16 @@ function Load-GameState {
         $Script:GameState.Gold        = [int]$saveData.Gold
         $Script:GameState.StepCounter = [int]$saveData.StepCounter
 
+        # Day/night cycle
+        if ($saveData.TimeOfDay)    { $Script:GameState.TimeOfDay    = $saveData.TimeOfDay }
+        if ($null -ne $saveData.DayCycleStep) { $Script:GameState.DayCycleStep = [int]$saveData.DayCycleStep }
+        if ($saveData.DiscoveredMaps) {
+            $Script:GameState.DiscoveredMaps = @{}
+            foreach ($prop in $saveData.DiscoveredMaps.PSObject.Properties) {
+                $Script:GameState.DiscoveredMaps[$prop.Name] = $true
+            }
+        }
+
         # Rebuild triggers hashtable
         $Script:GameState.Triggers = @{}
         if ($saveData.Triggers -and $saveData.Triggers.PSObject) {
@@ -228,7 +251,7 @@ function Show-SavePicker {
     #>
     Clear-FrameBuffer
 
-    $slots = @(Get-SaveSlots)
+    $slots = Get-SaveSlots
     $options = @()
 
     # First option is always "New Save"
@@ -285,7 +308,7 @@ function Show-LoadPicker {
     #>
     Clear-FrameBuffer
 
-    $slots = @(Get-SaveSlots)
+    $slots = Get-SaveSlots
 
     if ($slots.Count -eq 0) {
         return $false   # No saves

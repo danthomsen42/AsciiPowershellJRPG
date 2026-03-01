@@ -14,7 +14,8 @@
     "baseGold": 2,
     "abilities": ["Screech", "Wing Slash"],
     "drops": [
-        { "item": "Bat Wing", "chance": 40 }
+        { "item": "Bat Wing", "chance": 40, "rarity": "common" },
+        { "item": "Speed Boots", "chance": 3, "rarity": "rare" }
     ],
     "levelScaling": {
         "HP": 3,
