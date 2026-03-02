@@ -12,6 +12,8 @@ $Script:SettingsDefaults = @{
     AutoSave         = $true
     LootRarityLabels = $true
     WorldMap         = $true
+    BattleTransitions = $true
+    BattleTextSpeed  = 'Normal'   # Fast, Normal, Slow
 }
 
 function Load-Settings {
@@ -25,7 +27,14 @@ function Load-Settings {
         try {
             $json = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
             foreach ($prop in $json.PSObject.Properties) {
-                if ($prop.Name -ne '_comment' -and $Script:Settings.ContainsKey($prop.Name)) {
+                if ($prop.Name -eq '_comment') { continue }
+                if (-not $Script:Settings.ContainsKey($prop.Name)) { continue }
+                # BattleTextSpeed is a string, not a bool
+                if ($prop.Name -eq 'BattleTextSpeed') {
+                    if ($prop.Value -in @('Fast','Normal','Slow')) {
+                        $Script:Settings[$prop.Name] = [string]$prop.Value
+                    }
+                } else {
                     $Script:Settings[$prop.Name] = [bool]$prop.Value
                 }
             }
@@ -37,12 +46,14 @@ function Save-Settings {
     <# Persists current settings to Data/Settings.json. #>
     $path = Join-Path $PSScriptRoot '..\Data\Settings.json'
     $obj = [ordered]@{
-        _comment         = 'Game settings - toggle features on/off. Editable here or via in-game Settings menu.'
-        DayNightCycle    = $Script:Settings.DayNightCycle
-        StatusEffects    = $Script:Settings.StatusEffects
-        AutoSave         = $Script:Settings.AutoSave
-        LootRarityLabels = $Script:Settings.LootRarityLabels
-        WorldMap         = $Script:Settings.WorldMap
+        _comment          = 'Game settings - toggle features on/off. Editable here or via in-game Settings menu.'
+        DayNightCycle     = $Script:Settings.DayNightCycle
+        StatusEffects     = $Script:Settings.StatusEffects
+        AutoSave          = $Script:Settings.AutoSave
+        LootRarityLabels  = $Script:Settings.LootRarityLabels
+        WorldMap          = $Script:Settings.WorldMap
+        BattleTransitions = $Script:Settings.BattleTransitions
+        BattleTextSpeed   = $Script:Settings.BattleTextSpeed
     }
     $obj | ConvertTo-Json | Set-Content $path -Encoding UTF8
 }
@@ -514,12 +525,13 @@ function Show-GameMenu {
 # ── Settings Menu ────────────────────────────────────────────────────────────────
 
 function Show-SettingsMenu {
-    $settingKeys = @(
+    $toggleKeys = @(
         @{ Key = 'DayNightCycle';    Label = 'Day/Night Cycle' }
         @{ Key = 'StatusEffects';    Label = 'Status Effects' }
         @{ Key = 'AutoSave';         Label = 'Auto-Save on Map Transitions' }
         @{ Key = 'LootRarityLabels'; Label = 'Loot Rarity Labels' }
         @{ Key = 'WorldMap';         Label = 'World Map Menu Option' }
+        @{ Key = 'BattleTransitions'; Label = 'Battle Transition Effects' }
     )
 
     $running = $true
@@ -531,11 +543,15 @@ function Show-SettingsMenu {
 
         $y = 5
         $options = @()
-        foreach ($s in $settingKeys) {
+        foreach ($s in $toggleKeys) {
             $val = $Script:Settings[$s.Key]
             $state = if ($val) { '[ON]  ' } else { '[OFF] ' }
             $options += "$state $($s.Label)"
         }
+        # Battle text speed is a cycle (Fast / Normal / Slow), not a toggle
+        $speedLabel = "[$($Script:Settings.BattleTextSpeed)]"
+        $options += "$($speedLabel.PadRight(6)) Battle Text Speed"
+        $speedIdx = $toggleKeys.Count   # index of the speed option
         $options += 'Back'
 
         $sel = Draw-SelectionMenu -X 30 -Y 6 -Width 60 -Title "Toggle Features" `
@@ -543,14 +559,23 @@ function Show-SettingsMenu {
                                    -BorderColor ([ConsoleColor]::Yellow) `
                                    -TextColor ([ConsoleColor]::White)
 
-        if ($sel -ge 0 -and $sel -lt $settingKeys.Count) {
-            $key = $settingKeys[$sel].Key
+        if ($sel -ge 0 -and $sel -lt $toggleKeys.Count) {
+            $key = $toggleKeys[$sel].Key
             $Script:Settings[$key] = -not $Script:Settings[$key]
             # When disabling day/night mid-game, reset to Day to clear tinting
             if ($key -eq 'DayNightCycle' -and -not $Script:Settings[$key]) {
                 $Script:GameState.TimeOfDay  = 'Day'
                 $Script:GameState.DayCycleStep = 0
                 $Script:_tileColorCache = $null
+            }
+            Save-Settings
+        }
+        elseif ($sel -eq $speedIdx) {
+            # Cycle: Normal -> Fast -> Slow -> Normal
+            switch ($Script:Settings.BattleTextSpeed) {
+                'Normal' { $Script:Settings.BattleTextSpeed = 'Fast' }
+                'Fast'   { $Script:Settings.BattleTextSpeed = 'Slow' }
+                'Slow'   { $Script:Settings.BattleTextSpeed = 'Normal' }
             }
             Save-Settings
         }

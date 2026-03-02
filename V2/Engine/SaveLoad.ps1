@@ -361,6 +361,7 @@ function Read-SaveName {
         Invoke-RenderFrame
 
         $key = [Console]::ReadKey($true)
+        if (Test-BossKey -Key $key) { continue }
 
         switch ($key.Key) {
             'Enter' {

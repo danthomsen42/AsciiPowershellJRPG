@@ -311,6 +311,7 @@ function Draw-SelectionMenu {
         Invoke-RenderFrame
 
         $key = [Console]::ReadKey($true)
+        if (Test-BossKey -Key $key) { continue }
         switch ($key.Key) {
             'UpArrow' {
                 $selectedIndex--

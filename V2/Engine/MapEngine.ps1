@@ -325,6 +325,14 @@ function Render-Map {
     $voidFg    = [ConsoleColor]::Black
     $voidBg    = [ConsoleColor]::Black
 
+    # Pre-resolve tint map once (avoids ~1920 function calls per frame)
+    $tintMap = $null
+    if ($Script:Settings.DayNightCycle) {
+        $phase = $Script:GameState.TimeOfDay
+        if ($phase -eq 'Night') { $tintMap = $Script:NightColorMap }
+        elseif ($phase -eq 'Dusk') { $tintMap = $Script:DuskColorMap }
+    }
+
     for ($vy = 0; $vy -lt $vpH; $vy++) {
         $mapY = $vy + $viewOffsetY
         $screenRowBase = ($vy + $vpY) * $sw + $vpX
@@ -352,7 +360,11 @@ function Render-Map {
                             $cFg[$idx] = $waterColors[$offset]
                         }
                         else {
-                            $cFg[$idx] = Get-TintedColor $colors[0]
+                            $cFg[$idx] = $colors[0]
+                            if ($tintMap) {
+                                $mapped = $tintMap[$colors[0]]
+                                if ($mapped) { $cFg[$idx] = $mapped }
+                            }
                         }
                     }
                     else {

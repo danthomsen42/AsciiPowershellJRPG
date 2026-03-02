@@ -4,6 +4,65 @@
 
 # ── Cutscene Data Cache ──────────────────────────────────────────────────────────
 $Script:CutsceneDefinitions = $null
+$Script:SkipCutscene = $false
+
+# ── Cutscene Skip Helpers ────────────────────────────────────────────────────────
+
+function Test-CutsceneSkip {
+    <#
+    .SYNOPSIS  Non-blocking check — drains input buffer looking for Escape.
+               Sets $Script:SkipCutscene if found. Always returns the flag.
+    #>
+    if ($Script:SkipCutscene) { return $true }
+    while ([Console]::KeyAvailable) {
+        $k = [Console]::ReadKey($true)
+        if ($k.Key -eq 'Escape') {
+            $Script:SkipCutscene = $true
+            return $true
+        }
+        if (Test-BossKey -Key $k) { continue }
+    }
+    return $false
+}
+
+function Wait-ForCutsceneKey {
+    <#
+    .SYNOPSIS  Blocks until a key is pressed. If Escape ⇒ sets skip flag.
+               Boss key is also intercepted.
+    #>
+    if ($Script:SkipCutscene) { return }
+    while ($true) {
+        $k = [Console]::ReadKey($true)
+        if ($k.Key -eq 'Escape') {
+            $Script:SkipCutscene = $true
+            return
+        }
+        if (Test-BossKey -Key $k) { continue }
+        return  # any non-boss key continues the cutscene
+    }
+}
+
+function Invoke-CutsceneSleep {
+    <#
+    .SYNOPSIS  Interruptible sleep — polls for Escape every ~16ms.
+    #>
+    param([int]$Ms)
+    if ($Script:SkipCutscene) { return }
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    while ($sw.ElapsedMilliseconds -lt $Ms) {
+        if (Test-CutsceneSkip) { $sw.Stop(); return }
+        [System.Threading.Thread]::Sleep(16)
+    }
+    $sw.Stop()
+}
+
+function Show-SkipHint {
+    <#
+    .SYNOPSIS  Draws a small "[Esc] Skip" label at the bottom-right.
+    #>
+    $hint = "[Esc] Skip"
+    Set-Text -X ($Script:SCREEN_WIDTH - $hint.Length - 2) -Y ($Script:SCREEN_HEIGHT - 1) -Text $hint -FgColor ([ConsoleColor]::DarkGray)
+}
 
 function Load-CutsceneDefinitions {
     <#
@@ -104,7 +163,10 @@ function Play-Cutscene {
 
     $csData = Get-Content $csPath -Raw -Encoding UTF8 | ConvertFrom-Json
 
+    $Script:SkipCutscene = $false
+
     foreach ($step in $csData.steps) {
+        if ($Script:SkipCutscene) { break }
         switch ($step.type) {
             'dialogue' {
                 Invoke-CutsceneDialogue -Step $step
@@ -126,7 +188,7 @@ function Play-Cutscene {
             }
             'delay' {
                 $ms = if ($step.ms) { [int]$step.ms } else { 1000 }
-                [System.Threading.Thread]::Sleep($ms)
+                Invoke-CutsceneSleep -Ms $ms
             }
             'clear' {
                 Clear-FrameBuffer
@@ -169,6 +231,7 @@ function Invoke-CutsceneDialogue {
     .SYNOPSIS  Shows a speaker's dialogue in a box. Waits for keypress.
     #>
     param([object]$Step)
+    if ($Script:SkipCutscene) { return }
 
     $speaker = if ($Step.speaker) { $Step.speaker } else { '???' }
     $lines   = @()
@@ -195,8 +258,9 @@ function Invoke-CutsceneDialogue {
 
     $promptText = "[Press any key to continue]"
     Set-Text -X (116 - $promptText.Length) -Y ($boxY + $boxHeight - 2) -Text $promptText -FgColor ([ConsoleColor]::DarkGray) -BgColor ([ConsoleColor]::Black)
+    Show-SkipHint
     Invoke-RenderFrame
-    Wait-ForKey | Out-Null
+    Wait-ForCutsceneKey
 }
 
 function Invoke-CutsceneNarration {
@@ -204,6 +268,7 @@ function Invoke-CutsceneNarration {
     .SYNOPSIS  Shows narration text centered on a dark screen. Atmospheric.
     #>
     param([object]$Step)
+    if ($Script:SkipCutscene) { return }
 
     Clear-FrameBuffer
 
@@ -237,8 +302,9 @@ function Invoke-CutsceneNarration {
 
     $promptText = "[Press any key]"
     Set-Text -X ([math]::Floor(($Script:SCREEN_WIDTH - $promptText.Length) / 2)) -Y ($Script:SCREEN_HEIGHT - 2) -Text $promptText -FgColor ([ConsoleColor]::DarkGray)
+    Show-SkipHint
     Invoke-RenderFrame
-    Wait-ForKey | Out-Null
+    Wait-ForCutsceneKey
 }
 
 function Invoke-CutsceneArtLines {
@@ -316,6 +382,7 @@ function Invoke-CutsceneArt {
     .SYNOPSIS  Displays ASCII art from a file or inline, centered on screen.
     #>
     param([object]$Step)
+    if ($Script:SkipCutscene) { return }
 
     Clear-FrameBuffer
 
@@ -352,8 +419,9 @@ function Invoke-CutsceneArt {
 
     $promptText = "[Press any key]"
     Set-Text -X ([math]::Floor(($Script:SCREEN_WIDTH - $promptText.Length) / 2)) -Y ($Script:SCREEN_HEIGHT - 2) -Text $promptText -FgColor ([ConsoleColor]::DarkGray)
+    Show-SkipHint
     Invoke-RenderFrame
-    Wait-ForKey | Out-Null
+    Wait-ForCutsceneKey
 }
 
 function Invoke-CutsceneEffect {
@@ -361,6 +429,7 @@ function Invoke-CutsceneEffect {
     .SYNOPSIS  Screen effect: fade_in, fade_out, flash, shake.
     #>
     param([object]$Step)
+    if ($Script:SkipCutscene) { return }
 
     switch ($Step.effect) {
         'fade_out' {
@@ -368,15 +437,16 @@ function Invoke-CutsceneEffect {
             $steps = if ($Step.steps) { [int]$Step.steps } else { 5 }
             $delayMs = if ($Step.delayMs) { [int]$Step.delayMs } else { 150 }
             for ($s = 0; $s -lt $steps; $s++) {
+                if ($Script:SkipCutscene) { return }
                 Clear-FrameBuffer
                 Invoke-RenderFrame
-                [System.Threading.Thread]::Sleep($delayMs)
+                Invoke-CutsceneSleep -Ms $delayMs
             }
         }
         'fade_in' {
             # Just a delay before the next frame renders
             $delayMs = if ($Step.delayMs) { [int]$Step.delayMs } else { 500 }
-            [System.Threading.Thread]::Sleep($delayMs)
+            Invoke-CutsceneSleep -Ms $delayMs
             Invoke-ForceFullRedraw
         }
         'flash' {
@@ -386,16 +456,17 @@ function Invoke-CutsceneEffect {
             $delayMs    = if ($Step.delayMs) { [int]$Step.delayMs } else { 100 }
 
             for ($f = 0; $f -lt $flashCount; $f++) {
+                if ($Script:SkipCutscene) { return }
                 Clear-FrameBuffer
                 # Fill screen with flash color
                 for ($row = 0; $row -lt $Script:SCREEN_HEIGHT; $row++) {
                     Set-Text -X 0 -Y $row -Text (' ' * $Script:SCREEN_WIDTH) -FgColor $flashColor -BgColor $flashColor
                 }
                 Invoke-RenderFrame
-                [System.Threading.Thread]::Sleep($delayMs)
+                Invoke-CutsceneSleep -Ms $delayMs
                 Clear-FrameBuffer
                 Invoke-RenderFrame
-                [System.Threading.Thread]::Sleep($delayMs)
+                Invoke-CutsceneSleep -Ms $delayMs
             }
         }
         'shake' {
@@ -404,6 +475,7 @@ function Invoke-CutsceneEffect {
             $delayMs    = if ($Step.delayMs) { [int]$Step.delayMs } else { 80 }
 
             for ($s = 0; $s -lt $shakeCount; $s++) {
+                if ($Script:SkipCutscene) { return }
                 $msgText = if ($Step.text) { $Step.text } else { '' }
                 Clear-FrameBuffer
                 $offset = if ($s % 2 -eq 0) { 2 } else { -2 }
@@ -412,12 +484,12 @@ function Invoke-CutsceneEffect {
                     Set-Text -X $mX -Y 15 -Text $msgText -FgColor ([ConsoleColor]::Red)
                 }
                 Invoke-RenderFrame
-                [System.Threading.Thread]::Sleep($delayMs)
+                Invoke-CutsceneSleep -Ms $delayMs
             }
         }
         'pause' {
             $delayMs = if ($Step.delayMs) { [int]$Step.delayMs } else { 1000 }
-            [System.Threading.Thread]::Sleep($delayMs)
+            Invoke-CutsceneSleep -Ms $delayMs
         }
     }
 }
@@ -449,6 +521,7 @@ function Invoke-CutsceneAnimatedArt {
         }
     #>
     param([object]$Step)
+    if ($Script:SkipCutscene) { return }
 
     $frames   = @($Step.frames)
     if ($frames.Count -eq 0) { return }
@@ -477,6 +550,7 @@ function Invoke-CutsceneAnimatedArt {
 
     for ($loop = 0; $loop -lt $loops; $loop++) {
         for ($fi = 0; $fi -lt $frames.Count; $fi++) {
+            if ($Script:SkipCutscene) { return }
             $fd = $frameData[$fi]
             Clear-FrameBuffer
 
@@ -505,12 +579,13 @@ function Invoke-CutsceneAnimatedArt {
                 Set-Text -X ([math]::Floor(($Script:SCREEN_WIDTH - $pt.Length) / 2)) -Y ($Script:SCREEN_HEIGHT - 2) -Text $pt -FgColor ([ConsoleColor]::DarkGray)
             }
 
+            Show-SkipHint
             Invoke-RenderFrame
             if ($isLast -and $hold -and $waitKey) {
-                Wait-ForKey | Out-Null
+                Wait-ForCutsceneKey
                 return
             }
-            [System.Threading.Thread]::Sleep($delayMs)
+            Invoke-CutsceneSleep -Ms $delayMs
         }
     }
 }
@@ -548,6 +623,7 @@ function Invoke-CutsceneMapSequence {
         }
     #>
     param([object]$Step)
+    if ($Script:SkipCutscene) { return }
 
     # ── Load map data ──
     $mapLines = @()
@@ -646,6 +722,7 @@ function Invoke-CutsceneMapSequence {
     # ── Process events ──
     if ($Step.events) {
         foreach ($evt in $Step.events) {
+            if ($Script:SkipCutscene) { return }
             switch ($evt.action) {
                 'move' {
                     $ent = $entities[$evt.entity]
@@ -653,10 +730,11 @@ function Invoke-CutsceneMapSequence {
                     $ent.Hidden = $false
                     $stepDelay = if ($evt.stepDelayMs) { [int]$evt.stepDelayMs } else { 200 }
                     foreach ($pt in $evt.path) {
+                        if ($Script:SkipCutscene) { break }
                         $ent.X = [int]$pt[0]
                         $ent.Y = [int]$pt[1]
                         & $renderMap
-                        [System.Threading.Thread]::Sleep($stepDelay)
+                        Invoke-CutsceneSleep -Ms $stepDelay
                     }
                 }
                 'show' {
@@ -666,7 +744,7 @@ function Invoke-CutsceneMapSequence {
                     if ($null -ne $evt.x) { $ent.X = [int]$evt.x }
                     if ($null -ne $evt.y) { $ent.Y = [int]$evt.y }
                     & $renderMap
-                    if ($evt.delayMs) { [System.Threading.Thread]::Sleep([int]$evt.delayMs) }
+                    if ($evt.delayMs) { Invoke-CutsceneSleep -Ms ([int]$evt.delayMs) }
                 }
                 'hide' {
                     $ent = $entities[$evt.entity]
@@ -675,6 +753,7 @@ function Invoke-CutsceneMapSequence {
                     & $renderMap
                 }
                 'dialogue' {
+                    if ($Script:SkipCutscene) { continue }
                     # Render map in background, dialogue box at bottom
                     & $renderMap
                     $speaker  = if ($evt.speaker) { $evt.speaker } else { '???' }
@@ -692,15 +771,16 @@ function Invoke-CutsceneMapSequence {
                     }
                     $pt = "[Press any key]"
                     Set-Text -X (116 - $pt.Length) -Y ($boxY + $boxH - 2) -Text $pt -FgColor ([ConsoleColor]::DarkGray) -BgColor ([ConsoleColor]::Black)
+                    Show-SkipHint
                     Invoke-RenderFrame
-                    Wait-ForKey | Out-Null
+                    Wait-ForCutsceneKey
                 }
                 'narration' {
                     Invoke-CutsceneNarration -Step $evt
                 }
                 'delay' {
                     $ms = if ($evt.ms) { [int]$evt.ms } else { 500 }
-                    [System.Threading.Thread]::Sleep($ms)
+                    Invoke-CutsceneSleep -Ms $ms
                 }
                 'effect' {
                     Invoke-CutsceneEffect -Step $evt

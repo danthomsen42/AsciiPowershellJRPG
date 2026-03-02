@@ -1,44 +1,68 @@
 ﻿{
     "PlayerPosition":  {
                            "Y":  19,
-                           "X":  22
+                           "X":  33
                        },
     "Version":  2,
-    "SaveDate":  "2026-03-01 00:26:57",
-    "StepCounter":  149,
-    "Gold":  338,
+    "SaveDate":  "2026-03-02 01:59:40",
+    "StepCounter":  334,
+    "Gold":  821,
     "TimeOfDay":  "Dusk",
     "Messages":  [
+                     "Victory! +56 EXP, +25 Gold.",
+                     "Enemies appear! (5 foes)",
+                     "Victory! +59 EXP, +15 Gold.",
                      "Enemies appear! (1 foe)",
-                     "Victory! +43 EXP, +20 Gold.",
-                     "Enemies appear! (1 foe)",
-                     "Victory! +15 EXP, +5 Gold.",
-                     "Enemies appear! (1 foe)",
-                     "Victory! +43 EXP, +20 Gold.",
+                     "Victory! +20 EXP, +8 Gold.",
                      "Entered Thornvale Village.",
-                     "Entered Dark Cavern - Floor 1.",
-                     "You enter the Dark Cavern. Stay alert!",
+                     "Entered Thornvale General Store.",
+                     "Entered Thornvale Village.",
+                     "Entered Thornvale General Store.",
                      "Entered Thornvale Village."
                  ],
     "Triggers":  {
+                     "cavern_boss_encountered":  true,
                      "cutscene_intro_seen":  true,
-                     "treant_kills":  2,
+                     "has_item_silver_amulet_quest":  true,
+                     "shadow_goblin_kills":  2,
+                     "secret_cavern_lost_amulet":  true,
                      "cutscene_first_cavern":  true,
-                     "goblin_kills":  12,
-                     "forest_wolf_kills":  9
+                     "cave_bat_kills":  23,
+                     "boss_cave_shadow_defeated":  true,
+                     "goblin_kills":  30,
+                     "healer_used":  true,
+                     "quest_lost_amulet_done":  true,
+                     "shadowed_figure_kills":  1,
+                     "slime_kills":  13,
+                     "quest_lost_amulet_start":  true,
+                     "cutscene_amulet_done":  true,
+                     "cutscene_amulet_found":  true,
+                     "cutscene_shadow_boss_done":  true,
+                     "quest_cavern_accepted":  true
                  },
     "DiscoveredMaps":  {
                            "Map-TestTown-1":  true,
-                           "Map-WhisperForest-1":  true,
+                           "Map-Shop-1":  true,
                            "Map-DarkCavern-1":  true
                        },
     "SaveName":  "Autosave",
     "Inventory":  [
                       {
+                          "id":  "herb",
+                          "type":  "consumable",
+                          "effect":  "heal",
+                          "count":  9,
+                          "description":  "Restores 10 HP to one ally. A common remedy.",
+                          "value":  10,
+                          "name":  "Herb",
+                          "sellPrice":  4,
+                          "buyPrice":  8
+                      },
+                      {
                           "id":  "goblin_ear",
                           "type":  "material",
                           "effect":  "none",
-                          "count":  6,
+                          "count":  13,
                           "description":  "A trophy from a defeated goblin. Can be sold.",
                           "value":  0,
                           "name":  "Goblin Ear",
@@ -46,164 +70,185 @@
                           "buyPrice":  0
                       },
                       {
-                          "id":  "wolf_pelt",
+                          "id":  "bat_wing",
+                          "type":  "material",
+                          "effect":  "none",
+                          "count":  8,
+                          "description":  "A leathery bat wing. Used in alchemy.",
+                          "value":  0,
+                          "name":  "Bat Wing",
+                          "sellPrice":  3,
+                          "buyPrice":  0
+                      },
+                      {
+                          "id":  "slime_gel",
                           "type":  "material",
                           "effect":  "none",
                           "count":  5,
-                          "description":  "A thick fur pelt from a forest wolf.",
+                          "description":  "Gelatinous residue. Strangely valuable to alchemists.",
                           "value":  0,
-                          "name":  "Wolf Pelt",
-                          "sellPrice":  15,
+                          "name":  "Slime Gel",
+                          "sellPrice":  10,
                           "buyPrice":  0
                       },
                       {
-                          "id":  "ancient_wood",
-                          "type":  "material",
-                          "effect":  "none",
-                          "count":  1,
-                          "description":  "Petrified wood from an ancient treant.",
-                          "value":  0,
-                          "name":  "Ancient Wood",
-                          "sellPrice":  25,
-                          "buyPrice":  0
-                      },
-                      {
-                          "id":  "herb",
+                          "id":  "potion",
                           "type":  "consumable",
                           "effect":  "heal",
-                          "count":  6,
-                          "description":  "Restores 10 HP to one ally. A common remedy.",
-                          "value":  10,
-                          "name":  "Herb",
-                          "sellPrice":  4,
-                          "buyPrice":  8
+                          "count":  2,
+                          "description":  "Restores 30 HP to one ally.",
+                          "value":  30,
+                          "name":  "Potion",
+                          "sellPrice":  12,
+                          "buyPrice":  25
+                      },
+                      {
+                          "id":  "steel_sword",
+                          "type":  "weapon",
+                          "effect":  "none",
+                          "count":  1,
+                          "description":  "A finely forged blade. STR+5",
+                          "value":  0,
+                          "name":  "Steel Sword",
+                          "sellPrice":  125,
+                          "buyPrice":  250
+                      },
+                      {
+                          "id":  "ether",
+                          "type":  "consumable",
+                          "effect":  "restoreMP",
+                          "count":  2,
+                          "description":  "Restores 20 MP to one ally.",
+                          "value":  20,
+                          "name":  "Ether",
+                          "sellPrice":  20,
+                          "buyPrice":  40
+                      },
+                      {
+                          "id":  "speed_boots",
+                          "type":  "accessory",
+                          "effect":  "none",
+                          "count":  1,
+                          "description":  "Enchanted boots. SPD+3",
+                          "value":  0,
+                          "name":  "Speed Boots",
+                          "sellPrice":  75,
+                          "buyPrice":  150
                       }
                   ],
     "Party":  [
                   {
-                      "HP":  64,
-                      "MP":  14,
-                      "Level":  6,
-                      "EXPToNext":  197,
+                      "Accuracy":  96,
+                      "Strength":  30,
+                      "EXP":  12,
                       "Equipment":  {
                                         "Armor":  "Chain Mail",
                                         "Accessory":  null,
                                         "Weapon":  "Iron Sword"
                                     },
+                      "HP":  76,
+                      "Class":  "Warrior",
+                      "EXPToNext":  341,
+                      "Intelligence":  12,
+                      "MaxHP":  76,
+                      "Level":  10,
+                      "MP":  12,
+                      "MaxMP":  12,
+                      "Name":  "Warrior1",
                       "SecondaryAbilities":  [
                                                  "Power Strike",
                                                  "Shield Bash"
                                              ],
-                      "Class":  "Warrior",
-                      "Speed":  16,
-                      "Strength":  26,
-                      "Accuracy":  94,
-                      "StatusEffects":  [
-
-                                        ],
-                      "EXP":  102,
-                      "Intelligence":  9,
-                      "Defense":  23,
                       "Symbol":  "W",
-                      "Name":  "Warrior1",
-                      "MaxHP":  65,
+                      "Defense":  32,
                       "MainAttack":  "Slash",
-                      "MaxMP":  14
+                      "Speed":  21
                   },
                   {
-                      "HP":  30,
-                      "MP":  48,
-                      "Level":  6,
-                      "EXPToNext":  217,
+                      "Accuracy":  96,
+                      "Strength":  10,
+                      "EXP":  172,
                       "Equipment":  {
                                         "Armor":  "Cloth Robe",
                                         "Accessory":  null,
                                         "Weapon":  "Oak Staff"
                                     },
+                      "HP":  41,
+                      "Class":  "Mage",
+                      "EXPToNext":  328,
+                      "Intelligence":  34,
+                      "MaxHP":  41,
+                      "Level":  9,
+                      "MP":  62,
+                      "MaxMP":  66,
+                      "Name":  "Mage2",
                       "SecondaryAbilities":  [
                                                  "Ice Shard",
                                                  "Lightning",
                                                  "Heal"
                                              ],
-                      "Class":  "Mage",
-                      "Speed":  18,
-                      "Strength":  11,
-                      "Accuracy":  96,
-                      "StatusEffects":  [
-
-                                        ],
-                      "EXP":  35,
-                      "Intelligence":  27,
-                      "Defense":  7,
                       "Symbol":  "M",
-                      "Name":  "Mage2",
-                      "MaxHP":  30,
+                      "Defense":  8,
                       "MainAttack":  "Fire Bolt",
-                      "MaxMP":  48
+                      "Speed":  16
                   },
                   {
-                      "HP":  50,
-                      "MP":  42,
-                      "Level":  6,
-                      "EXPToNext":  208,
+                      "Accuracy":  91,
+                      "Strength":  15,
+                      "EXP":  235,
                       "Equipment":  {
                                         "Armor":  "Scale Mail",
                                         "Accessory":  null,
                                         "Weapon":  "Iron Mace"
                                     },
+                      "HP":  62,
+                      "Class":  "Cleric",
+                      "EXPToNext":  315,
+                      "Intelligence":  22,
+                      "MaxHP":  62,
+                      "Level":  9,
+                      "MP":  37,
+                      "MaxMP":  46,
+                      "Name":  "Cleric3",
                       "SecondaryAbilities":  [
                                                  "Heal",
                                                  "Bless",
                                                  "Holy Light"
                                              ],
-                      "Class":  "Cleric",
-                      "Speed":  10,
-                      "Strength":  16,
-                      "Accuracy":  89,
-                      "StatusEffects":  [
-
-                                        ],
-                      "EXP":  67,
-                      "Intelligence":  22,
-                      "Defense":  16,
                       "Symbol":  "C",
-                      "Name":  "Cleric3",
-                      "MaxHP":  50,
+                      "Defense":  16,
                       "MainAttack":  "Smite",
-                      "MaxMP":  42
+                      "Speed":  20
                   },
                   {
-                      "HP":  46,
-                      "MP":  24,
-                      "Level":  6,
-                      "EXPToNext":  197,
+                      "Accuracy":  106,
+                      "Strength":  17,
+                      "EXP":  12,
                       "Equipment":  {
                                         "Armor":  "Hide Armor",
                                         "Accessory":  null,
                                         "Weapon":  "Short Bow"
                                     },
+                      "HP":  59,
+                      "Class":  "Ranger",
+                      "EXPToNext":  341,
+                      "Intelligence":  16,
+                      "MaxHP":  59,
+                      "Level":  10,
+                      "MP":  24,
+                      "MaxMP":  24,
+                      "Name":  "Ranger4",
                       "SecondaryAbilities":  [
                                                  "Multi-Shot",
                                                  "Snare Trap",
                                                  "Nature\u0027s Cure"
                                              ],
-                      "Class":  "Ranger",
-                      "Speed":  25,
-                      "Strength":  17,
-                      "Accuracy":  101,
-                      "StatusEffects":  [
-
-                                        ],
-                      "EXP":  102,
-                      "Intelligence":  12,
-                      "Defense":  13,
                       "Symbol":  "A",
-                      "Name":  "Ranger4",
-                      "MaxHP":  46,
+                      "Defense":  18,
                       "MainAttack":  "Arrow Shot",
-                      "MaxMP":  24
+                      "Speed":  33
                   }
               ],
-    "DayCycleStep":  69,
+    "DayCycleStep":  37,
     "CurrentMapName":  "Map-TestTown-1"
 }

@@ -16,6 +16,183 @@ $Script:COMBAT_ACTION_H      = 9
 $Script:COMBAT_LOG_Y         = 26
 $Script:COMBAT_LOG_LINES     = 3
 
+# ── Battle Text Speed ────────────────────────────────────────────────────────────
+
+function Get-BattleTextDelay {
+    <#
+    .SYNOPSIS  Returns the pause duration (ms) between combat log messages,
+               based on the BattleTextSpeed setting.
+    #>
+    switch ($Script:Settings.BattleTextSpeed) {
+        'Fast'   { return 120 }
+        'Slow'   { return 700 }
+        default  { return 350 }   # Normal
+    }
+}
+
+# ── Battle Transition Effects ────────────────────────────────────────────────────
+
+# Available transition styles
+$Script:TransitionStyles = @('flash', 'sweep_lr', 'sweep_tb', 'spiral', 'shatter', 'diagonal')
+
+function Invoke-BattleTransition {
+    <#
+    .SYNOPSIS  Plays a visual transition before entering combat.
+    .PARAMETER Style
+        Force a specific style (e.g. 'flash'). If empty/null, a random style is chosen.
+    #>
+    param([string]$Style = '')
+
+    if (-not $Script:Settings.BattleTransitions) { return }
+
+    if (-not $Style -or $Style -eq '' -or $Style -eq 'random') {
+        $Style = $Script:TransitionStyles[(Get-Random -Minimum 0 -Maximum $Script:TransitionStyles.Count)]
+    }
+
+    $sw = $Script:SCREEN_WIDTH
+    $sh = $Script:SCREEN_HEIGHT
+
+    switch ($Style) {
+        # ── Flash: rapid black-white-red flash ──
+        'flash' {
+            $colors = @([ConsoleColor]::White, [ConsoleColor]::Black, [ConsoleColor]::Red, [ConsoleColor]::Black, [ConsoleColor]::DarkRed)
+            foreach ($c in $colors) {
+                Clear-FrameBuffer
+                for ($row = 0; $row -lt $sh; $row++) {
+                    Set-Text -X 0 -Y $row -Text (' ' * $sw) -FgColor $c -BgColor $c
+                }
+                Invoke-RenderFrame
+                [System.Threading.Thread]::Sleep(60)
+            }
+            Clear-FrameBuffer
+            Invoke-RenderFrame
+        }
+
+        # ── Sweep Left→Right: columns fill with dark blocks ──
+        'sweep_lr' {
+            $step = [math]::Max(1, [math]::Floor($sw / 12))
+            for ($x = 0; $x -lt $sw; $x += $step) {
+                $end = [math]::Min($sw, $x + $step)
+                $block = [string]::new([char]0x2588, $end - $x)
+                for ($row = 0; $row -lt $sh; $row++) {
+                    Set-Text -X $x -Y $row -Text $block -FgColor ([ConsoleColor]::DarkRed) -BgColor ([ConsoleColor]::Black)
+                }
+                Invoke-RenderFrame
+                [System.Threading.Thread]::Sleep(25)
+            }
+            [System.Threading.Thread]::Sleep(100)
+            Clear-FrameBuffer
+            Invoke-RenderFrame
+        }
+
+        # ── Sweep Top→Bottom: rows fill down ──
+        'sweep_tb' {
+            $step = [math]::Max(1, [math]::Floor($sh / 10))
+            $block = [string]::new([char]0x2588, $sw)
+            for ($y = 0; $y -lt $sh; $y += $step) {
+                $end = [math]::Min($sh, $y + $step)
+                for ($row = $y; $row -lt $end; $row++) {
+                    Set-Text -X 0 -Y $row -Text $block -FgColor ([ConsoleColor]::DarkRed) -BgColor ([ConsoleColor]::Black)
+                }
+                Invoke-RenderFrame
+                [System.Threading.Thread]::Sleep(30)
+            }
+            [System.Threading.Thread]::Sleep(100)
+            Clear-FrameBuffer
+            Invoke-RenderFrame
+        }
+
+        # ── Spiral inward ──
+        'spiral' {
+            $filled = [bool[,]]::new($sw, $sh)
+            $block = [char]0x2588
+            $left = 0; $right = $sw - 1; $top = 0; $bottom = $sh - 1
+            $cellsPerFrame = [math]::Max(1, [math]::Floor(($sw * $sh) / 20))
+            $count = 0
+            while ($left -le $right -and $top -le $bottom) {
+                for ($x = $left; $x -le $right; $x++) {
+                    Set-Cell -X $x -Y $top -Char $block -FgColor ([ConsoleColor]::DarkRed)
+                    $count++; if ($count % $cellsPerFrame -eq 0) { Invoke-RenderFrame; [System.Threading.Thread]::Sleep(16) }
+                }
+                $top++
+                for ($y = $top; $y -le $bottom; $y++) {
+                    Set-Cell -X $right -Y $y -Char $block -FgColor ([ConsoleColor]::DarkRed)
+                    $count++; if ($count % $cellsPerFrame -eq 0) { Invoke-RenderFrame; [System.Threading.Thread]::Sleep(16) }
+                }
+                $right--
+                for ($x = $right; $x -ge $left; $x--) {
+                    Set-Cell -X $x -Y $bottom -Char $block -FgColor ([ConsoleColor]::DarkRed)
+                    $count++; if ($count % $cellsPerFrame -eq 0) { Invoke-RenderFrame; [System.Threading.Thread]::Sleep(16) }
+                }
+                $bottom--
+                for ($y = $bottom; $y -ge $top; $y--) {
+                    Set-Cell -X $left -Y $y -Char $block -FgColor ([ConsoleColor]::DarkRed)
+                    $count++; if ($count % $cellsPerFrame -eq 0) { Invoke-RenderFrame; [System.Threading.Thread]::Sleep(16) }
+                }
+                $left++
+            }
+            Invoke-RenderFrame
+            [System.Threading.Thread]::Sleep(100)
+            Clear-FrameBuffer
+            Invoke-RenderFrame
+        }
+
+        # ── Shatter: random blocks fill the screen ──
+        'shatter' {
+            $block = [string]::new([char]0x2592, 4)
+            $iterations = 60
+            for ($i = 0; $i -lt $iterations; $i++) {
+                $bx = Get-Random -Minimum 0 -Maximum ($sw - 4)
+                $by = Get-Random -Minimum 0 -Maximum $sh
+                $c = @([ConsoleColor]::DarkRed, [ConsoleColor]::Red, [ConsoleColor]::DarkYellow, [ConsoleColor]::Black)[(Get-Random -Minimum 0 -Maximum 4)]
+                Set-Text -X $bx -Y $by -Text $block -FgColor $c -BgColor ([ConsoleColor]::Black)
+                if ($i % 5 -eq 0) {
+                    Invoke-RenderFrame
+                    [System.Threading.Thread]::Sleep(16)
+                }
+            }
+            # Quick fill to black
+            for ($row = 0; $row -lt $sh; $row++) {
+                Set-Text -X 0 -Y $row -Text (' ' * $sw) -FgColor ([ConsoleColor]::Black) -BgColor ([ConsoleColor]::Black)
+            }
+            Invoke-RenderFrame
+            [System.Threading.Thread]::Sleep(80)
+            Clear-FrameBuffer
+            Invoke-RenderFrame
+        }
+
+        # ── Diagonal wipe ──
+        'diagonal' {
+            $block = [char]0x2588
+            $totalSteps = $sw + $sh
+            $step = [math]::Max(1, [math]::Floor($totalSteps / 14))
+            for ($d = 0; $d -lt $totalSteps; $d += $step) {
+                $dEnd = [math]::Min($totalSteps, $d + $step)
+                for ($di = $d; $di -lt $dEnd; $di++) {
+                    for ($y = 0; $y -lt $sh; $y++) {
+                        $x = $di - $y
+                        if ($x -ge 0 -and $x -lt $sw) {
+                            Set-Cell -X $x -Y $y -Char $block -FgColor ([ConsoleColor]::DarkRed)
+                        }
+                    }
+                }
+                Invoke-RenderFrame
+                [System.Threading.Thread]::Sleep(25)
+            }
+            [System.Threading.Thread]::Sleep(100)
+            Clear-FrameBuffer
+            Invoke-RenderFrame
+        }
+
+        default {
+            # Fallback: simple flash
+            Clear-FrameBuffer
+            Invoke-RenderFrame
+            [System.Threading.Thread]::Sleep(200)
+        }
+    }
+}
+
 # ── Ability Definitions ──────────────────────────────────────────────────────────
 # Each ability: Name, Type (physical/magic/heal/buff/debuff), stat used, MP cost,
 # power multiplier, accuracy modifier, target (single/all/ally/allAllies)
@@ -355,6 +532,10 @@ function Start-ScriptedBattle {
     }
     $battleDef = $battle.Value
 
+    # Play transition effect (battleDef.transition can force a specific style)
+    $transStyle = if ($battleDef.transition) { $battleDef.transition } else { '' }
+    Invoke-BattleTransition -Style $transStyle
+
     $Script:GameState.GameMode = 'Combat'
 
     # Build enemy list from the battle definition
@@ -420,6 +601,8 @@ function Start-ScriptedBattle {
 
 function Start-RandomEncounter {
     param([object]$MapConfig)
+
+    Invoke-BattleTransition
 
     $Script:GameState.GameMode = 'Combat'
 
@@ -1283,7 +1466,7 @@ function Update-Combat {
             # Shouldn't reach here but safety
         }
         Render-CombatScreen -ActionPrompt 'Escaped!'
-        [System.Threading.Thread]::Sleep(800)
+        [System.Threading.Thread]::Sleep(([int]((Get-BattleTextDelay) / 350.0 * 800)))
         Add-GameMessage "You fled from battle!"
         Clear-AllStatusEffects
         $Script:GameState.GameMode = 'Exploration'
@@ -1314,7 +1497,7 @@ function Update-Combat {
             $canAct = Process-StatusEffects -Entity $member -EntityName $member.Name
             if (-not $canAct) {
                 Render-CombatScreen -ActiveMemberName $member.Name
-                [System.Threading.Thread]::Sleep(350)
+                [System.Threading.Thread]::Sleep((Get-BattleTextDelay))
                 continue
             }
 
@@ -1365,7 +1548,7 @@ function Update-Combat {
 
             # Brief pause for readability
             Render-CombatScreen -ActiveMemberName $member.Name
-            [System.Threading.Thread]::Sleep(350)
+            [System.Threading.Thread]::Sleep((Get-BattleTextDelay))
         }
         elseif ($combatant.Type -eq 'enemy') {
             $enemyEntry = $combatant.Ref
@@ -1380,7 +1563,7 @@ function Update-Combat {
                     Add-CombatLog "$($enemyEntry.Name) succumbs to poison!"
                 }
                 Render-CombatScreen
-                [System.Threading.Thread]::Sleep(350)
+                [System.Threading.Thread]::Sleep((Get-BattleTextDelay))
                 continue
             }
 
@@ -1417,7 +1600,7 @@ function Update-Combat {
                                 -AbilityName $chosenAbility -Targets $enemyTargets -IsPartyActor $false
 
             Render-CombatScreen
-            [System.Threading.Thread]::Sleep(350)
+            [System.Threading.Thread]::Sleep((Get-BattleTextDelay))
         }
     }
 
@@ -1431,7 +1614,7 @@ function Update-Combat {
         Resolve-Victory
 
         Render-CombatScreen -ActionPrompt 'VICTORY!'
-        [System.Threading.Thread]::Sleep(600)
+        [System.Threading.Thread]::Sleep(([int]((Get-BattleTextDelay) / 350.0 * 600)))
 
         # Show results screen
         $resultLines = @($Script:CombatState.CombatLog | Select-Object -Last 8)
@@ -1452,7 +1635,7 @@ function Update-Combat {
         # DEFEAT
         Add-CombatLog '--- DEFEAT ---'
         Render-CombatScreen -ActionPrompt 'DEFEAT'
-        [System.Threading.Thread]::Sleep(1000)
+        [System.Threading.Thread]::Sleep(([int]((Get-BattleTextDelay) / 350.0 * 1000)))
 
         Add-GameMessage "Your party has been defeated..."
         # For now: restore party to 1HP each and return to exploration

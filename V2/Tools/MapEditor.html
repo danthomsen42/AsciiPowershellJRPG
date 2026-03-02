@@ -484,6 +484,20 @@ body {
 }
 .swatch-none:hover { border-color: #aaa; }
 .swatch-none.selected { border-color: #fff; box-shadow: 0 0 4px rgba(255,255,255,0.5); }
+#art-tile-palette {
+    background: var(--bg-toolbar); border-bottom: 1px solid var(--border);
+    padding: 3px 8px; display: flex; gap: 2px; align-items: center; font-size: 11px;
+    flex-wrap: wrap;
+}
+#art-tile-palette .art-pal-cell {
+    width: 24px; height: 24px; background: #111; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Consolas', 'Courier New', monospace; font-size: 14px;
+    cursor: pointer; border-radius: 2px; color: #ccc; box-sizing: border-box;
+}
+#art-tile-palette .art-pal-cell:hover { border-color: var(--accent); }
+#art-tile-palette .art-pal-cell.selected { border-color: var(--accent); background: #0e639c33; box-shadow: 0 0 0 1px var(--accent); }
+#art-tile-palette .art-pal-label { color: var(--text-dim); margin-right: 4px; white-space: nowrap; font-size: 10px; }
 #frame-strip {
     background: var(--bg-toolbar); border-bottom: 1px solid var(--border);
     padding: 3px 8px; display: flex; gap: 4px; align-items: center; font-size: 11px;
@@ -846,6 +860,7 @@ body {
             </span>
         </div>
         <div id="art-color-palette"></div>
+        <div id="art-tile-palette"></div>
         <div id="frame-strip" style="display:none;"></div>
         <div style="flex:1; overflow:auto; position:relative;">
             <canvas id="art-canvas" width="0" height="0"></canvas>
@@ -1237,14 +1252,17 @@ const SPECIAL_CHARS = {
     'Misc': '†‡•…‰™©®¿¡¬¦ƒ‹›†‡·¸˛˜ˆ'
 };
 
-const DEFAULT_PALETTE = '#.~+TSDBVPEIWGCRHºXO@^*=|_><{}[]()';
+const BLANK_CHAR = '\u2800'; // Braille blank — visually invisible, but carries tile properties (bg color, passable, etc.)
+
+const DEFAULT_PALETTE = '#.~+TSDBVPEIWGCRHºXO@^*=|_><{}[]()'+ BLANK_CHAR;
 
 const DEFAULT_TILES = {
     '#': { color: 'DarkGray', passable: false, name: 'Wall' },
     '.': { color: 'DarkGray', passable: true, name: 'Ground' },
     '~': { color: 'Cyan', bgColor: 'DarkBlue', passable: false, name: 'Water', animated: true },
     '+': { color: 'DarkYellow', passable: false, name: 'Campfire' },
-    ' ': { color: 'DarkGray', passable: true, name: 'Empty' }
+    ' ': { color: 'DarkGray', passable: true, name: 'Empty' },
+    [BLANK_CHAR]: { color: 'Black', bgColor: 'Black', passable: true, name: 'Blank' }
 };
 
 /* ──────────────────────────────────────────
@@ -1311,7 +1329,8 @@ function populateColorDropdowns() {
     const bgSel = document.getElementById('sel-bgcolor');
     bgSel.innerHTML = '<option value="">(none)</option>';
     for (const [name, hex] of Object.entries(PS_COLORS)) {
-        const opt = `<option value="${name}" style="color:${hex}; background:#222;">${name}</option>`;
+        const extra = name === 'Black' ? ' text-shadow: 0 0 1px #888;' : '';
+        const opt = `<option value="${name}" style="color:${hex}; background:#222;${extra}">${name}</option>`;
         fgSel.innerHTML += opt;
         bgSel.innerHTML += opt;
     }
@@ -1339,6 +1358,12 @@ function buildPalette() {
             if (def.bgColor) cell.style.background = PS_COLORS[def.bgColor];
         } else {
             cell.style.color = '#ccc';
+        }
+        // Special display for blank tile
+        if (ch === BLANK_CHAR) {
+            cell.textContent = '⊘';
+            cell.title = 'Blank (invisible tile with bg color)';
+            cell.style.fontSize = '10px';
         }
         cell.onclick = () => selectPaletteTile(ch);
         grid.appendChild(cell);
@@ -1371,7 +1396,7 @@ function selectPaletteTile(ch) {
     state.selectedChar = ch;
     // Load definition into sidebar
     const def = state.tileDefs[ch] || DEFAULT_TILES[ch] || { color: 'Gray', passable: true, name: '' };
-    document.getElementById('sel-char').value = ch;
+    document.getElementById('sel-char').value = ch === BLANK_CHAR ? '(Blank)' : ch;
     document.getElementById('sel-name').value = def.name || '';
     document.getElementById('sel-color').value = def.color || 'Gray';
     document.getElementById('sel-bgcolor').value = def.bgColor || '';
@@ -1389,7 +1414,7 @@ function updateTilePreview() {
     const ch = document.getElementById('sel-char').value || '.';
     const fg = PS_COLORS[document.getElementById('sel-color').value] || '#808080';
     const bg = PS_COLORS[document.getElementById('sel-bgcolor').value] || '#111';
-    prev.textContent = ch;
+    prev.textContent = (ch === BLANK_CHAR || ch === '(Blank)') ? '\u2298' : ch;
     prev.style.color = fg;
     prev.style.background = bg;
 }
@@ -1495,9 +1520,13 @@ function renderGrid() {
             ctx.fillRect(x, y, cs, cs);
 
             // Character
-            if (ch !== ' ') {
+            if (ch !== ' ' && ch !== BLANK_CHAR) {
                 ctx.fillStyle = def ? (PS_COLORS[def.color] || '#808080') : '#808080';
                 ctx.fillText(ch, x + cs / 2, y + cs / 2 + 1);
+            } else if (ch === BLANK_CHAR && cs >= 10) {
+                // Show a subtle marker in editor so blank tiles are visible
+                ctx.fillStyle = 'rgba(255,255,255,0.15)';
+                ctx.fillText('⊘', x + cs / 2, y + cs / 2 + 1);
             }
         }
     }
@@ -1867,7 +1896,7 @@ function ctxAddOverride() {
 
 function ctxTogglePassable() {
     const ch = state.grid[state.ctxCell.y][state.ctxCell.x];
-    if (!ch || ch === ' ') return;
+    if (!ch || (ch === ' ' && ch !== BLANK_CHAR)) return;
     if (!state.tileDefs[ch]) {
         state.tileDefs[ch] = { ...(DEFAULT_TILES[ch] || { color: 'Gray', passable: true, name: '' }) };
     }
@@ -1879,7 +1908,7 @@ function ctxTogglePassable() {
 
 function ctxSetAction(type) {
     const ch = state.grid[state.ctxCell.y][state.ctxCell.x];
-    if (!ch || ch === ' ') return;
+    if (!ch || (ch === ' ' && ch !== BLANK_CHAR)) return;
     if (!state.tileDefs[ch]) {
         state.tileDefs[ch] = { ...(DEFAULT_TILES[ch] || { color: 'Gray', passable: false, name: '' }) };
     }
@@ -2506,6 +2535,7 @@ function showSpecialChars() {
                             csState.dirty = true;
                             renderArtCanvas();
                         }
+                        buildArtTilePalette();
                     } else if (step && step.type === 'map_sequence') {
                         csState.mseqTileChar = ch;
                         document.getElementById('mseq-tile-char').value = ch;
@@ -3509,11 +3539,13 @@ function updateCsMainArea() {
         document.getElementById('art-frame-nav').style.display = 'none';
         document.getElementById('frame-strip').style.display = 'none';
         renderArtCanvas();
+        buildArtTilePalette();
     } else if (step.type === 'animated_art') {
         loadAnimArtToEditor(step);
         document.getElementById('art-editor-container').style.display = 'flex';
         document.getElementById('art-frame-nav').style.display = '';
         renderArtCanvas();
+        buildArtTilePalette();
         renderFrameStrip();
     } else if (step.type === 'map_sequence') {
         loadMapSeqToEditor(step);
@@ -3797,7 +3829,7 @@ function setupArtCanvasEvents() {
         paintCell(cell.y, cell.x);
         renderArtCanvas();
     });
-    artCanvas.addEventListener('mouseup', () => { csState.artPainting = false; });
+    artCanvas.addEventListener('mouseup', () => { csState.artPainting = false; buildArtTilePalette(); });
     artCanvas.addEventListener('mouseleave', () => { csState.artCursor = { x: -1, y: -1 }; csState.artPainting = false; renderArtCanvas(); });
     artCanvas.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -3840,6 +3872,7 @@ function setupArtCanvasEvents() {
             if (csState.artCursor.x < csState.artW - 1) csState.artCursor.x++;
         }
         renderArtCanvas();
+        buildArtTilePalette();
     });
 }
 
@@ -3850,6 +3883,7 @@ function setArtMode(mode) {
     if (mode === 'text') {
         artCanvas.style.display = 'none';
         document.getElementById('art-color-palette').style.display = 'none';
+        document.getElementById('art-tile-palette').style.display = 'none';
         const ta = document.getElementById('art-raw-text');
         ta.style.display = '';
         ta.value = gridToLines(csState.artGrid).join('\n');
@@ -3882,7 +3916,9 @@ function setArtMode(mode) {
         ta.style.display = 'none';
         artCanvas.style.display = '';
         document.getElementById('art-color-palette').style.display = '';
+        document.getElementById('art-tile-palette').style.display = '';
         renderArtCanvas();
+        buildArtTilePalette();
     }
 }
 
@@ -4958,8 +4994,6 @@ function rebuildSwatches() {
     }
 
     for (const [name, hex] of Object.entries(PS_COLORS)) {
-        // For FG, skip Black (invisible). For BG, include all.
-        if (!isBg && name === 'Black') continue;
         const swatch = document.createElement('div');
         swatch.className = 'color-swatch' + (name === currentColor ? ' selected' : '');
         swatch.style.background = hex;
@@ -4984,6 +5018,89 @@ function selectPaintBgColor(colorName) {
     if (csState.artPaintLayer === 'bg') {
         rebuildSwatches();
     }
+}
+
+/* ──────────────────────────────────────────
+   ART TILE PALETTE — Quick char picker for cutscene art
+   ────────────────────────────────────────── */
+
+const ART_DEFAULT_CHARS = '#.~+|_-=*^><\\/[](){}░▒▓█▄▀▐▌─│┌┐└┘├┤┬┴┼═║╔╗╚╝╠╣╦╩╬';
+
+function buildArtTilePalette() {
+    const container = document.getElementById('art-tile-palette');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // Label
+    const label = document.createElement('span');
+    label.className = 'art-pal-label';
+    label.textContent = '🔤 Tiles:';
+    container.appendChild(label);
+
+    // Collect used chars from current art grid (all frames for animated_art)
+    const usedSet = new Set();
+    const gridsToScan = (csState.artFrames && csState.artFrames.length > 0)
+        ? csState.artFrames : [csState.artGrid];
+    // Always scan current grid too
+    if (csState.artGrid && csState.artGrid.length > 0) {
+        for (const row of csState.artGrid) {
+            if (!row) continue;
+            for (const ch of row) {
+                if (ch && ch !== ' ' && ch !== BLANK_CHAR) usedSet.add(ch);
+            }
+        }
+    }
+    for (const grid of gridsToScan) {
+        if (!grid || grid === csState.artGrid) continue;
+        for (const row of grid) {
+            if (!row) continue;
+            for (const ch of row) {
+                if (ch && ch !== ' ' && ch !== BLANK_CHAR) usedSet.add(ch);
+            }
+        }
+    }
+
+    // Build "Used" section first (if any)
+    const usedChars = [...usedSet].filter(ch => !ART_DEFAULT_CHARS.includes(ch));
+    if (usedChars.length > 0) {
+        const usedLabel = document.createElement('span');
+        usedLabel.className = 'art-pal-label';
+        usedLabel.style.cssText = 'color: #7cc; font-weight: bold;';
+        usedLabel.textContent = 'Used:';
+        container.appendChild(usedLabel);
+        for (const ch of usedChars) {
+            container.appendChild(makeArtPalCell(ch));
+        }
+        // Separator
+        const sep = document.createElement('div');
+        sep.style.cssText = 'width:1px; height:20px; background:#555; margin:0 4px;';
+        container.appendChild(sep);
+    }
+
+    // Default chars
+    for (const ch of ART_DEFAULT_CHARS) {
+        container.appendChild(makeArtPalCell(ch));
+    }
+
+    // Blank tile
+    const blankCell = makeArtPalCell(BLANK_CHAR);
+    blankCell.textContent = '⊘';
+    blankCell.title = 'Blank (invisible with bg color)';
+    blankCell.style.fontSize = '10px';
+    container.appendChild(blankCell);
+}
+
+function makeArtPalCell(ch) {
+    const cell = document.createElement('div');
+    cell.className = 'art-pal-cell' + (ch === csState.artChar ? ' selected' : '');
+    cell.textContent = ch;
+    cell.title = `${ch} — U+${ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}`;
+    cell.onclick = () => {
+        csState.artChar = ch;
+        buildArtTilePalette(); // refresh selection highlight
+        setStatus(`Selected tile: '${ch === BLANK_CHAR ? '(Blank)' : ch}'`);
+    };
+    return cell;
 }
 
 /* ──────────────────────────────────────────
@@ -5073,6 +5190,7 @@ function initCutscene() {
     setupArtCanvasEvents();
     setupMapSeqCanvasEvents();
     initArtColorPalette();
+    buildArtTilePalette();
     // Tile char input for map sequence
     document.getElementById('mseq-tile-char').addEventListener('input', function() {
         if (this.value) csState.mseqTileChar = this.value;
