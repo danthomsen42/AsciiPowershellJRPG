@@ -34,7 +34,7 @@ function Update-Dialogue {
 
     if (Test-Path $dialoguePath) {
         try {
-            $dialogue = Get-Content $dialoguePath -Raw | ConvertFrom-Json
+            $dialogue = Get-Content $dialoguePath -Raw -Encoding UTF8 | ConvertFrom-Json
         }
         catch {
             $dialogue = $null

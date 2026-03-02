@@ -35,7 +35,7 @@ function Load-Map {
         throw "Map file not found: $mapPath"
     }
 
-    $rawLines = Get-Content $mapPath
+    $rawLines = Get-Content $mapPath -Encoding UTF8
 
     # Filter out empty lines and comments (lines starting with ;)
     $tileRows = @()
@@ -121,7 +121,7 @@ function Load-MapConfig {
         throw "Map config not found: $configPath"
     }
 
-    return (Get-Content $configPath -Raw | ConvertFrom-Json)
+    return (Get-Content $configPath -Raw -Encoding UTF8 | ConvertFrom-Json)
 }
 
 # ── Tile Queries ─────────────────────────────────────────────────────────────────

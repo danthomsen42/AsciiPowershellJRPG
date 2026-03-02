@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ASCII JRPG Map Editor</title>
+<title>ASCII JRPG Editor — Maps & Cutscenes</title>
 <style>
 /* ═══════════════════════════════════════════════════
    CSS — Dark theme inspired by VS Code
@@ -407,37 +407,197 @@ body {
 
 /* Selected tools highlight */
 .tool-group { display: flex; gap: 2px; }
+
+/* ─── Mode toggle ─── */
+.mode-toggle { display: flex; gap: 0; }
+.mode-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.mode-btn:first-child { border-radius: 3px 0 0 3px; }
+.mode-btn:last-child  { border-radius: 0 3px 3px 0; border-left: none; }
+.mode-btn:hover { color: var(--text); }
+.mode-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ─── Cutscene step list ─── */
+.step-list-wrap { max-height: 320px; overflow-y: auto; padding: 0 8px; margin-bottom: 6px; }
+.step-item {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 6px; margin-bottom: 2px;
+    background: var(--bg-input); border: 1px solid transparent;
+    border-radius: 3px; cursor: pointer; font-size: 12px;
+}
+.step-item:hover { border-color: var(--border); }
+.step-item.selected { border-color: var(--accent); background: #0e639c22; }
+.step-badge {
+    background: var(--accent); color: #fff;
+    padding: 1px 6px; border-radius: 2px;
+    font-size: 10px; font-weight: 600; flex-shrink: 0;
+}
+.step-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); }
+.step-actions { display: flex; gap: 2px; flex-shrink: 0; }
+.step-actions button {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; padding: 1px 3px; font-size: 11px;
+}
+.step-actions button:hover { color: var(--text); }
+
+/* ─── Art editor ─── */
+#art-editor-container {
+    display: none; position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    flex-direction: column;
+}
+#art-toolbar {
+    background: var(--bg-toolbar); border-bottom: 1px solid var(--border);
+    padding: 4px 8px; display: flex; gap: 4px; align-items: center; font-size: 12px;
+}
+#art-canvas { image-rendering: pixelated; cursor: crosshair; }
+#art-color-palette {
+    background: var(--bg-toolbar); border-bottom: 1px solid var(--border);
+    padding: 3px 8px; display: flex; gap: 3px; align-items: center; font-size: 11px;
+    flex-wrap: wrap;
+}
+#art-color-palette .color-swatch {
+    width: 20px; height: 20px; border: 2px solid #444; border-radius: 3px;
+    cursor: pointer; box-sizing: border-box; transition: border-color 0.15s;
+}
+#art-color-palette .color-swatch:hover { border-color: #aaa; }
+#art-color-palette .color-swatch.selected { border-color: #fff; box-shadow: 0 0 4px rgba(255,255,255,0.5); }
+#art-color-palette .palette-label { color: var(--text-dim); margin-right: 4px; white-space: nowrap; }
+.layer-btn {
+    padding: 2px 8px; border: 1px solid #555; background: #333; color: var(--text);
+    border-radius: 3px; cursor: pointer; font-size: 11px; margin-right: 2px;
+}
+.layer-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: bold; }
+.layer-btn:hover { border-color: #888; }
+.swatch-none {
+    width: 20px; height: 20px; border: 2px solid #444; border-radius: 3px;
+    cursor: pointer; box-sizing: border-box; transition: border-color 0.15s;
+    background: repeating-conic-gradient(#333 0% 25%, #555 0% 50%) 50%/10px 10px;
+    font-size: 10px; text-align: center; line-height: 16px; color: #f44;
+}
+.swatch-none:hover { border-color: #aaa; }
+.swatch-none.selected { border-color: #fff; box-shadow: 0 0 4px rgba(255,255,255,0.5); }
+#frame-strip {
+    background: var(--bg-toolbar); border-bottom: 1px solid var(--border);
+    padding: 3px 8px; display: flex; gap: 4px; align-items: center; font-size: 11px;
+    overflow-x: auto; min-height: 0;
+}
+#frame-strip .frame-thumb {
+    border: 2px solid #444; border-radius: 3px; cursor: pointer;
+    box-sizing: border-box; image-rendering: pixelated; flex-shrink: 0;
+    transition: border-color 0.15s;
+}
+#frame-strip .frame-thumb.active { border-color: var(--accent); box-shadow: 0 0 4px rgba(0,122,204,0.5); }
+#frame-strip .frame-thumb:hover { border-color: #aaa; }
+#art-raw-text {
+    width: 100%; height: 100%; background: #111; color: var(--text);
+    font-family: 'Consolas','Courier New',monospace; font-size: 14px;
+    border: none; padding: 8px; resize: none; white-space: pre; overflow: auto;
+}
+
+/* ─── Map sequence editor ─── */
+#mapseq-editor-container {
+    display: none; position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    flex-direction: column;
+}
+#mapseq-toolbar {
+    background: var(--bg-toolbar); border-bottom: 1px solid var(--border);
+    padding: 4px 8px; display: flex; gap: 4px; align-items: center; font-size: 12px;
+}
+#mapseq-canvas { image-rendering: pixelated; cursor: crosshair; }
+
+/* ─── Entity chips ─── */
+.entity-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; background: var(--bg-input);
+    border: 1px solid var(--border); border-radius: 12px;
+    font-size: 11px; cursor: pointer; margin: 2px;
+}
+.entity-chip:hover { border-color: var(--accent); }
+.entity-chip.selected { border-color: var(--accent); background: #0e639c22; }
+
+/* ─── Event list ─── */
+.event-list-item {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 6px; background: var(--bg-input);
+    border-radius: 3px; margin-bottom: 2px; font-size: 11px;
+}
+.event-list-item .ev-type {
+    background: var(--bg-toolbar); padding: 1px 4px;
+    border-radius: 2px; font-size: 10px; font-weight: 600; flex-shrink: 0;
+}
+.event-list-item .ev-desc { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.event-list-item button {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; padding: 1px 3px; font-size: 11px;
+}
+.event-list-item button:hover { color: var(--danger); }
+
+/* ─── Cutscene preview ─── */
+#cs-preview .preview-box {
+    background: var(--bg-sidebar); border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px; text-align: left;
+    margin-top: 12px; font-size: 13px;
+}
 </style>
 </head>
 <body>
 
 <!-- ═══════════════ TOOLBAR ═══════════════ -->
 <div id="toolbar">
-    <button class="tb-btn" onclick="showNewMapDialog()" title="Create a new map">📄 New</button>
-    <button class="tb-btn" onclick="openFolder()" title="Open Maps folder (read/write maps directly)">📂 Open Folder</button>
-    <button class="tb-btn" onclick="importFiles()" title="Import map files">📥 Import</button>
-    <div class="sep"></div>
-    <button class="tb-btn" id="btn-save" onclick="saveMap()" title="Save to folder (requires Open Folder)">💾 Save</button>
-    <button class="tb-btn" onclick="exportDownload()" title="Download .txt and .json files">📤 Export</button>
-    <div class="sep"></div>
-    <div class="tool-group">
-        <button class="tb-btn active" id="tool-paint" onclick="setTool('paint')" title="Paint tiles (Alt+P)">🖌️ Paint</button>
-        <button class="tb-btn" id="tool-erase" onclick="setTool('erase')" title="Erase tiles (Alt+E)">🧹 Erase</button>
-        <button class="tb-btn" id="tool-fill" onclick="setTool('fill')" title="Flood fill area (Alt+F)">🪣 Fill</button>
-        <button class="tb-btn" id="tool-pick" onclick="setTool('pick')" title="Pick tile from grid (Alt+I)">💉 Pick</button>
+    <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-map" onclick="switchMode('map')">🗺️ Maps</button>
+        <button class="mode-btn" id="mode-cs" onclick="switchMode('cutscene')">🎬 Cutscenes</button>
     </div>
     <div class="sep"></div>
-    <button class="tb-btn" onclick="showResizeDialog()" title="Resize map dimensions">↔️ Resize</button>
-    <button class="tb-btn" onclick="shrinkToFit()" title="Auto-shrink to fit content">🔲 Shrink to Fit</button>
-    <div class="sep"></div>
-    <button class="tb-btn" onclick="zoomIn()" title="Zoom in">🔍+</button>
-    <button class="tb-btn" onclick="zoomOut()" title="Zoom out">🔍−</button>
-    <button class="tb-btn" onclick="toggleGridLines()" id="btn-gridlines" title="Toggle grid lines (Alt+G)">⊞ Grid</button>
+    <!-- Map tools -->
+    <div id="toolbar-map-tools" style="display:flex; align-items:center; gap:4px;">
+        <button class="tb-btn" onclick="showNewMapDialog()" title="Create a new map">📄 New</button>
+        <button class="tb-btn" onclick="openFolder()" title="Open Maps folder">📂 Open Folder</button>
+        <button class="tb-btn" onclick="importFiles()" title="Import map files">📥 Import</button>
+        <div class="sep"></div>
+        <button class="tb-btn" id="btn-save" onclick="saveMap()" title="Save to folder">💾 Save</button>
+        <button class="tb-btn" onclick="exportDownload()" title="Download .txt and .json">📤 Export</button>
+        <div class="sep"></div>
+        <div class="tool-group">
+            <button class="tb-btn active" id="tool-paint" onclick="setTool('paint')" title="Paint tiles (Alt+P)">🖌️ Paint</button>
+            <button class="tb-btn" id="tool-erase" onclick="setTool('erase')" title="Erase tiles (Alt+E)">🧹 Erase</button>
+            <button class="tb-btn" id="tool-fill" onclick="setTool('fill')" title="Flood fill area (Alt+F)">🪣 Fill</button>
+            <button class="tb-btn" id="tool-pick" onclick="setTool('pick')" title="Pick tile from grid (Alt+I)">💉 Pick</button>
+        </div>
+        <div class="sep"></div>
+        <button class="tb-btn" onclick="showResizeDialog()" title="Resize map dimensions">↔️ Resize</button>
+        <button class="tb-btn" onclick="shrinkToFit()" title="Auto-shrink to fit content">🔲 Shrink to Fit</button>
+        <div class="sep"></div>
+        <button class="tb-btn" onclick="zoomIn()" title="Zoom in">🔍+</button>
+        <button class="tb-btn" onclick="zoomOut()" title="Zoom out">🔍−</button>
+        <button class="tb-btn" onclick="toggleGridLines()" id="btn-gridlines" title="Toggle grid lines (Alt+G)">⊞ Grid</button>
+    </div>
+    <!-- Cutscene tools (hidden) -->
+    <div id="toolbar-cs-tools" style="display:none; align-items:center; gap:4px;">
+        <button class="tb-btn" onclick="showNewCutsceneDialog()" title="Create new cutscene">📄 New</button>
+        <button class="tb-btn" onclick="openCutsceneFolder()" title="Open Cutscenes folder">📂 Open Folder</button>
+        <button class="tb-btn" onclick="importCutsceneFile()" title="Import cutscene JSON">📥 Import</button>
+        <div class="sep"></div>
+        <button class="tb-btn" id="btn-cs-save" onclick="saveCutscene()" title="Save cutscene">💾 Save</button>
+        <button class="tb-btn" onclick="exportCutsceneDownload()" title="Download cutscene JSON">📤 Export</button>
+        <div class="sep"></div>
+        <button class="tb-btn" onclick="showRegistryEditor()" title="Edit Cutscenes.json registry">📋 Registry</button>
+    </div>
     <span class="map-name" id="toolbar-map-name">No map loaded</span>
 </div>
 
 <!-- ═══════════════ SIDEBAR ═══════════════ -->
 <div id="sidebar">
+    <div id="sidebar-map-panels">
     <!-- Current Tile -->
     <div class="panel">
         <div class="panel-header" onclick="togglePanel(this)">
@@ -571,6 +731,74 @@ body {
             <button class="add-btn" onclick="showEnemyDialog()">+ Add Enemy</button>
         </div>
     </div>
+    </div><!-- /sidebar-map-panels -->
+
+    <!-- ═══ Cutscene sidebar panels (hidden by default) ═══ -->
+    <div id="sidebar-cs-panels" style="display:none;">
+        <!-- Cutscene Properties -->
+        <div class="panel">
+            <div class="panel-header" onclick="togglePanel(this)">
+                Cutscene Properties <span class="arrow">▾</span>
+            </div>
+            <div class="panel-body">
+                <div class="form-row"><label>ID</label><input type="text" id="cs-id" placeholder="my_cutscene"></div>
+                <div class="form-row"><label>Name</label><input type="text" id="cs-name" placeholder="My Cutscene"></div>
+            </div>
+        </div>
+        <!-- Steps List -->
+        <div class="panel">
+            <div class="panel-header" onclick="togglePanel(this)">
+                Steps <span class="arrow">▾</span>
+            </div>
+            <div class="panel-body" style="padding:4px 0 8px;">
+                <div class="step-list-wrap" id="cs-step-list"></div>
+                <div style="padding:0 12px; display:flex; gap:4px;">
+                    <select id="cs-add-step-type" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:12px;">
+                        <option value="narration">Narration</option>
+                        <option value="dialogue">Dialogue</option>
+                        <option value="art">Art</option>
+                        <option value="animated_art">Animated Art</option>
+                        <option value="map_sequence">Map Sequence</option>
+                        <option value="effect">Effect</option>
+                        <option value="set_trigger">Set Trigger</option>
+                        <option value="delay">Delay</option>
+                        <option value="clear">Clear Screen</option>
+                        <option value="message">Message</option>
+                        <option value="heal_party">Heal Party</option>
+                        <option value="start_battle">Start Battle</option>
+                    </select>
+                    <button class="tb-btn primary" onclick="addCutsceneStep()" style="white-space:nowrap;">+ Add</button>
+                </div>
+            </div>
+        </div>
+        <!-- Step Editor -->
+        <div class="panel" id="cs-step-editor-panel" style="display:none;">
+            <div class="panel-header" onclick="togglePanel(this)">
+                <span id="cs-step-editor-title">Step Editor</span> <span class="arrow">▾</span>
+            </div>
+            <div class="panel-body" id="cs-step-editor"></div>
+        </div>
+        <!-- Entities (map_sequence only) -->
+        <div class="panel" id="cs-entities-panel" style="display:none;">
+            <div class="panel-header" onclick="togglePanel(this)">
+                Entities <span class="arrow">▾</span>
+            </div>
+            <div class="panel-body">
+                <div id="cs-entity-list"></div>
+                <button class="add-btn" onclick="showEntityDialog()">+ Add Entity</button>
+            </div>
+        </div>
+        <!-- Events (map_sequence only) -->
+        <div class="panel" id="cs-events-panel" style="display:none;">
+            <div class="panel-header" onclick="togglePanel(this)">
+                Events <span class="arrow">▾</span>
+            </div>
+            <div class="panel-body">
+                <div id="cs-event-list" style="max-height:250px; overflow-y:auto;"></div>
+                <button class="add-btn" onclick="showEventDialog()">+ Add Event</button>
+            </div>
+        </div>
+    </div><!-- /sidebar-cs-panels -->
 </div>
 
 <!-- ═══════════════ MAIN GRID AREA ═══════════════ -->
@@ -582,6 +810,79 @@ body {
         <p style="margin-top:12px; font-size:11px; color:var(--text-dim);">Tip: Hover over a cell and type any key to place it. Right-click for connections, NPCs, and more.</p>
     </div>
     <div class="tooltip" id="tooltip"></div>
+
+    <!-- Cutscene Welcome -->
+    <div class="welcome-msg" id="cs-welcome" style="display:none;">
+        <h2>🎬 Cutscene Creator</h2>
+        <p>Click <strong>New</strong> to create a cutscene, or <strong>Open Folder</strong> to load existing ones.</p>
+        <p style="margin-top:12px; font-size:11px; color:var(--text-dim);">Cutscene files are stored as JSON in the Cutscenes/ folder.</p>
+    </div>
+
+    <!-- Art Editor -->
+    <div id="art-editor-container">
+        <div id="art-toolbar">
+            <button class="tb-btn active" id="art-mode-grid" onclick="setArtMode('grid')" style="font-size:11px;">⊞ Grid</button>
+            <button class="tb-btn" id="art-mode-text" onclick="setArtMode('text')" style="font-size:11px;">📝 Raw Text</button>
+            <div class="sep"></div>
+            <label style="font-size:11px; color:var(--text-dim);">W:</label>
+            <input type="number" id="art-width" value="40" min="1" max="120" style="width:50px; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:2px 4px; font-size:11px; border-radius:3px;">
+            <label style="font-size:11px; color:var(--text-dim);">H:</label>
+            <input type="number" id="art-height" value="11" min="1" max="60" style="width:50px; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:2px 4px; font-size:11px; border-radius:3px;">
+            <button class="tb-btn" onclick="resizeArt()" style="font-size:11px;">Apply Size</button>
+            <button class="tb-btn" onclick="cropArt()" style="font-size:11px;" title="Auto-crop empty space from all sides">✂ Crop</button>
+            <div class="sep"></div>
+            <button class="tb-btn" onclick="showSpecialChars()" style="font-size:11px;" title="Browse special characters">⌨️ Special Chars</button>
+            <div class="sep"></div>
+            <span id="art-frame-nav" style="display:none;">
+                <button class="tb-btn" onclick="prevArtFrame()" style="font-size:11px;">◀</button>
+                <span id="art-frame-label" style="font-size:11px; color:var(--text);">Frame 1/1</span>
+                <button class="tb-btn" onclick="nextArtFrame()" style="font-size:11px;">▶</button>
+                <button class="tb-btn" onclick="addArtFrame()" style="font-size:11px;">+ Frame</button>
+                <button class="tb-btn" onclick="dupArtFrame()" style="font-size:11px;">⧉ Dup</button>
+                <button class="tb-btn" onclick="delArtFrame()" style="font-size:11px;">✕ Del</button>
+                <div class="sep"></div>
+                <button class="tb-btn" onclick="moveArtFrame(csState.artFrameIdx, csState.artFrameIdx-1)" style="font-size:11px;" title="Move frame left">⇐ Move</button>
+                <button class="tb-btn" onclick="moveArtFrame(csState.artFrameIdx, csState.artFrameIdx+1)" style="font-size:11px;" title="Move frame right">Move ⇒</button>
+            </span>
+        </div>
+        <div id="art-color-palette"></div>
+        <div id="frame-strip" style="display:none;"></div>
+        <div style="flex:1; overflow:auto; position:relative;">
+            <canvas id="art-canvas" width="0" height="0"></canvas>
+            <textarea id="art-raw-text"></textarea>
+        </div>
+    </div>
+
+    <!-- Map Sequence Editor -->
+    <div id="mapseq-editor-container">
+        <div id="mapseq-toolbar">
+            <div class="tool-group">
+                <button class="tb-btn active" id="mseq-tool-paint" onclick="setMapSeqTool('paint')" style="font-size:11px;">🖌️ Paint</button>
+                <button class="tb-btn" id="mseq-tool-erase" onclick="setMapSeqTool('erase')" style="font-size:11px;">🧹 Erase</button>
+                <button class="tb-btn" id="mseq-tool-entity" onclick="setMapSeqTool('entity')" style="font-size:11px;">👤 Entity</button>
+                <button class="tb-btn" id="mseq-tool-path" onclick="setMapSeqTool('path')" style="font-size:11px;">📍 Path</button>
+            </div>
+            <div class="sep"></div>
+            <label style="font-size:11px; color:var(--text-dim);">Tile:</label>
+            <input type="text" id="mseq-tile-char" value="#" maxlength="1" style="width:28px; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:2px 4px; font-size:14px; font-family:Consolas; text-align:center; border-radius:3px;">
+            <div class="sep"></div>
+            <label style="font-size:11px; color:var(--text-dim);">W:</label>
+            <input type="number" id="mseq-width" value="50" min="5" max="120" style="width:50px; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:2px 4px; font-size:11px; border-radius:3px;">
+            <label style="font-size:11px; color:var(--text-dim);">H:</label>
+            <input type="number" id="mseq-height" value="15" min="3" max="60" style="width:50px; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:2px 4px; font-size:11px; border-radius:3px;">
+            <button class="tb-btn" onclick="resizeMapSeq()" style="font-size:11px;">Apply Size</button>
+            <div class="sep"></div>
+            <button class="tb-btn" onclick="showSpecialChars()" style="font-size:11px;" title="Browse special characters">⌨️ Special Chars</button>
+        </div>
+        <div style="flex:1; overflow:auto;">
+            <canvas id="mapseq-canvas" width="0" height="0"></canvas>
+        </div>
+    </div>
+
+    <!-- Step Preview (non-visual steps) -->
+    <div id="cs-preview" style="display:none;">
+        <div id="cs-preview-content"></div>
+    </div>
 </div>
 
 <!-- ═══════════════ STATUS BAR ═══════════════ -->
@@ -800,6 +1101,98 @@ body {
         </div>
         <div class="modal-footer">
             <button class="btn" onclick="closeModal('modal-maplist')">Cancel</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ═══════════════ NEW CUTSCENE MODAL ═══════════════ -->
+<div class="modal-overlay" id="modal-new-cutscene">
+    <div class="modal" style="min-width:400px;">
+        <div class="modal-title">New Cutscene</div>
+        <div class="modal-body">
+            <div class="form-row"><label style="min-width:80px;">ID</label><input type="text" id="new-cs-id" placeholder="my_cutscene"></div>
+            <div class="form-row"><label style="min-width:80px;">Name</label><input type="text" id="new-cs-name" placeholder="My Epic Cutscene"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('modal-new-cutscene')">Cancel</button>
+            <button class="btn primary" onclick="createNewCutscene()">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ ENTITY EDITOR MODAL ═══════════════ -->
+<div class="modal-overlay" id="modal-entity">
+    <div class="modal" style="min-width:400px;">
+        <div class="modal-title" id="entity-modal-title">Add Entity</div>
+        <div class="modal-body">
+            <div class="form-row"><label style="min-width:80px;">ID</label><input type="text" id="ent-id" placeholder="mage"></div>
+            <div class="form-row"><label style="min-width:80px;">Char</label><input type="text" id="ent-char" value="@" maxlength="1" style="width:30px; text-align:center; font-family:Consolas; font-size:16px;"></div>
+            <div class="form-row"><label style="min-width:80px;">Color</label><select id="ent-color"></select></div>
+            <div class="form-row"><label style="min-width:80px;">X</label><input type="number" id="ent-x" value="1" min="-1"></div>
+            <div class="form-row"><label style="min-width:80px;">Y</label><input type="number" id="ent-y" value="1" min="-1"></div>
+            <div class="form-row"><label style="min-width:80px;">Hidden</label><input type="checkbox" id="ent-hidden"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="deleteEntity()" style="margin-right:auto; color:var(--danger);">🗑 Delete</button>
+            <button class="btn" onclick="closeModal('modal-entity')">Cancel</button>
+            <button class="btn primary" onclick="saveEntity()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ EVENT EDITOR MODAL ═══════════════ -->
+<div class="modal-overlay" id="modal-event">
+    <div class="modal" style="min-width:480px;">
+        <div class="modal-title" id="event-modal-title">Add Event</div>
+        <div class="modal-body">
+            <div class="form-row">
+                <label style="min-width:80px;">Action</label>
+                <select id="evt-action" onchange="updateEventFields()">
+                    <option value="move">Move</option>
+                    <option value="show">Show</option>
+                    <option value="hide">Hide</option>
+                    <option value="dialogue">Dialogue</option>
+                    <option value="narration">Narration</option>
+                    <option value="delay">Delay</option>
+                    <option value="effect">Effect</option>
+                </select>
+            </div>
+            <div id="evt-fields"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="deleteEvent()" style="margin-right:auto; color:var(--danger);">🗑 Delete</button>
+            <button class="btn" onclick="closeModal('modal-event')">Cancel</button>
+            <button class="btn primary" onclick="saveEvent()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ REGISTRY EDITOR MODAL ═══════════════ -->
+<div class="modal-overlay" id="modal-registry">
+    <div class="modal" style="min-width:620px; max-width:720px;">
+        <div class="modal-title">Cutscene Registry (Cutscenes.json)</div>
+        <div class="modal-body" style="max-height:60vh; overflow-y:auto;">
+            <div id="registry-list"></div>
+            <button class="add-btn" onclick="addRegistryEntry()" style="margin-top:8px;">+ Add Entry</button>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('modal-registry')">Close</button>
+            <button class="btn primary" onclick="saveRegistry()">Save Registry</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ CUTSCENE PICKER MODAL ═══════════════ -->
+<div class="modal-overlay" id="modal-cs-picker">
+    <div class="modal" style="min-width:400px;">
+        <div class="modal-title">Open Cutscene from Folder</div>
+        <div class="modal-body">
+            <p style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">Select a cutscene to open:</p>
+            <div id="cs-picker-items" style="max-height:300px; overflow-y:auto;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('modal-cs-picker')">Cancel</button>
         </div>
     </div>
 </div>
@@ -2100,13 +2493,38 @@ function showSpecialChars() {
             cell.textContent = ch;
             cell.title = `U+${ch.codePointAt(0).toString(16).toUpperCase().padStart(4,'0')} — Click to select`;
             cell.onclick = () => {
-                state.selectedChar = ch;
-                document.getElementById('sel-char').value = ch;
-                updateTilePreview();
-                if (!state.tileDefs[ch]) {
-                    state.tileDefs[ch] = { color: 'Gray', passable: false, name: '' };
+                if (csState.mode === 'cutscene') {
+                    // Cutscene mode: feed char to the active canvas
+                    const step = csState.cutscene && csState.cutscene.steps[csState.selectedStep];
+                    if (step && (step.type === 'art' || step.type === 'animated_art')) {
+                        csState.artChar = ch;
+                        if (csState.artCursor.x >= 0) {
+                            csState.artGrid[csState.artCursor.y][csState.artCursor.x] = ch;
+                            ensureArtColorMapCell(csState.artCursor.y, csState.artCursor.x);
+                            csState.artColorMap[csState.artCursor.y][csState.artCursor.x] = csState.artPaintColor;
+                            csState.artBgColorMap[csState.artCursor.y][csState.artCursor.x] = csState.artPaintBgColor;
+                            csState.dirty = true;
+                            renderArtCanvas();
+                        }
+                    } else if (step && step.type === 'map_sequence') {
+                        csState.mseqTileChar = ch;
+                        document.getElementById('mseq-tile-char').value = ch;
+                        if (csState.mseqCursor.x >= 0) {
+                            csState.mseqGrid[csState.mseqCursor.y][csState.mseqCursor.x] = ch;
+                            csState.dirty = true;
+                            renderMapSeqCanvas();
+                        }
+                    }
+                } else {
+                    // Map mode
+                    state.selectedChar = ch;
+                    document.getElementById('sel-char').value = ch;
+                    updateTilePreview();
+                    if (!state.tileDefs[ch]) {
+                        state.tileDefs[ch] = { color: 'Gray', passable: false, name: '' };
+                    }
+                    selectPaletteTile(ch);
                 }
-                selectPaletteTile(ch);
                 closeModal('modal-chars');
             };
             grid.appendChild(cell);
@@ -2597,16 +3015,2082 @@ document.addEventListener('keydown', (e) => {
 
 // Warn before unload if dirty
 window.addEventListener('beforeunload', (e) => {
-    if (state.dirty) {
+    if (state.dirty || csState.dirty) {
         e.preventDefault();
         e.returnValue = '';
     }
 });
 
+/* ══════════════════════════════════════════════════════════════════
+   CUTSCENE EDITOR — State, Mode Switching, Step CRUD, Editors,
+   Art Editor, Map Sequence Editor, File I/O, Registry
+   ══════════════════════════════════════════════════════════════════ */
+
+const csState = {
+    mode: 'map',
+    cutscene: null,       // { id, name, steps:[] }
+    selectedStep: -1,
+    csDirHandle: null,
+    knownCutscenes: [],   // [{ id, name, fileName }]
+    registry: null,       // parsed Cutscenes.json
+
+    // Art editor
+    artGrid: [],
+    artW: 40, artH: 11,
+    artZoom: 1.5,
+    artCursor: { x: -1, y: -1 },
+    artPainting: false,
+    artMode: 'grid',
+    artChar: ' ',
+    artFrameIdx: 0,
+    artFrames: [[]],
+    artColorMap: [],          // 2D array [row][col] of PS_COLOR names ('' = default artColor)
+    artColorFrames: [[]],     // per-frame colorMaps for animated_art
+    artBgColorMap: [],        // 2D array [row][col] of PS_COLOR names for BG ('' = no bg)
+    artBgColorFrames: [[]],   // per-frame bgColorMaps for animated_art
+    artPaintColor: 'White',   // currently selected paint FG color
+    artPaintBgColor: '',      // currently selected paint BG color ('' = none/Black)
+    artPaintLayer: 'fg',      // 'fg' or 'bg' — which color layer the palette controls
+
+    // Map sequence editor
+    mseqGrid: [],
+    mseqW: 50, mseqH: 15,
+    mseqZoom: 1.2,
+    mseqCursor: { x: -1, y: -1 },
+    mseqPainting: false,
+    mseqTool: 'paint',
+    mseqTileChar: '#',
+    mseqEntities: [],
+    mseqEvents: [],
+    mseqPathPoints: [],
+    mseqPathEntity: null,
+
+    editingEntityIdx: -1,
+    editingEventIdx: -1,
+    dirty: false,
+};
+
+const artCanvas = document.getElementById('art-canvas');
+const artCtx = artCanvas.getContext('2d');
+const mseqCanvas = document.getElementById('mapseq-canvas');
+const mseqCtx = mseqCanvas.getContext('2d');
+
+/* ──────────────────────────────────────────
+   MODE SWITCHING
+   ────────────────────────────────────────── */
+
+function switchMode(mode) {
+    csState.mode = mode;
+    document.getElementById('mode-map').classList.toggle('active', mode === 'map');
+    document.getElementById('mode-cs').classList.toggle('active', mode === 'cutscene');
+    document.getElementById('toolbar-map-tools').style.display = mode === 'map' ? 'flex' : 'none';
+    document.getElementById('toolbar-cs-tools').style.display = mode === 'cutscene' ? 'flex' : 'none';
+    document.getElementById('sidebar-map-panels').style.display = mode === 'map' ? '' : 'none';
+    document.getElementById('sidebar-cs-panels').style.display = mode === 'cutscene' ? '' : 'none';
+
+    // Map elements
+    document.getElementById('map-canvas').style.display = mode === 'map' ? '' : 'none';
+    document.getElementById('welcome').style.display = (mode === 'map' && !state.width) ? '' : 'none';
+
+    // Cutscene elements
+    if (mode === 'cutscene') {
+        if (!csState.cutscene) {
+            showCsWelcome();
+        } else {
+            updateCsMainArea();
+        }
+    } else {
+        hideCsMainAreas();
+        if (state.width) renderGrid();
+    }
+    updateToolbarName();
+}
+
+function showCsWelcome() {
+    hideCsMainAreas();
+    document.getElementById('cs-welcome').style.display = '';
+}
+
+function hideCsMainAreas() {
+    document.getElementById('cs-welcome').style.display = 'none';
+    document.getElementById('art-editor-container').style.display = 'none';
+    document.getElementById('mapseq-editor-container').style.display = 'none';
+    document.getElementById('cs-preview').style.display = 'none';
+}
+
+function updateToolbarName() {
+    const el = document.getElementById('toolbar-map-name');
+    if (csState.mode === 'cutscene') {
+        el.textContent = csState.cutscene ? csState.cutscene.name : 'No cutscene loaded';
+    } else {
+        el.textContent = state.displayName || state.mapName || 'No map loaded';
+    }
+}
+
+/* ──────────────────────────────────────────
+   CUTSCENE CRUD
+   ────────────────────────────────────────── */
+
+function showNewCutsceneDialog() {
+    document.getElementById('new-cs-id').value = '';
+    document.getElementById('new-cs-name').value = '';
+    document.getElementById('modal-new-cutscene').classList.add('show');
+}
+
+function createNewCutscene() {
+    const id = document.getElementById('new-cs-id').value.trim() || 'new_cutscene';
+    const name = document.getElementById('new-cs-name').value.trim() || 'New Cutscene';
+    csState.cutscene = { id, name, steps: [] };
+    csState.selectedStep = -1;
+    csState.dirty = false;
+    document.getElementById('cs-id').value = id;
+    document.getElementById('cs-name').value = name;
+    closeModal('modal-new-cutscene');
+    renderStepList();
+    updateCsMainArea();
+    updateToolbarName();
+    setStatus(`Created cutscene: ${name}`);
+}
+
+function loadCutsceneFromJson(json) {
+    csState.cutscene = {
+        id: json.id || 'unknown',
+        name: json.name || 'Unnamed',
+        steps: JSON.parse(JSON.stringify(json.steps || []))
+    };
+    csState.selectedStep = -1;
+    csState.dirty = false;
+    document.getElementById('cs-id').value = csState.cutscene.id;
+    document.getElementById('cs-name').value = csState.cutscene.name;
+    renderStepList();
+    updateCsMainArea();
+    updateToolbarName();
+}
+
+/* ──────────────────────────────────────────
+   STEP LIST
+   ────────────────────────────────────────── */
+
+function renderStepList() {
+    const container = document.getElementById('cs-step-list');
+    container.innerHTML = '';
+    if (!csState.cutscene) return;
+    csState.cutscene.steps.forEach((step, i) => {
+        const item = document.createElement('div');
+        item.className = 'step-item' + (i === csState.selectedStep ? ' selected' : '');
+        const label = getStepSummary(step);
+        item.innerHTML = `
+            <span class="step-badge">${step.type}</span>
+            <span class="step-label" title="${escHtml(label)}">${escHtml(label)}</span>
+            <span class="step-actions">
+                <button onclick="event.stopPropagation(); moveStep(${i},-1)" title="Move up">▲</button>
+                <button onclick="event.stopPropagation(); moveStep(${i},1)" title="Move down">▼</button>
+                <button onclick="event.stopPropagation(); dupStep(${i})" title="Duplicate">⧉</button>
+                <button onclick="event.stopPropagation(); removeStep(${i})" title="Delete">✕</button>
+            </span>`;
+        item.onclick = () => selectStep(i);
+        container.appendChild(item);
+    });
+}
+
+function getStepSummary(step) {
+    switch (step.type) {
+        case 'narration': return (step.text || '').substring(0, 50);
+        case 'dialogue': return `${step.speaker || '?'}: ${(step.text || '').substring(0, 40)}`;
+        case 'art': return step.caption || `Art (${(step.art||[]).length} lines)`;
+        case 'animated_art': return step.caption || `Anim (${(step.frames||[]).length} frames)`;
+        case 'map_sequence': return step.title || 'Map Sequence';
+        case 'effect': return `${step.effect || 'effect'}`;
+        case 'set_trigger': return `${step.trigger || '?'} = ${step.value}`;
+        case 'delay': return `${step.ms || 0}ms`;
+        case 'clear': return 'Clear screen';
+        case 'message': return (step.text || '').substring(0, 50);
+        case 'heal_party': return 'Full heal';
+        case 'start_battle': return `Battle: ${step.battleId || '?'}`;
+        default: return step.type;
+    }
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function addCutsceneStep() {
+    if (!csState.cutscene) return;
+    const type = document.getElementById('cs-add-step-type').value;
+    const step = createDefaultStep(type);
+    csState.cutscene.steps.push(step);
+    csState.dirty = true;
+    csState.selectedStep = csState.cutscene.steps.length - 1;
+    renderStepList();
+    selectStep(csState.selectedStep);
+}
+
+function createDefaultStep(type) {
+    switch (type) {
+        case 'narration': return { type, text: '', textColor: 'Gray' };
+        case 'dialogue': return { type, speaker: '', text: '', speakerColor: 'White', textColor: 'Gray' };
+        case 'art': return { type, art: [], artColor: 'White', caption: '' };
+        case 'animated_art': return { type, frames: [[]], frameDelayMs: 250, loops: 3, artColor: 'White', caption: '', holdLastFrame: true, waitForKey: true };
+        case 'map_sequence': return { type, title: '', inlineMap: [], tileColors: {}, entities: [], events: [] };
+        case 'effect': return { type, effect: 'fade_out', steps: 3, delayMs: 200 };
+        case 'set_trigger': return { type, trigger: '', value: true };
+        case 'delay': return { type, ms: 500 };
+        case 'clear': return { type: 'clear' };
+        case 'message': return { type, text: '' };
+        case 'heal_party': return { type: 'heal_party' };
+        case 'start_battle': return { type, battleId: '' };
+        default: return { type };
+    }
+}
+
+function removeStep(idx) {
+    csState.cutscene.steps.splice(idx, 1);
+    csState.dirty = true;
+    if (csState.selectedStep >= csState.cutscene.steps.length) csState.selectedStep = csState.cutscene.steps.length - 1;
+    renderStepList();
+    if (csState.selectedStep >= 0) selectStep(csState.selectedStep);
+    else { hideStepEditor(); updateCsMainArea(); }
+}
+
+function moveStep(idx, dir) {
+    const steps = csState.cutscene.steps;
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= steps.length) return;
+    [steps[idx], steps[newIdx]] = [steps[newIdx], steps[idx]];
+    csState.dirty = true;
+    if (csState.selectedStep === idx) csState.selectedStep = newIdx;
+    else if (csState.selectedStep === newIdx) csState.selectedStep = idx;
+    renderStepList();
+}
+
+function dupStep(idx) {
+    const copy = JSON.parse(JSON.stringify(csState.cutscene.steps[idx]));
+    csState.cutscene.steps.splice(idx + 1, 0, copy);
+    csState.dirty = true;
+    csState.selectedStep = idx + 1;
+    renderStepList();
+    selectStep(csState.selectedStep);
+}
+
+function selectStep(idx) {
+    csState.selectedStep = idx;
+    renderStepList();
+    showStepEditor(idx);
+    updateCsMainArea();
+}
+
+/* ──────────────────────────────────────────
+   STEP EDITOR (sidebar forms for each type)
+   ────────────────────────────────────────── */
+
+function hideStepEditor() {
+    document.getElementById('cs-step-editor-panel').style.display = 'none';
+    document.getElementById('cs-entities-panel').style.display = 'none';
+    document.getElementById('cs-events-panel').style.display = 'none';
+}
+
+function showStepEditor(idx) {
+    const step = csState.cutscene.steps[idx];
+    if (!step) { hideStepEditor(); return; }
+    const panel = document.getElementById('cs-step-editor-panel');
+    const editor = document.getElementById('cs-step-editor');
+    const title = document.getElementById('cs-step-editor-title');
+    panel.style.display = '';
+    title.textContent = `Step ${idx + 1}: ${step.type}`;
+
+    // Build type-specific form
+    let html = `<div class="form-row"><label>Type</label><select id="step-type-sel" onchange="changeStepType(${idx})" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:12px;">`;
+    for (const t of ['narration','dialogue','art','animated_art','map_sequence','effect','set_trigger','delay','clear','message','heal_party','start_battle']) {
+        html += `<option value="${t}" ${t === step.type ? 'selected' : ''}>${t}</option>`;
+    }
+    html += `</select></div><hr style="border:none; border-top:1px solid var(--border); margin:8px 0;">`;
+
+    html += buildStepFields(step);
+    editor.innerHTML = html;
+
+    // Show/hide entity & event panels for map_sequence
+    const isMapSeq = step.type === 'map_sequence';
+    document.getElementById('cs-entities-panel').style.display = isMapSeq ? '' : 'none';
+    document.getElementById('cs-events-panel').style.display = isMapSeq ? '' : 'none';
+    if (isMapSeq) {
+        csState.mseqEntities = step.entities || [];
+        csState.mseqEvents = step.events || [];
+        renderEntityList();
+        renderEventList();
+    }
+}
+
+function buildStepFields(step) {
+    const colorOpts = Object.keys(PS_COLORS).map(c => `<option value="${c}" ${step.textColor === c || step.speakerColor === c || step.artColor === c || step.borderColor === c || step.color === c ? '' : ''}>${c}</option>`).join('');
+    function colorSel(id, val) {
+        return `<select id="${id}" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:12px;">`
+            + Object.keys(PS_COLORS).map(c => `<option value="${c}" style="color:${PS_COLORS[c]}; background:#222;" ${c === val ? 'selected' : ''}>${c}</option>`).join('')
+            + `</select>`;
+    }
+
+    switch (step.type) {
+        case 'narration': return `
+            <div class="form-row"><label>Text</label><textarea id="step-text" rows="4" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:4px 6px; border-radius:3px; font-size:12px; font-family:inherit; resize:vertical;">${escHtml(step.text || '')}</textarea></div>
+            <div class="form-row"><label>Color</label>${colorSel('step-textColor', step.textColor || 'Gray')}</div>
+            <div class="form-row"><label>Boxed</label><input type="checkbox" id="step-boxed" ${step.boxed ? 'checked' : ''}></div>
+            <div class="form-row"><label>Border</label>${colorSel('step-borderColor', step.borderColor || 'DarkGray')}</div>
+            <button class="tb-btn primary" onclick="syncStepFromEditor()" style="width:100%; margin-top:8px;">Apply Changes</button>`;
+
+        case 'dialogue': return `
+            <div class="form-row"><label>Speaker</label><input type="text" id="step-speaker" value="${escHtml(step.speaker || '')}"></div>
+            <div class="form-row"><label>Text</label><textarea id="step-text" rows="3" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:4px 6px; border-radius:3px; font-size:12px; font-family:inherit; resize:vertical;">${escHtml(step.text || '')}</textarea></div>
+            <div class="form-row"><label>Spk Color</label>${colorSel('step-speakerColor', step.speakerColor || 'White')}</div>
+            <div class="form-row"><label>Txt Color</label>${colorSel('step-textColor', step.textColor || 'Gray')}</div>
+            <button class="tb-btn primary" onclick="syncStepFromEditor()" style="width:100%; margin-top:8px;">Apply Changes</button>`;
+
+        case 'art': return `
+            <div class="form-row"><label>Color</label>${colorSel('step-artColor', step.artColor || 'White')}</div>
+            <div class="form-row"><label>Caption</label><input type="text" id="step-caption" value="${escHtml(step.caption || '')}"></div>
+            <p style="font-size:11px; color:var(--text-dim); margin-top:4px;">Edit the art in the grid canvas to the right. Toggle Raw Text mode for direct editing.</p>
+            <button class="tb-btn primary" onclick="syncStepFromEditor()" style="width:100%; margin-top:8px;">Apply Changes</button>`;
+
+        case 'animated_art': return `
+            <div class="form-row"><label>Color</label>${colorSel('step-artColor', step.artColor || 'White')}</div>
+            <div class="form-row"><label>Caption</label><input type="text" id="step-caption" value="${escHtml(step.caption || '')}"></div>
+            <div class="form-row"><label>Frame ms</label><input type="number" id="step-frameDelayMs" value="${step.frameDelayMs || 250}" min="50" style="width:70px;"></div>
+            <div class="form-row"><label>Loops</label><input type="number" id="step-loops" value="${step.loops || 3}" min="1" style="width:70px;"></div>
+            <div class="form-row"><label>Hold Last</label><input type="checkbox" id="step-holdLastFrame" ${step.holdLastFrame ? 'checked' : ''}></div>
+            <div class="form-row"><label>Wait Key</label><input type="checkbox" id="step-waitForKey" ${step.waitForKey ? 'checked' : ''}></div>
+            <p style="font-size:11px; color:var(--text-dim); margin-top:4px;">Use frame navigation in the canvas toolbar to add/edit frames.</p>
+            <button class="tb-btn primary" onclick="syncStepFromEditor()" style="width:100%; margin-top:8px;">Apply Changes</button>`;
+
+        case 'map_sequence': return `
+            <div class="form-row"><label>Title</label><input type="text" id="step-title" value="${escHtml(step.title || '')}"></div>
+            <p style="font-size:11px; color:var(--text-dim); margin-top:4px;">Paint the inline map in the canvas. Manage entities & events in panels below.</p>
+            <button class="tb-btn primary" onclick="syncStepFromEditor()" style="width:100%; margin-top:8px;">Apply Changes</button>`;
+
+        case 'effect': return `
+            <div class="form-row"><label>Effect</label>
+                <select id="step-effect" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:12px;">
+                    <option value="fade_out" ${step.effect === 'fade_out' ? 'selected' : ''}>fade_out</option>
+                    <option value="fade_in" ${step.effect === 'fade_in' ? 'selected' : ''}>fade_in</option>
+                    <option value="flash" ${step.effect === 'flash' ? 'selected' : ''}>flash</option>
+                </select></div>
+            <div class="form-row"><label>Steps</label><input type="number" id="step-steps" value="${step.steps || 3}" min="1" style="width:70px;"></div>
+            <div class="form-row"><label>Delay ms</label><input type="number" id="step-delayMs" value="${step.delayMs || 200}" min="10" style="width:70px;"></div>
+            <div class="form-row"><label>Color</label>${colorSel('step-color', step.color || 'White')}</div>
+            <div class="form-row"><label>Count</label><input type="number" id="step-count" value="${step.count || 1}" min="1" style="width:70px;"></div>
+            <button class="tb-btn primary" onclick="syncStepFromEditor()" style="width:100%; margin-top:8px;">Apply Changes</button>`;
+
+        case 'set_trigger': return `
+            <div class="form-row"><label>Trigger</label><input type="text" id="step-trigger" value="${escHtml(step.trigger || '')}"></div>
+            <div class="form-row"><label>Value</label><input type="text" id="step-value" value="${step.value !== undefined ? step.value : 'true'}"></div>
+            <button class="tb-btn primary" onclick="syncStepFromEditor()" style="width:100%; margin-top:8px;">Apply Changes</button>`;
+
+        case 'delay': return `
+            <div class="form-row"><label>Duration ms</label><input type="number" id="step-ms" value="${step.ms || 500}" min="10"></div>
+            <button class="tb-btn primary" onclick="syncStepFromEditor()" style="width:100%; margin-top:8px;">Apply Changes</button>`;
+
+        case 'clear': return `<p style="font-size:12px; color:var(--text-dim);">Clears the screen. No additional settings.</p>`;
+
+        case 'message': return `
+            <div class="form-row"><label>Text</label><textarea id="step-text" rows="3" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:4px 6px; border-radius:3px; font-size:12px; font-family:inherit; resize:vertical;">${escHtml(step.text || '')}</textarea></div>
+            <button class="tb-btn primary" onclick="syncStepFromEditor()" style="width:100%; margin-top:8px;">Apply Changes</button>`;
+
+        case 'heal_party': return `<p style="font-size:12px; color:var(--text-dim);">Fully heals the party. No additional settings.</p>`;
+
+        case 'start_battle': return `
+            <div class="form-row"><label>Battle ID</label><input type="text" id="step-battleId" value="${escHtml(step.battleId || '')}"></div>
+            <button class="tb-btn primary" onclick="syncStepFromEditor()" style="width:100%; margin-top:8px;">Apply Changes</button>`;
+
+        default: return '<p style="font-size:12px; color:var(--text-dim);">Unknown step type.</p>';
+    }
+}
+
+function changeStepType(idx) {
+    const newType = document.getElementById('step-type-sel').value;
+    const step = csState.cutscene.steps[idx];
+    if (step.type === newType) return;
+    csState.cutscene.steps[idx] = createDefaultStep(newType);
+    csState.dirty = true;
+    renderStepList();
+    showStepEditor(idx);
+    updateCsMainArea();
+}
+
+function syncStepFromEditor() {
+    const idx = csState.selectedStep;
+    if (idx < 0 || !csState.cutscene) return;
+    const step = csState.cutscene.steps[idx];
+
+    switch (step.type) {
+        case 'narration':
+            step.text = gv('step-text');
+            step.textColor = gv('step-textColor');
+            step.boxed = gc('step-boxed');
+            step.borderColor = gv('step-borderColor');
+            break;
+        case 'dialogue':
+            step.speaker = gv('step-speaker');
+            step.text = gv('step-text');
+            step.speakerColor = gv('step-speakerColor');
+            step.textColor = gv('step-textColor');
+            break;
+        case 'art':
+            step.artColor = gv('step-artColor');
+            step.caption = gv('step-caption');
+            syncArtToStep();
+            break;
+        case 'animated_art':
+            step.artColor = gv('step-artColor');
+            step.caption = gv('step-caption');
+            step.frameDelayMs = parseInt(gv('step-frameDelayMs')) || 250;
+            step.loops = parseInt(gv('step-loops')) || 3;
+            step.holdLastFrame = gc('step-holdLastFrame');
+            step.waitForKey = gc('step-waitForKey');
+            syncAnimArtToStep();
+            break;
+        case 'map_sequence':
+            step.title = gv('step-title');
+            syncMapSeqToStep();
+            break;
+        case 'effect':
+            step.effect = gv('step-effect');
+            step.steps = parseInt(gv('step-steps')) || 3;
+            step.delayMs = parseInt(gv('step-delayMs')) || 200;
+            step.color = gv('step-color');
+            step.count = parseInt(gv('step-count')) || 1;
+            break;
+        case 'set_trigger':
+            step.trigger = gv('step-trigger');
+            const v = gv('step-value');
+            step.value = (v === 'true') ? true : (v === 'false') ? false : v;
+            break;
+        case 'delay':
+            step.ms = parseInt(gv('step-ms')) || 500;
+            break;
+        case 'message':
+            step.text = gv('step-text');
+            break;
+        case 'start_battle':
+            step.battleId = gv('step-battleId');
+            break;
+    }
+    csState.dirty = true;
+    renderStepList();
+    setStatus('Step updated.');
+}
+
+function gv(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+function gc(id) { const el = document.getElementById(id); return el ? el.checked : false; }
+
+/* ──────────────────────────────────────────
+   MAIN AREA — Cutscene visual display
+   ────────────────────────────────────────── */
+
+function updateCsMainArea() {
+    hideCsMainAreas();
+    if (!csState.cutscene) { showCsWelcome(); return; }
+    if (csState.selectedStep < 0) {
+        // Show cutscene overview preview
+        const el = document.getElementById('cs-preview');
+        el.style.display = '';
+        el.style.position = 'absolute';
+        el.style.top = '50%'; el.style.left = '50%';
+        el.style.transform = 'translate(-50%,-50%)';
+        el.style.textAlign = 'center';
+        el.style.color = 'var(--text-dim)';
+        el.style.maxWidth = '500px';
+        document.getElementById('cs-preview-content').innerHTML = `
+            <h3 style="color:var(--text); margin-bottom:8px;">🎬 ${escHtml(csState.cutscene.name)}</h3>
+            <p>${csState.cutscene.steps.length} step(s). Select a step to edit it.</p>`;
+        return;
+    }
+    const step = csState.cutscene.steps[csState.selectedStep];
+    if (!step) return;
+
+    if (step.type === 'art') {
+        loadArtStepToEditor(step, false);
+        document.getElementById('art-editor-container').style.display = 'flex';
+        document.getElementById('art-frame-nav').style.display = 'none';
+        document.getElementById('frame-strip').style.display = 'none';
+        renderArtCanvas();
+    } else if (step.type === 'animated_art') {
+        loadAnimArtToEditor(step);
+        document.getElementById('art-editor-container').style.display = 'flex';
+        document.getElementById('art-frame-nav').style.display = '';
+        renderArtCanvas();
+        renderFrameStrip();
+    } else if (step.type === 'map_sequence') {
+        loadMapSeqToEditor(step);
+        document.getElementById('mapseq-editor-container').style.display = 'flex';
+        renderMapSeqCanvas();
+    } else {
+        // Show text preview
+        const el = document.getElementById('cs-preview');
+        el.style.display = '';
+        el.style.position = 'absolute';
+        el.style.top = '50%'; el.style.left = '50%';
+        el.style.transform = 'translate(-50%,-50%)';
+        el.style.textAlign = 'center';
+        el.style.color = 'var(--text-dim)';
+        el.style.maxWidth = '500px';
+        document.getElementById('cs-preview-content').innerHTML = buildStepPreview(step);
+    }
+}
+
+function buildStepPreview(step) {
+    const color = step.textColor ? (PS_COLORS[step.textColor] || '#ccc') : '#ccc';
+    switch (step.type) {
+        case 'narration':
+            return `<div class="preview-box" style="border-color:${PS_COLORS[step.borderColor] || 'var(--border)'};">
+                <p style="color:${color}; white-space:pre-wrap;">${escHtml(step.text || '(empty)')}</p></div>`;
+        case 'dialogue':
+            return `<div class="preview-box">
+                <p style="color:${PS_COLORS[step.speakerColor] || '#fff'}; font-weight:bold;">${escHtml(step.speaker || '?')}</p>
+                <p style="color:${color};">${escHtml(step.text || '(empty)')}</p></div>`;
+        case 'effect':
+            return `<div class="preview-box"><p>⚡ Effect: <strong>${step.effect}</strong></p>
+                <p>Steps: ${step.steps}, Delay: ${step.delayMs}ms${step.effect === 'flash' ? `, Count: ${step.count}` : ''}</p></div>`;
+        case 'set_trigger':
+            return `<div class="preview-box"><p>🔧 Set trigger: <strong>${escHtml(step.trigger || '?')}</strong> = ${step.value}</p></div>`;
+        case 'delay':
+            return `<div class="preview-box"><p>⏱ Delay: <strong>${step.ms}ms</strong></p></div>`;
+        case 'clear':
+            return `<div class="preview-box"><p>🧹 Clear screen</p></div>`;
+        case 'message':
+            return `<div class="preview-box"><p style="color:${color};">${escHtml(step.text || '(empty)')}</p></div>`;
+        case 'heal_party':
+            return `<div class="preview-box"><p>💚 Heal party to full</p></div>`;
+        case 'start_battle':
+            return `<div class="preview-box"><p>⚔️ Start battle: <strong>${escHtml(step.battleId || '?')}</strong></p></div>`;
+        default:
+            return `<div class="preview-box"><p>${step.type}</p></div>`;
+    }
+}
+
+/* ──────────────────────────────────────────
+   ART EDITOR — Grid canvas for art/animated_art
+   ────────────────────────────────────────── */
+
+function loadArtStepToEditor(step, isAnimated) {
+    const lines = step.art || [];
+    csState.artH = Math.max(lines.length, 1);
+    csState.artW = Math.max(...lines.map(l => l.length), 1) || 40;
+    document.getElementById('art-width').value = csState.artW;
+    document.getElementById('art-height').value = csState.artH;
+    csState.artGrid = buildGridFromLines(lines, csState.artW, csState.artH);
+    csState.artColorMap = buildColorMapFromData(step.colorMap, csState.artW, csState.artH);
+    csState.artBgColorMap = buildColorMapFromData(step.bgColorMap, csState.artW, csState.artH);
+    csState.artFrames = [csState.artGrid];
+    csState.artColorFrames = [csState.artColorMap];
+    csState.artBgColorFrames = [csState.artBgColorMap];
+    csState.artFrameIdx = 0;
+    csState.artMode = 'grid';
+    document.getElementById('art-mode-grid').classList.add('active');
+    document.getElementById('art-mode-text').classList.remove('active');
+    document.getElementById('art-raw-text').style.display = 'none';
+    artCanvas.style.display = '';
+}
+
+function loadAnimArtToEditor(step) {
+    const frames = step.frames || [[]];
+    const colorMaps = step.colorMaps || [];
+    const bgColorMaps = step.bgColorMaps || [];
+    csState.artFrames = [];
+    csState.artColorFrames = [];
+    csState.artBgColorFrames = [];
+    let maxW = 1, maxH = 1;
+    for (const frame of frames) {
+        maxH = Math.max(maxH, frame.length);
+        for (const line of frame) maxW = Math.max(maxW, line.length);
+    }
+    csState.artW = maxW || 40;
+    csState.artH = maxH || 11;
+    document.getElementById('art-width').value = csState.artW;
+    document.getElementById('art-height').value = csState.artH;
+    for (let fi = 0; fi < frames.length; fi++) {
+        csState.artFrames.push(buildGridFromLines(frames[fi], csState.artW, csState.artH));
+        csState.artColorFrames.push(buildColorMapFromData(colorMaps[fi] || null, csState.artW, csState.artH));
+        csState.artBgColorFrames.push(buildColorMapFromData(bgColorMaps[fi] || null, csState.artW, csState.artH));
+    }
+    if (csState.artFrames.length === 0) {
+        csState.artFrames.push(buildEmptyGrid(csState.artW, csState.artH));
+        csState.artColorFrames.push(buildEmptyColorMap(csState.artW, csState.artH));
+        csState.artBgColorFrames.push(buildEmptyColorMap(csState.artW, csState.artH));
+    }
+    csState.artFrameIdx = 0;
+    csState.artGrid = csState.artFrames[0];
+    csState.artColorMap = csState.artColorFrames[0];
+    csState.artBgColorMap = csState.artBgColorFrames[0];
+    updateFrameLabel();
+    csState.artMode = 'grid';
+    document.getElementById('art-mode-grid').classList.add('active');
+    document.getElementById('art-mode-text').classList.remove('active');
+    document.getElementById('art-raw-text').style.display = 'none';
+    artCanvas.style.display = '';
+}
+
+function buildGridFromLines(lines, w, h) {
+    const grid = [];
+    for (let r = 0; r < h; r++) {
+        grid[r] = [];
+        const line = (lines[r] || '');
+        for (let c = 0; c < w; c++) {
+            grid[r][c] = c < line.length ? line[c] : ' ';
+        }
+    }
+    return grid;
+}
+
+function buildEmptyColorMap(w, h) {
+    const cm = [];
+    for (let r = 0; r < h; r++) {
+        cm[r] = [];
+        for (let c = 0; c < w; c++) cm[r][c] = '';
+    }
+    return cm;
+}
+
+function buildColorMapFromData(data, w, h) {
+    // data is an array of arrays from JSON; fill missing cells with ''
+    const cm = buildEmptyColorMap(w, h);
+    if (!data || !Array.isArray(data)) return cm;
+    for (let r = 0; r < Math.min(data.length, h); r++) {
+        if (!Array.isArray(data[r])) continue;
+        for (let c = 0; c < Math.min(data[r].length, w); c++) {
+            cm[r][c] = data[r][c] || '';
+        }
+    }
+    return cm;
+}
+
+function ensureArtColorMapCell(r, c) {
+    if (!csState.artColorMap[r]) csState.artColorMap[r] = [];
+    if (csState.artColorMap[r][c] === undefined) csState.artColorMap[r][c] = '';
+    if (!csState.artBgColorMap[r]) csState.artBgColorMap[r] = [];
+    if (csState.artBgColorMap[r][c] === undefined) csState.artBgColorMap[r][c] = '';
+}
+
+function colorMapHasColors(cm) {
+    // Returns true if any cell has a non-empty color
+    if (!cm) return false;
+    for (const row of cm) {
+        if (!row) continue;
+        for (const cell of row) {
+            if (cell && cell !== '') return true;
+        }
+    }
+    return false;
+}
+
+function trimColorMap(cm) {
+    // Returns a sparse colorMap, trimming trailing empty strings per row and empty rows at end
+    if (!cm) return null;
+    const result = cm.map(row => {
+        if (!row) return [];
+        let lastNonEmpty = -1;
+        for (let c = row.length - 1; c >= 0; c--) {
+            if (row[c] && row[c] !== '') { lastNonEmpty = c; break; }
+        }
+        return lastNonEmpty >= 0 ? row.slice(0, lastNonEmpty + 1) : [];
+    });
+    // Trim trailing empty rows
+    let lastNonEmptyRow = -1;
+    for (let r = result.length - 1; r >= 0; r--) {
+        if (result[r].length > 0) { lastNonEmptyRow = r; break; }
+    }
+    return lastNonEmptyRow >= 0 ? result.slice(0, lastNonEmptyRow + 1) : [];
+}
+
+function buildEmptyGrid(w, h) {
+    const grid = [];
+    for (let r = 0; r < h; r++) {
+        grid[r] = [];
+        for (let c = 0; c < w; c++) grid[r][c] = ' ';
+    }
+    return grid;
+}
+
+function gridToLines(grid) {
+    return grid.map(row => {
+        let line = row.join('');
+        // Trim trailing spaces
+        return line.replace(/\s+$/, '');
+    });
+}
+
+function renderArtCanvas() {
+    const cs = Math.round(18 * csState.artZoom);
+    const w = csState.artW * cs;
+    const h = csState.artH * cs;
+    artCanvas.width = w;
+    artCanvas.height = h;
+    artCtx.fillStyle = '#111';
+    artCtx.fillRect(0, 0, w, h);
+    artCtx.font = `${Math.max(8, cs - 4)}px Consolas, 'Courier New', monospace`;
+    artCtx.textAlign = 'center';
+    artCtx.textBaseline = 'middle';
+
+    // Get art color from sidebar
+    const artColorEl = document.getElementById('step-artColor');
+    const defaultArtColor = artColorEl ? (PS_COLORS[artColorEl.value] || '#ccc') : '#ccc';
+
+    for (let r = 0; r < csState.artH; r++) {
+        for (let c = 0; c < csState.artW; c++) {
+            const x = c * cs, y = r * cs;
+            // Per-cell BG color
+            const bgName = csState.artBgColorMap[r] && csState.artBgColorMap[r][c];
+            if (bgName && bgName !== '') {
+                artCtx.fillStyle = PS_COLORS[bgName] || '#111';
+                artCtx.fillRect(x, y, cs, cs);
+            }
+            const ch = csState.artGrid[r] && csState.artGrid[r][c] || ' ';
+            if (ch !== ' ') {
+                // Per-cell color from colorMap, fall back to default artColor
+                const cellColorName = csState.artColorMap[r] && csState.artColorMap[r][c];
+                const cellColor = cellColorName ? (PS_COLORS[cellColorName] || defaultArtColor) : defaultArtColor;
+                artCtx.fillStyle = cellColor;
+                artCtx.fillText(ch, x + cs / 2, y + cs / 2 + 1);
+            }
+        }
+    }
+
+    // Grid lines
+    artCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+    artCtx.lineWidth = 1;
+    artCtx.beginPath();
+    for (let c = 0; c <= csState.artW; c++) { artCtx.moveTo(c * cs + 0.5, 0); artCtx.lineTo(c * cs + 0.5, h); }
+    for (let r = 0; r <= csState.artH; r++) { artCtx.moveTo(0, r * cs + 0.5); artCtx.lineTo(w, r * cs + 0.5); }
+    artCtx.stroke();
+
+    // Cursor — highlight with current paint color
+    if (csState.artCursor.x >= 0) {
+        const paintHex = PS_COLORS[csState.artPaintColor] || '#fff';
+        artCtx.strokeStyle = paintHex;
+        artCtx.lineWidth = 2;
+        artCtx.strokeRect(csState.artCursor.x * cs + 1, csState.artCursor.y * cs + 1, cs - 2, cs - 2);
+    }
+}
+
+function setupArtCanvasEvents() {
+    function getArtCell(e) {
+        const rect = artCanvas.getBoundingClientRect();
+        const cs = Math.round(18 * csState.artZoom);
+        return {
+            x: Math.max(0, Math.min(Math.floor((e.clientX - rect.left) / cs), csState.artW - 1)),
+            y: Math.max(0, Math.min(Math.floor((e.clientY - rect.top) / cs), csState.artH - 1))
+        };
+    }
+    function paintCell(r, c) {
+        csState.artGrid[r][c] = csState.artChar;
+        ensureArtColorMapCell(r, c);
+        csState.artColorMap[r][c] = csState.artPaintColor;
+        csState.artBgColorMap[r][c] = csState.artPaintBgColor;
+        csState.dirty = true;
+    }
+    artCanvas.addEventListener('mousemove', (e) => {
+        csState.artCursor = getArtCell(e);
+        if (csState.artPainting) {
+            paintCell(csState.artCursor.y, csState.artCursor.x);
+        }
+        renderArtCanvas();
+    });
+    artCanvas.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        csState.artPainting = true;
+        const cell = getArtCell(e);
+        paintCell(cell.y, cell.x);
+        renderArtCanvas();
+    });
+    artCanvas.addEventListener('mouseup', () => { csState.artPainting = false; });
+    artCanvas.addEventListener('mouseleave', () => { csState.artCursor = { x: -1, y: -1 }; csState.artPainting = false; renderArtCanvas(); });
+    artCanvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const cell = getArtCell(e);
+        const fg = csState.artColorMap[cell.y] && csState.artColorMap[cell.y][cell.x];
+        const bg = csState.artBgColorMap[cell.y] && csState.artBgColorMap[cell.y][cell.x];
+        if (fg && fg !== '') {
+            selectPaintColor(fg);
+        }
+        selectPaintBgColor(bg || '');
+        setStatus(`Picked — FG: ${fg || '(default)'}, BG: ${bg || '(none)'}`);
+    });
+    document.addEventListener('mouseup', () => { csState.artPainting = false; });
+
+    // Keyboard for art canvas — type chars directly
+    artCanvas.tabIndex = 0;
+    artCanvas.addEventListener('keydown', (e) => {
+        if (csState.artCursor.x < 0) return;
+        if (e.key === 'ArrowLeft')  { csState.artCursor.x = Math.max(0, csState.artCursor.x - 1); e.preventDefault(); }
+        if (e.key === 'ArrowRight') { csState.artCursor.x = Math.min(csState.artW - 1, csState.artCursor.x + 1); e.preventDefault(); }
+        if (e.key === 'ArrowUp')    { csState.artCursor.y = Math.max(0, csState.artCursor.y - 1); e.preventDefault(); }
+        if (e.key === 'ArrowDown')  { csState.artCursor.y = Math.min(csState.artH - 1, csState.artCursor.y + 1); e.preventDefault(); }
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            e.preventDefault();
+            csState.artGrid[csState.artCursor.y][csState.artCursor.x] = ' ';
+            ensureArtColorMapCell(csState.artCursor.y, csState.artCursor.x);
+            csState.artColorMap[csState.artCursor.y][csState.artCursor.x] = '';
+            csState.artBgColorMap[csState.artCursor.y][csState.artCursor.x] = '';
+            csState.dirty = true;
+        }
+        if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            e.preventDefault();
+            csState.artGrid[csState.artCursor.y][csState.artCursor.x] = e.key;
+            csState.artChar = e.key;
+            ensureArtColorMapCell(csState.artCursor.y, csState.artCursor.x);
+            csState.artColorMap[csState.artCursor.y][csState.artCursor.x] = csState.artPaintColor;
+            csState.artBgColorMap[csState.artCursor.y][csState.artCursor.x] = csState.artPaintBgColor;
+            csState.dirty = true;
+            // Advance cursor right
+            if (csState.artCursor.x < csState.artW - 1) csState.artCursor.x++;
+        }
+        renderArtCanvas();
+    });
+}
+
+function setArtMode(mode) {
+    csState.artMode = mode;
+    document.getElementById('art-mode-grid').classList.toggle('active', mode === 'grid');
+    document.getElementById('art-mode-text').classList.toggle('active', mode === 'text');
+    if (mode === 'text') {
+        artCanvas.style.display = 'none';
+        document.getElementById('art-color-palette').style.display = 'none';
+        const ta = document.getElementById('art-raw-text');
+        ta.style.display = '';
+        ta.value = gridToLines(csState.artGrid).join('\n');
+    } else {
+        // Parse text back to grid
+        const ta = document.getElementById('art-raw-text');
+        if (ta.style.display !== 'none') {
+            const lines = ta.value.split('\n');
+            const oldH = csState.artH, oldW = csState.artW;
+            csState.artH = Math.max(lines.length, 1);
+            csState.artW = Math.max(...lines.map(l => l.length), 1) || 40;
+            csState.artGrid = buildGridFromLines(lines, csState.artW, csState.artH);
+            // Resize colorMap + bgColorMap to match new dimensions, preserving existing colors
+            const oldColorMap = csState.artColorMap;
+            const oldBgColorMap = csState.artBgColorMap;
+            csState.artColorMap = buildEmptyColorMap(csState.artW, csState.artH);
+            csState.artBgColorMap = buildEmptyColorMap(csState.artW, csState.artH);
+            for (let r = 0; r < Math.min(csState.artH, oldH); r++) {
+                for (let c = 0; c < Math.min(csState.artW, oldW); c++) {
+                    if (oldColorMap[r] && oldColorMap[r][c]) csState.artColorMap[r][c] = oldColorMap[r][c];
+                    if (oldBgColorMap[r] && oldBgColorMap[r][c]) csState.artBgColorMap[r][c] = oldBgColorMap[r][c];
+                }
+            }
+            csState.artFrames[csState.artFrameIdx] = csState.artGrid;
+            csState.artColorFrames[csState.artFrameIdx] = csState.artColorMap;
+            csState.artBgColorFrames[csState.artFrameIdx] = csState.artBgColorMap;
+            document.getElementById('art-width').value = csState.artW;
+            document.getElementById('art-height').value = csState.artH;
+        }
+        ta.style.display = 'none';
+        artCanvas.style.display = '';
+        document.getElementById('art-color-palette').style.display = '';
+        renderArtCanvas();
+    }
+}
+
+function resizeArt() {
+    const newW = parseInt(document.getElementById('art-width').value) || 40;
+    const newH = parseInt(document.getElementById('art-height').value) || 11;
+    const newGrid = buildEmptyGrid(newW, newH);
+    const newColorMap = buildEmptyColorMap(newW, newH);
+    const newBgColorMap = buildEmptyColorMap(newW, newH);
+    for (let r = 0; r < Math.min(newH, csState.artH); r++) {
+        for (let c = 0; c < Math.min(newW, csState.artW); c++) {
+            if (csState.artGrid[r] && csState.artGrid[r][c]) newGrid[r][c] = csState.artGrid[r][c];
+            if (csState.artColorMap[r] && csState.artColorMap[r][c]) newColorMap[r][c] = csState.artColorMap[r][c];
+            if (csState.artBgColorMap[r] && csState.artBgColorMap[r][c]) newBgColorMap[r][c] = csState.artBgColorMap[r][c];
+        }
+    }
+    csState.artW = newW; csState.artH = newH;
+    csState.artGrid = newGrid;
+    csState.artColorMap = newColorMap;
+    csState.artBgColorMap = newBgColorMap;
+    csState.artFrames[csState.artFrameIdx] = newGrid;
+    csState.artColorFrames[csState.artFrameIdx] = newColorMap;
+    csState.artBgColorFrames[csState.artFrameIdx] = newBgColorMap;
+    csState.dirty = true;
+    renderArtCanvas();
+}
+
+function cropArt() {
+    // For animated_art, scan ALL frames to find the union bounding box
+    const step = csState.cutscene && csState.cutscene.steps[csState.selectedStep];
+    const isAnimated = step && step.type === 'animated_art';
+
+    // Save current frame state
+    if (isAnimated) saveCurrentFrame();
+
+    const framesToScan = isAnimated ? csState.artFrames : [csState.artGrid];
+    const colorFrames = isAnimated ? csState.artColorFrames : [csState.artColorMap];
+    const bgFrames = isAnimated ? csState.artBgColorFrames : [csState.artBgColorMap];
+
+    // Find bounding box across all frames
+    let minC = csState.artW, minR = csState.artH, maxC = -1, maxR = -1;
+    for (const grid of framesToScan) {
+        for (let r = 0; r < csState.artH; r++) {
+            for (let c = 0; c < csState.artW; c++) {
+                const ch = grid[r] && grid[r][c];
+                if (ch && ch !== ' ') {
+                    minC = Math.min(minC, c); minR = Math.min(minR, r);
+                    maxC = Math.max(maxC, c); maxR = Math.max(maxR, r);
+                }
+            }
+        }
+    }
+    // Also check color maps — a cell with a fg/bg color but space char still matters
+    for (const cm of colorFrames) {
+        for (let r = 0; r < csState.artH; r++) {
+            for (let c = 0; c < csState.artW; c++) {
+                if (cm[r] && cm[r][c] && cm[r][c] !== '') {
+                    minC = Math.min(minC, c); minR = Math.min(minR, r);
+                    maxC = Math.max(maxC, c); maxR = Math.max(maxR, r);
+                }
+            }
+        }
+    }
+    for (const cm of bgFrames) {
+        for (let r = 0; r < csState.artH; r++) {
+            for (let c = 0; c < csState.artW; c++) {
+                if (cm[r] && cm[r][c] && cm[r][c] !== '') {
+                    minC = Math.min(minC, c); minR = Math.min(minR, r);
+                    maxC = Math.max(maxC, c); maxR = Math.max(maxR, r);
+                }
+            }
+        }
+    }
+
+    if (maxC < 0) { setStatus('Art is empty — nothing to crop.'); return; }
+
+    const newW = maxC - minC + 1;
+    const newH = maxR - minR + 1;
+
+    if (newW === csState.artW && newH === csState.artH) {
+        setStatus('Already cropped — no empty space to remove.');
+        return;
+    }
+
+    // Crop each frame
+    for (let f = 0; f < framesToScan.length; f++) {
+        const oldGrid = framesToScan[f];
+        const oldCM = colorFrames[f];
+        const oldBG = bgFrames[f];
+        const newGrid = buildEmptyGrid(newW, newH);
+        const newCM = buildEmptyColorMap(newW, newH);
+        const newBG = buildEmptyColorMap(newW, newH);
+        for (let r = 0; r < newH; r++) {
+            for (let c = 0; c < newW; c++) {
+                const srcR = r + minR, srcC = c + minC;
+                if (oldGrid[srcR] && oldGrid[srcR][srcC]) newGrid[r][c] = oldGrid[srcR][srcC];
+                if (oldCM[srcR] && oldCM[srcR][srcC]) newCM[r][c] = oldCM[srcR][srcC];
+                if (oldBG[srcR] && oldBG[srcR][srcC]) newBG[r][c] = oldBG[srcR][srcC];
+            }
+        }
+        framesToScan[f] = newGrid;
+        colorFrames[f] = newCM;
+        bgFrames[f] = newBG;
+    }
+
+    csState.artW = newW;
+    csState.artH = newH;
+    csState.artGrid = framesToScan[csState.artFrameIdx];
+    csState.artColorMap = colorFrames[csState.artFrameIdx];
+    csState.artBgColorMap = bgFrames[csState.artFrameIdx];
+
+    if (isAnimated) {
+        csState.artFrames = framesToScan;
+        csState.artColorFrames = colorFrames;
+        csState.artBgColorFrames = bgFrames;
+    } else {
+        csState.artFrames[csState.artFrameIdx] = csState.artGrid;
+        csState.artColorFrames[csState.artFrameIdx] = csState.artColorMap;
+        csState.artBgColorFrames[csState.artFrameIdx] = csState.artBgColorMap;
+    }
+
+    document.getElementById('art-width').value = newW;
+    document.getElementById('art-height').value = newH;
+    csState.dirty = true;
+    renderArtCanvas();
+    if (isAnimated) renderFrameStrip();
+    setStatus(`Cropped to ${newW}×${newH}`);
+}
+
+function syncArtToStep() {
+    const step = csState.cutscene.steps[csState.selectedStep];
+    if (!step || step.type !== 'art') return;
+    if (csState.artMode === 'text') {
+        const lines = document.getElementById('art-raw-text').value.split('\n');
+        step.art = lines;
+    } else {
+        step.art = gridToLines(csState.artGrid);
+    }
+    // Save colorMap only if it has any non-default colors
+    if (colorMapHasColors(csState.artColorMap)) {
+        step.colorMap = trimColorMap(csState.artColorMap);
+    } else {
+        delete step.colorMap;
+    }
+    if (colorMapHasColors(csState.artBgColorMap)) {
+        step.bgColorMap = trimColorMap(csState.artBgColorMap);
+    } else {
+        delete step.bgColorMap;
+    }
+}
+
+function syncAnimArtToStep() {
+    const step = csState.cutscene.steps[csState.selectedStep];
+    if (!step || step.type !== 'animated_art') return;
+    // Ensure current frame is saved
+    csState.artFrames[csState.artFrameIdx] = csState.artGrid;
+    csState.artColorFrames[csState.artFrameIdx] = csState.artColorMap;
+    csState.artBgColorFrames[csState.artFrameIdx] = csState.artBgColorMap;
+    step.frames = csState.artFrames.map(grid => gridToLines(grid));
+    // Save colorMaps only if any frame has non-default colors
+    const anyColors = csState.artColorFrames.some(cm => colorMapHasColors(cm));
+    if (anyColors) {
+        step.colorMaps = csState.artColorFrames.map(cm => trimColorMap(cm));
+    } else {
+        delete step.colorMaps;
+    }
+    const anyBgColors = csState.artBgColorFrames.some(cm => colorMapHasColors(cm));
+    if (anyBgColors) {
+        step.bgColorMaps = csState.artBgColorFrames.map(cm => trimColorMap(cm));
+    } else {
+        delete step.bgColorMaps;
+    }
+}
+
+// Frame navigation — helper to save/load current frame
+function saveCurrentFrame() {
+    csState.artFrames[csState.artFrameIdx] = csState.artGrid;
+    csState.artColorFrames[csState.artFrameIdx] = csState.artColorMap;
+    csState.artBgColorFrames[csState.artFrameIdx] = csState.artBgColorMap;
+}
+function loadFrame(idx) {
+    csState.artFrameIdx = idx;
+    csState.artGrid = csState.artFrames[idx];
+    csState.artColorMap = csState.artColorFrames[idx];
+    csState.artBgColorMap = csState.artBgColorFrames[idx];
+}
+function refreshAfterFrameChange() {
+    updateFrameLabel();
+    renderFrameStrip();
+    if (csState.artMode === 'text') {
+        document.getElementById('art-raw-text').value = gridToLines(csState.artGrid).join('\n');
+    } else {
+        renderArtCanvas();
+    }
+}
+
+function prevArtFrame() {
+    if (csState.artFrameIdx > 0) {
+        saveCurrentFrame();
+        loadFrame(csState.artFrameIdx - 1);
+        refreshAfterFrameChange();
+    }
+}
+
+function nextArtFrame() {
+    if (csState.artFrameIdx < csState.artFrames.length - 1) {
+        saveCurrentFrame();
+        loadFrame(csState.artFrameIdx + 1);
+        refreshAfterFrameChange();
+    }
+}
+
+function addArtFrame() {
+    saveCurrentFrame();
+    csState.artFrames.push(buildEmptyGrid(csState.artW, csState.artH));
+    csState.artColorFrames.push(buildEmptyColorMap(csState.artW, csState.artH));
+    csState.artBgColorFrames.push(buildEmptyColorMap(csState.artW, csState.artH));
+    loadFrame(csState.artFrames.length - 1);
+    csState.dirty = true;
+    refreshAfterFrameChange();
+}
+
+function dupArtFrame() {
+    saveCurrentFrame();
+    const copy = csState.artGrid.map(row => [...row]);
+    const colorCopy = csState.artColorMap.map(row => [...row]);
+    const bgCopy = csState.artBgColorMap.map(row => [...row]);
+    csState.artFrames.splice(csState.artFrameIdx + 1, 0, copy);
+    csState.artColorFrames.splice(csState.artFrameIdx + 1, 0, colorCopy);
+    csState.artBgColorFrames.splice(csState.artFrameIdx + 1, 0, bgCopy);
+    loadFrame(csState.artFrameIdx + 1);
+    csState.dirty = true;
+    refreshAfterFrameChange();
+}
+
+function delArtFrame() {
+    if (csState.artFrames.length <= 1) { setStatus('Cannot delete the only frame.'); return; }
+    csState.artFrames.splice(csState.artFrameIdx, 1);
+    csState.artColorFrames.splice(csState.artFrameIdx, 1);
+    csState.artBgColorFrames.splice(csState.artFrameIdx, 1);
+    if (csState.artFrameIdx >= csState.artFrames.length) csState.artFrameIdx = csState.artFrames.length - 1;
+    loadFrame(csState.artFrameIdx);
+    csState.dirty = true;
+    refreshAfterFrameChange();
+}
+
+function moveArtFrame(fromIdx, toIdx) {
+    if (toIdx < 0 || toIdx >= csState.artFrames.length) return;
+    saveCurrentFrame();
+    // Remove from old position and insert at new
+    const [grid] = csState.artFrames.splice(fromIdx, 1);
+    const [colorMap] = csState.artColorFrames.splice(fromIdx, 1);
+    const [bgColorMap] = csState.artBgColorFrames.splice(fromIdx, 1);
+    csState.artFrames.splice(toIdx, 0, grid);
+    csState.artColorFrames.splice(toIdx, 0, colorMap);
+    csState.artBgColorFrames.splice(toIdx, 0, bgColorMap);
+    loadFrame(toIdx);
+    csState.dirty = true;
+    refreshAfterFrameChange();
+}
+
+function updateFrameLabel() {
+    document.getElementById('art-frame-label').textContent = `Frame ${csState.artFrameIdx + 1}/${csState.artFrames.length}`;
+}
+
+/* ──────────────────────────────────────────
+   MAP SEQUENCE EDITOR — Inline map + entities
+   ────────────────────────────────────────── */
+
+function loadMapSeqToEditor(step) {
+    const lines = step.inlineMap || [];
+    csState.mseqH = Math.max(lines.length, 3);
+    csState.mseqW = Math.max(...lines.map(l => l.length), 5) || 50;
+    document.getElementById('mseq-width').value = csState.mseqW;
+    document.getElementById('mseq-height').value = csState.mseqH;
+    csState.mseqGrid = buildGridFromLines(lines, csState.mseqW, csState.mseqH);
+    csState.mseqEntities = JSON.parse(JSON.stringify(step.entities || []));
+    csState.mseqEvents = JSON.parse(JSON.stringify(step.events || []));
+    csState.mseqTool = 'paint';
+    csState.mseqPathPoints = [];
+    csState.mseqPathEntity = null;
+    document.getElementById('mseq-tool-paint').classList.add('active');
+    document.getElementById('mseq-tool-erase').classList.remove('active');
+    document.getElementById('mseq-tool-entity').classList.remove('active');
+    document.getElementById('mseq-tool-path').classList.remove('active');
+
+    // Tile colors
+    const tileColorsFromStep = step.tileColors || {};
+    csState.mseqTileColors = { ...tileColorsFromStep };
+}
+
+function renderMapSeqCanvas() {
+    const cs = Math.round(18 * csState.mseqZoom);
+    const w = csState.mseqW * cs;
+    const h = csState.mseqH * cs;
+    mseqCanvas.width = w;
+    mseqCanvas.height = h;
+    mseqCtx.fillStyle = '#111';
+    mseqCtx.fillRect(0, 0, w, h);
+    mseqCtx.font = `${Math.max(8, cs - 4)}px Consolas, 'Courier New', monospace`;
+    mseqCtx.textAlign = 'center';
+    mseqCtx.textBaseline = 'middle';
+
+    for (let r = 0; r < csState.mseqH; r++) {
+        for (let c = 0; c < csState.mseqW; c++) {
+            const ch = csState.mseqGrid[r] && csState.mseqGrid[r][c] || ' ';
+            if (ch !== ' ') {
+                const colorName = csState.mseqTileColors[ch] || 'Gray';
+                mseqCtx.fillStyle = PS_COLORS[colorName] || '#808080';
+                mseqCtx.fillText(ch, c * cs + cs / 2, r * cs + cs / 2 + 1);
+            }
+        }
+    }
+
+    // Grid lines
+    mseqCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+    mseqCtx.lineWidth = 1;
+    mseqCtx.beginPath();
+    for (let c = 0; c <= csState.mseqW; c++) { mseqCtx.moveTo(c * cs + 0.5, 0); mseqCtx.lineTo(c * cs + 0.5, h); }
+    for (let r = 0; r <= csState.mseqH; r++) { mseqCtx.moveTo(0, r * cs + 0.5); mseqCtx.lineTo(w, r * cs + 0.5); }
+    mseqCtx.stroke();
+
+    // Draw entities
+    for (const ent of csState.mseqEntities) {
+        if (ent.hidden || ent.x < 0 || ent.y < 0) continue;
+        if (ent.x >= csState.mseqW || ent.y >= csState.mseqH) continue;
+        mseqCtx.fillStyle = PS_COLORS[ent.color] || '#fff';
+        mseqCtx.fillText(ent.char || '@', ent.x * cs + cs / 2, ent.y * cs + cs / 2 + 1);
+        mseqCtx.strokeStyle = PS_COLORS[ent.color] || '#fff';
+        mseqCtx.lineWidth = 2;
+        mseqCtx.strokeRect(ent.x * cs + 1, ent.y * cs + 1, cs - 2, cs - 2);
+    }
+
+    // Draw path points if in path mode
+    if (csState.mseqTool === 'path' && csState.mseqPathPoints.length > 0) {
+        mseqCtx.strokeStyle = '#00ff00';
+        mseqCtx.lineWidth = 2;
+        mseqCtx.beginPath();
+        mseqCtx.moveTo(csState.mseqPathPoints[0][0] * cs + cs / 2, csState.mseqPathPoints[0][1] * cs + cs / 2);
+        for (let i = 1; i < csState.mseqPathPoints.length; i++) {
+            mseqCtx.lineTo(csState.mseqPathPoints[i][0] * cs + cs / 2, csState.mseqPathPoints[i][1] * cs + cs / 2);
+        }
+        mseqCtx.stroke();
+        for (const pt of csState.mseqPathPoints) {
+            mseqCtx.fillStyle = '#00ff00';
+            mseqCtx.beginPath();
+            mseqCtx.arc(pt[0] * cs + cs / 2, pt[1] * cs + cs / 2, 3, 0, Math.PI * 2);
+            mseqCtx.fill();
+        }
+    }
+
+    // Cursor
+    if (csState.mseqCursor.x >= 0) {
+        mseqCtx.strokeStyle = 'rgba(255,255,255,0.4)';
+        mseqCtx.lineWidth = 2;
+        mseqCtx.strokeRect(csState.mseqCursor.x * cs + 1, csState.mseqCursor.y * cs + 1, cs - 2, cs - 2);
+    }
+}
+
+function setupMapSeqCanvasEvents() {
+    function getMseqCell(e) {
+        const rect = mseqCanvas.getBoundingClientRect();
+        const cs = Math.round(18 * csState.mseqZoom);
+        return {
+            x: Math.max(0, Math.min(Math.floor((e.clientX - rect.left) / cs), csState.mseqW - 1)),
+            y: Math.max(0, Math.min(Math.floor((e.clientY - rect.top) / cs), csState.mseqH - 1))
+        };
+    }
+    mseqCanvas.addEventListener('mousemove', (e) => {
+        csState.mseqCursor = getMseqCell(e);
+        if (csState.mseqPainting) {
+            if (csState.mseqTool === 'paint') {
+                csState.mseqGrid[csState.mseqCursor.y][csState.mseqCursor.x] = csState.mseqTileChar;
+                csState.dirty = true;
+            } else if (csState.mseqTool === 'erase') {
+                csState.mseqGrid[csState.mseqCursor.y][csState.mseqCursor.x] = ' ';
+                csState.dirty = true;
+            }
+        }
+        renderMapSeqCanvas();
+    });
+    mseqCanvas.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        const cell = getMseqCell(e);
+        if (csState.mseqTool === 'paint') {
+            csState.mseqPainting = true;
+            csState.mseqGrid[cell.y][cell.x] = csState.mseqTileChar;
+            csState.dirty = true;
+        } else if (csState.mseqTool === 'erase') {
+            csState.mseqPainting = true;
+            csState.mseqGrid[cell.y][cell.x] = ' ';
+            csState.dirty = true;
+        } else if (csState.mseqTool === 'entity') {
+            // Place selected entity at position
+            const selected = csState.mseqEntities.find(en =>
+                document.querySelector('.entity-chip.selected')?.dataset.id === en.id);
+            if (selected) {
+                selected.x = cell.x;
+                selected.y = cell.y;
+                selected.hidden = false;
+                csState.dirty = true;
+                renderEntityList();
+            }
+        } else if (csState.mseqTool === 'path') {
+            csState.mseqPathPoints.push([cell.x, cell.y]);
+            csState.dirty = true;
+        }
+        renderMapSeqCanvas();
+    });
+    mseqCanvas.addEventListener('mouseup', () => { csState.mseqPainting = false; });
+    mseqCanvas.addEventListener('mouseleave', () => { csState.mseqCursor = { x: -1, y: -1 }; csState.mseqPainting = false; renderMapSeqCanvas(); });
+    document.addEventListener('mouseup', () => { csState.mseqPainting = false; });
+
+    // Keyboard input for map sequence
+    mseqCanvas.tabIndex = 0;
+    mseqCanvas.addEventListener('keydown', (e) => {
+        if (csState.mseqCursor.x < 0) return;
+        if (e.key === 'ArrowLeft')  { csState.mseqCursor.x = Math.max(0, csState.mseqCursor.x - 1); e.preventDefault(); }
+        if (e.key === 'ArrowRight') { csState.mseqCursor.x = Math.min(csState.mseqW - 1, csState.mseqCursor.x + 1); e.preventDefault(); }
+        if (e.key === 'ArrowUp')    { csState.mseqCursor.y = Math.max(0, csState.mseqCursor.y - 1); e.preventDefault(); }
+        if (e.key === 'ArrowDown')  { csState.mseqCursor.y = Math.min(csState.mseqH - 1, csState.mseqCursor.y + 1); e.preventDefault(); }
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            e.preventDefault();
+            csState.mseqGrid[csState.mseqCursor.y][csState.mseqCursor.x] = ' ';
+            csState.dirty = true;
+        }
+        if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            e.preventDefault();
+            csState.mseqGrid[csState.mseqCursor.y][csState.mseqCursor.x] = e.key;
+            csState.mseqTileChar = e.key;
+            document.getElementById('mseq-tile-char').value = e.key;
+            csState.dirty = true;
+        }
+        renderMapSeqCanvas();
+    });
+}
+
+function setMapSeqTool(tool) {
+    csState.mseqTool = tool;
+    ['paint','erase','entity','path'].forEach(t => {
+        document.getElementById('mseq-tool-' + t).classList.toggle('active', t === tool);
+    });
+    mseqCanvas.style.cursor = tool === 'entity' ? 'pointer' : tool === 'path' ? 'cell' : 'crosshair';
+    if (tool === 'path') {
+        csState.mseqPathPoints = [];
+        setStatus('Click cells to build a path. Press Escape or switch tools to finalize. The path will be added as a "move" event.');
+    } else if (csState.mseqPathPoints.length > 0) {
+        finalizePath();
+    }
+}
+
+function finalizePath() {
+    if (csState.mseqPathPoints.length > 1 && csState.mseqPathEntity) {
+        csState.mseqEvents.push({
+            action: 'move',
+            entity: csState.mseqPathEntity,
+            path: [...csState.mseqPathPoints],
+            stepDelayMs: 150
+        });
+        renderEventList();
+        setStatus(`Path with ${csState.mseqPathPoints.length} points added for ${csState.mseqPathEntity}.`);
+    } else if (csState.mseqPathPoints.length > 1) {
+        setStatus('Select an entity first (click an entity chip, then use Path tool).');
+    }
+    csState.mseqPathPoints = [];
+    renderMapSeqCanvas();
+}
+
+function resizeMapSeq() {
+    const newW = parseInt(document.getElementById('mseq-width').value) || 50;
+    const newH = parseInt(document.getElementById('mseq-height').value) || 15;
+    const newGrid = buildEmptyGrid(newW, newH);
+    for (let r = 0; r < Math.min(newH, csState.mseqH); r++) {
+        for (let c = 0; c < Math.min(newW, csState.mseqW); c++) {
+            if (csState.mseqGrid[r] && csState.mseqGrid[r][c]) newGrid[r][c] = csState.mseqGrid[r][c];
+        }
+    }
+    csState.mseqW = newW; csState.mseqH = newH;
+    csState.mseqGrid = newGrid;
+    csState.dirty = true;
+    renderMapSeqCanvas();
+}
+
+function syncMapSeqToStep() {
+    const step = csState.cutscene.steps[csState.selectedStep];
+    if (!step || step.type !== 'map_sequence') return;
+    step.inlineMap = gridToLines(csState.mseqGrid);
+    step.entities = JSON.parse(JSON.stringify(csState.mseqEntities));
+    step.events = JSON.parse(JSON.stringify(csState.mseqEvents));
+    step.tileColors = { ...csState.mseqTileColors };
+}
+
+/* ──────────────────────────────────────────
+   ENTITY MANAGEMENT
+   ────────────────────────────────────────── */
+
+function renderEntityList() {
+    const container = document.getElementById('cs-entity-list');
+    container.innerHTML = '';
+    csState.mseqEntities.forEach((ent, i) => {
+        const chip = document.createElement('div');
+        chip.className = 'entity-chip';
+        chip.dataset.id = ent.id;
+        chip.innerHTML = `<span style="color:${PS_COLORS[ent.color] || '#ccc'}; font-family:Consolas;">${ent.char || '@'}</span> ${escHtml(ent.id)}${ent.hidden ? ' (hidden)' : ''}`;
+        chip.onclick = () => {
+            document.querySelectorAll('.entity-chip').forEach(c => c.classList.remove('selected'));
+            chip.classList.add('selected');
+            csState.mseqPathEntity = ent.id;
+        };
+        chip.ondblclick = () => showEntityDialog(i);
+        container.appendChild(chip);
+    });
+}
+
+function showEntityDialog(idx) {
+    csState.editingEntityIdx = idx !== undefined ? idx : -1;
+    // Populate color dropdown
+    const sel = document.getElementById('ent-color');
+    if (sel.options.length === 0) {
+        for (const [name, hex] of Object.entries(PS_COLORS)) {
+            sel.innerHTML += `<option value="${name}" style="color:${hex}; background:#222;">${name}</option>`;
+        }
+    }
+    if (idx !== undefined && csState.mseqEntities[idx]) {
+        const ent = csState.mseqEntities[idx];
+        document.getElementById('entity-modal-title').textContent = 'Edit Entity';
+        document.getElementById('ent-id').value = ent.id;
+        document.getElementById('ent-char').value = ent.char || '@';
+        sel.value = ent.color || 'White';
+        document.getElementById('ent-x').value = ent.x !== undefined ? ent.x : 1;
+        document.getElementById('ent-y').value = ent.y !== undefined ? ent.y : 1;
+        document.getElementById('ent-hidden').checked = !!ent.hidden;
+    } else {
+        document.getElementById('entity-modal-title').textContent = 'Add Entity';
+        document.getElementById('ent-id').value = '';
+        document.getElementById('ent-char').value = '@';
+        sel.value = 'White';
+        document.getElementById('ent-x').value = 1;
+        document.getElementById('ent-y').value = 1;
+        document.getElementById('ent-hidden').checked = false;
+    }
+    document.getElementById('modal-entity').classList.add('show');
+}
+
+function saveEntity() {
+    const ent = {
+        id: document.getElementById('ent-id').value.trim(),
+        char: document.getElementById('ent-char').value || '@',
+        color: document.getElementById('ent-color').value || 'White',
+        x: parseInt(document.getElementById('ent-x').value) || 0,
+        y: parseInt(document.getElementById('ent-y').value) || 0,
+        hidden: document.getElementById('ent-hidden').checked
+    };
+    if (!ent.id) { alert('Entity ID is required.'); return; }
+    if (csState.editingEntityIdx >= 0) {
+        csState.mseqEntities[csState.editingEntityIdx] = ent;
+    } else {
+        csState.mseqEntities.push(ent);
+    }
+    csState.dirty = true;
+    renderEntityList();
+    renderMapSeqCanvas();
+    closeModal('modal-entity');
+}
+
+function deleteEntity() {
+    if (csState.editingEntityIdx >= 0) {
+        csState.mseqEntities.splice(csState.editingEntityIdx, 1);
+        csState.dirty = true;
+        renderEntityList();
+        renderMapSeqCanvas();
+    }
+    closeModal('modal-entity');
+}
+
+/* ──────────────────────────────────────────
+   EVENT MANAGEMENT
+   ────────────────────────────────────────── */
+
+function renderEventList() {
+    const container = document.getElementById('cs-event-list');
+    container.innerHTML = '';
+    csState.mseqEvents.forEach((evt, i) => {
+        const item = document.createElement('div');
+        item.className = 'event-list-item';
+        item.innerHTML = `
+            <span class="ev-type">${evt.action}</span>
+            <span class="ev-desc">${getEventSummary(evt)}</span>
+            <button onclick="showEventDialog(${i})" title="Edit">✏️</button>
+            <button onclick="moveEvent(${i},-1)" title="Up">▲</button>
+            <button onclick="moveEvent(${i},1)" title="Down">▼</button>
+            <button onclick="removeEvent(${i})" title="Delete">✕</button>`;
+        container.appendChild(item);
+    });
+}
+
+function getEventSummary(evt) {
+    switch (evt.action) {
+        case 'move': return `${evt.entity || '?'}: ${(evt.path || []).length} pts`;
+        case 'show': return `${evt.entity || '?'} at (${evt.x},${evt.y})`;
+        case 'hide': return `${evt.entity || '?'}`;
+        case 'dialogue': return `${evt.speaker || '?'}: ${(evt.text || '').substring(0, 30)}`;
+        case 'narration': return (evt.text || '').substring(0, 40);
+        case 'delay': return `${evt.ms || 0}ms`;
+        case 'effect': return evt.effect || 'effect';
+        default: return evt.action;
+    }
+}
+
+function showEventDialog(idx) {
+    csState.editingEventIdx = idx !== undefined ? idx : -1;
+    if (idx !== undefined && csState.mseqEvents[idx]) {
+        const evt = csState.mseqEvents[idx];
+        document.getElementById('event-modal-title').textContent = 'Edit Event';
+        document.getElementById('evt-action').value = evt.action;
+        updateEventFields();
+        // Fill fields after they're created
+        setTimeout(() => fillEventFields(evt), 10);
+    } else {
+        document.getElementById('event-modal-title').textContent = 'Add Event';
+        document.getElementById('evt-action').value = 'move';
+        updateEventFields();
+    }
+    document.getElementById('modal-event').classList.add('show');
+}
+
+function updateEventFields() {
+    const action = document.getElementById('evt-action').value;
+    const container = document.getElementById('evt-fields');
+    const entOpts = csState.mseqEntities.map(e => `<option value="${e.id}">${e.id}</option>`).join('');
+    const colorSel = (id, val) => {
+        return `<select id="${id}" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:12px;">`
+            + Object.keys(PS_COLORS).map(c => `<option value="${c}" style="color:${PS_COLORS[c]}; background:#222;" ${c === (val||'White') ? 'selected' : ''}>${c}</option>`).join('')
+            + `</select>`;
+    };
+
+    switch (action) {
+        case 'move': container.innerHTML = `
+            <div class="form-row"><label style="min-width:80px;">Entity</label><select id="evt-entity" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:12px;">${entOpts}</select></div>
+            <div class="form-row"><label style="min-width:80px;">Step ms</label><input type="number" id="evt-stepDelayMs" value="150" min="10" style="width:70px;"></div>
+            <div class="form-row"><label style="min-width:80px;">Path</label><textarea id="evt-path" rows="3" placeholder="[[x,y],[x,y],...]" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:4px 6px; border-radius:3px; font-size:11px; font-family:Consolas; resize:vertical;"></textarea></div>
+            <p style="font-size:11px; color:var(--text-dim);">Tip: Use Path tool on canvas to build paths visually, or paste path data here.</p>`; break;
+        case 'show': container.innerHTML = `
+            <div class="form-row"><label style="min-width:80px;">Entity</label><select id="evt-entity" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:12px;">${entOpts}</select></div>
+            <div class="form-row"><label style="min-width:80px;">X</label><input type="number" id="evt-x" value="0" min="0"></div>
+            <div class="form-row"><label style="min-width:80px;">Y</label><input type="number" id="evt-y" value="0" min="0"></div>
+            <div class="form-row"><label style="min-width:80px;">Delay ms</label><input type="number" id="evt-delayMs" value="200" min="0" style="width:70px;"></div>`; break;
+        case 'hide': container.innerHTML = `
+            <div class="form-row"><label style="min-width:80px;">Entity</label><select id="evt-entity" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:12px;">${entOpts}</select></div>`; break;
+        case 'dialogue': container.innerHTML = `
+            <div class="form-row"><label style="min-width:80px;">Speaker</label><input type="text" id="evt-speaker" value=""></div>
+            <div class="form-row"><label style="min-width:80px;">Text</label><textarea id="evt-text" rows="2" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:4px 6px; border-radius:3px; font-size:12px; font-family:inherit; resize:vertical;"></textarea></div>
+            <div class="form-row"><label style="min-width:80px;">Spk Color</label>${colorSel('evt-speakerColor', 'White')}</div>
+            <div class="form-row"><label style="min-width:80px;">Txt Color</label>${colorSel('evt-textColor', 'Gray')}</div>`; break;
+        case 'narration': container.innerHTML = `
+            <div class="form-row"><label style="min-width:80px;">Text</label><textarea id="evt-text" rows="2" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:4px 6px; border-radius:3px; font-size:12px; font-family:inherit; resize:vertical;"></textarea></div>`; break;
+        case 'delay': container.innerHTML = `
+            <div class="form-row"><label style="min-width:80px;">Duration ms</label><input type="number" id="evt-ms" value="500" min="10"></div>`; break;
+        case 'effect': container.innerHTML = `
+            <div class="form-row"><label style="min-width:80px;">Effect</label>
+                <select id="evt-effect" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:12px;">
+                    <option value="fade_out">fade_out</option><option value="fade_in">fade_in</option><option value="flash">flash</option>
+                </select></div>`; break;
+        default: container.innerHTML = '';
+    }
+}
+
+function fillEventFields(evt) {
+    if (evt.entity) { const el = document.getElementById('evt-entity'); if (el) el.value = evt.entity; }
+    if (evt.path) { const el = document.getElementById('evt-path'); if (el) el.value = JSON.stringify(evt.path); }
+    if (evt.stepDelayMs) { const el = document.getElementById('evt-stepDelayMs'); if (el) el.value = evt.stepDelayMs; }
+    if (evt.x !== undefined) { const el = document.getElementById('evt-x'); if (el) el.value = evt.x; }
+    if (evt.y !== undefined) { const el = document.getElementById('evt-y'); if (el) el.value = evt.y; }
+    if (evt.delayMs !== undefined) { const el = document.getElementById('evt-delayMs'); if (el) el.value = evt.delayMs; }
+    if (evt.speaker) { const el = document.getElementById('evt-speaker'); if (el) el.value = evt.speaker; }
+    if (evt.text) { const el = document.getElementById('evt-text'); if (el) el.value = evt.text; }
+    if (evt.speakerColor) { const el = document.getElementById('evt-speakerColor'); if (el) el.value = evt.speakerColor; }
+    if (evt.textColor) { const el = document.getElementById('evt-textColor'); if (el) el.value = evt.textColor; }
+    if (evt.ms) { const el = document.getElementById('evt-ms'); if (el) el.value = evt.ms; }
+    if (evt.effect) { const el = document.getElementById('evt-effect'); if (el) el.value = evt.effect; }
+}
+
+function saveEvent() {
+    const action = document.getElementById('evt-action').value;
+    const evt = { action };
+    switch (action) {
+        case 'move':
+            evt.entity = gv('evt-entity');
+            evt.stepDelayMs = parseInt(gv('evt-stepDelayMs')) || 150;
+            try { evt.path = JSON.parse(gv('evt-path')); } catch(e) { evt.path = []; }
+            break;
+        case 'show':
+            evt.entity = gv('evt-entity');
+            evt.x = parseInt(gv('evt-x')) || 0;
+            evt.y = parseInt(gv('evt-y')) || 0;
+            evt.delayMs = parseInt(gv('evt-delayMs')) || 200;
+            break;
+        case 'hide':
+            evt.entity = gv('evt-entity');
+            break;
+        case 'dialogue':
+            evt.speaker = gv('evt-speaker');
+            evt.text = gv('evt-text');
+            evt.speakerColor = gv('evt-speakerColor');
+            evt.textColor = gv('evt-textColor');
+            break;
+        case 'narration':
+            evt.text = gv('evt-text');
+            break;
+        case 'delay':
+            evt.ms = parseInt(gv('evt-ms')) || 500;
+            break;
+        case 'effect':
+            evt.effect = gv('evt-effect');
+            break;
+    }
+    if (csState.editingEventIdx >= 0) {
+        csState.mseqEvents[csState.editingEventIdx] = evt;
+    } else {
+        csState.mseqEvents.push(evt);
+    }
+    csState.dirty = true;
+    renderEventList();
+    closeModal('modal-event');
+}
+
+function deleteEvent() {
+    if (csState.editingEventIdx >= 0) {
+        csState.mseqEvents.splice(csState.editingEventIdx, 1);
+        csState.dirty = true;
+        renderEventList();
+    }
+    closeModal('modal-event');
+}
+
+function moveEvent(idx, dir) {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= csState.mseqEvents.length) return;
+    [csState.mseqEvents[idx], csState.mseqEvents[newIdx]] = [csState.mseqEvents[newIdx], csState.mseqEvents[idx]];
+    csState.dirty = true;
+    renderEventList();
+}
+
+function removeEvent(idx) {
+    csState.mseqEvents.splice(idx, 1);
+    csState.dirty = true;
+    renderEventList();
+}
+
+/* ──────────────────────────────────────────
+   CUTSCENE FILE I/O
+   ────────────────────────────────────────── */
+
+async function openCutsceneFolder() {
+    if (!('showDirectoryPicker' in window)) {
+        alert('Your browser does not support the File System Access API.\nPlease use Chrome or Edge.');
+        return;
+    }
+    try {
+        csState.csDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    } catch (e) { return; }
+
+    csState.knownCutscenes = [];
+    try {
+        for await (const entry of csState.csDirHandle.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.json') && entry.name !== 'Cutscenes.json') {
+                try {
+                    const file = await entry.getFile();
+                    const json = JSON.parse(await file.text());
+                    if (json.id && json.steps) {
+                        csState.knownCutscenes.push({ id: json.id, name: json.name || json.id, fileName: entry.name });
+                    }
+                } catch (e) {}
+            }
+        }
+        // Also try loading registry
+        try {
+            const regHandle = await csState.csDirHandle.getFileHandle('Cutscenes.json');
+            const regFile = await regHandle.getFile();
+            csState.registry = JSON.parse(await regFile.text());
+        } catch (e) { csState.registry = null; }
+    } catch (e) { console.error('Error scanning cutscene folder:', e); }
+
+    csState.knownCutscenes.sort((a, b) => a.id.localeCompare(b.id));
+    setStatus(`Opened cutscene folder with ${csState.knownCutscenes.length} cutscene(s).`);
+    if (csState.knownCutscenes.length > 0) showCutscenePicker();
+}
+
+function showCutscenePicker() {
+    const container = document.getElementById('cs-picker-items');
+    container.innerHTML = '';
+    for (const cs of csState.knownCutscenes) {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.style.cssText = 'cursor:pointer; padding:8px 12px;';
+        item.innerHTML = `<span class="label">🎬 <strong>${escHtml(cs.name)}</strong> <span style="color:var(--text-dim);">(${cs.id})</span></span>`;
+        item.onclick = async () => {
+            closeModal('modal-cs-picker');
+            try {
+                const handle = await csState.csDirHandle.getFileHandle(cs.fileName);
+                const file = await handle.getFile();
+                const json = JSON.parse(await file.text());
+                loadCutsceneFromJson(json);
+                setStatus(`Loaded cutscene: ${json.name}`);
+            } catch (e) { setStatus('Failed to load: ' + e.message); }
+        };
+        container.appendChild(item);
+    }
+    const newItem = document.createElement('div');
+    newItem.className = 'list-item';
+    newItem.style.cssText = 'cursor:pointer; padding:8px 12px; border-top:1px solid var(--border); margin-top:4px;';
+    newItem.innerHTML = `<span class="label">➕ <strong>Create New Cutscene</strong></span>`;
+    newItem.onclick = () => { closeModal('modal-cs-picker'); showNewCutsceneDialog(); };
+    container.appendChild(newItem);
+    document.getElementById('modal-cs-picker').classList.add('show');
+}
+
+function importCutsceneFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async () => {
+        const file = input.files[0];
+        if (!file) return;
+        try {
+            const json = JSON.parse(await file.text());
+            if (!json.steps) { alert('Not a valid cutscene JSON file.'); return; }
+            loadCutsceneFromJson(json);
+            setStatus(`Imported cutscene: ${json.name || json.id}`);
+        } catch (e) { alert('Error parsing JSON: ' + e.message); }
+    };
+    input.click();
+}
+
+async function saveCutscene() {
+    if (!csState.cutscene) { setStatus('No cutscene to save.'); return; }
+    syncCsPropsFromUI();
+    // Ensure current step data is synced
+    if (csState.selectedStep >= 0) syncStepFromEditor();
+
+    const json = JSON.stringify(csState.cutscene, null, 4) + '\n';
+
+    if (!csState.csDirHandle) {
+        exportCutsceneDownload();
+        return;
+    }
+    try {
+        const fileName = csState.cutscene.id + '.json';
+        const handle = await csState.csDirHandle.getFileHandle(fileName, { create: true });
+        const writable = await handle.createWritable();
+        await writable.write(json);
+        await writable.close();
+        csState.dirty = false;
+        setStatus(`Saved ${fileName}`);
+    } catch (e) {
+        console.error('Save error:', e);
+        setStatus('Save failed: ' + e.message);
+    }
+}
+
+function exportCutsceneDownload() {
+    if (!csState.cutscene) { setStatus('No cutscene to export.'); return; }
+    syncCsPropsFromUI();
+    if (csState.selectedStep >= 0) syncStepFromEditor();
+    const json = JSON.stringify(csState.cutscene, null, 4) + '\n';
+    downloadFile(csState.cutscene.id + '.json', json, 'application/json');
+    setStatus(`Exported ${csState.cutscene.id}.json`);
+}
+
+function syncCsPropsFromUI() {
+    if (!csState.cutscene) return;
+    csState.cutscene.id = document.getElementById('cs-id').value.trim() || csState.cutscene.id;
+    csState.cutscene.name = document.getElementById('cs-name').value.trim() || csState.cutscene.name;
+    updateToolbarName();
+}
+
+/* ──────────────────────────────────────────
+   REGISTRY EDITOR
+   ────────────────────────────────────────── */
+
+function showRegistryEditor() {
+    if (!csState.registry) {
+        csState.registry = { cutscenes: [] };
+    }
+    renderRegistryList();
+    document.getElementById('modal-registry').classList.add('show');
+}
+
+function renderRegistryList() {
+    const container = document.getElementById('registry-list');
+    container.innerHTML = '';
+    if (!csState.registry || !csState.registry.cutscenes) return;
+
+    csState.registry.cutscenes.forEach((entry, i) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:var(--bg-input); border-radius:3px; padding:8px; margin-bottom:6px;';
+        const triggerOptions = ['game_start','map_enter','quest_complete','battle_victory','dialogue_effect']
+            .map(t => `<option value="${t}" ${(entry.trigger && entry.trigger.type) === t ? 'selected' : ''}>${t}</option>`).join('');
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <strong style="font-size:12px;">🎬 ${escHtml(entry.name || entry.id)}</strong>
+                <button class="tb-btn" onclick="removeRegistryEntry(${i})" style="font-size:11px; color:var(--danger);">✕ Remove</button>
+            </div>
+            <div class="form-row"><label style="min-width:80px; font-size:11px;">ID</label><input type="text" class="reg-id" value="${escHtml(entry.id || '')}" style="font-size:11px;"></div>
+            <div class="form-row"><label style="min-width:80px; font-size:11px;">Name</label><input type="text" class="reg-name" value="${escHtml(entry.name || '')}" style="font-size:11px;"></div>
+            <div class="form-row"><label style="min-width:80px; font-size:11px;">Trigger</label><select class="reg-trigger-type" onchange="updateRegTriggerFields(this)" style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text); padding:3px 6px; border-radius:3px; font-size:11px;">${triggerOptions}</select></div>
+            <div class="reg-trigger-fields" style="margin-left:86px;">
+                ${buildRegTriggerFields(entry.trigger || {})}
+            </div>
+            <div class="form-row"><label style="min-width:80px; font-size:11px;">onceTrigger</label><input type="text" class="reg-once" value="${escHtml(entry.onceTrigger || '')}" style="font-size:11px;"></div>
+            ${entry.note ? `<div class="form-row"><label style="min-width:80px; font-size:11px;">Note</label><input type="text" class="reg-note" value="${escHtml(entry.note || '')}" style="font-size:11px;"></div>` : ''}
+        `;
+        container.appendChild(div);
+    });
+}
+
+function buildRegTriggerFields(trigger) {
+    const type = trigger.type || 'game_start';
+    switch (type) {
+        case 'map_enter': return `
+            <div class="form-row"><label style="min-width:80px; font-size:11px;">Map</label><input type="text" class="reg-trig-map" value="${escHtml(trigger.map || '')}" style="font-size:11px;" placeholder="Map-Name-1"></div>
+            <div class="form-row"><label style="min-width:80px; font-size:11px;">Require</label><input type="text" class="reg-trig-req" value="${escHtml(trigger.requireTrigger || '')}" style="font-size:11px;" placeholder="(optional trigger)"></div>`;
+        case 'quest_complete': return `
+            <div class="form-row"><label style="min-width:80px; font-size:11px;">Quest ID</label><input type="text" class="reg-trig-quest" value="${escHtml(trigger.questId || '')}" style="font-size:11px;"></div>`;
+        case 'battle_victory': return `
+            <div class="form-row"><label style="min-width:80px; font-size:11px;">Battle ID</label><input type="text" class="reg-trig-battle" value="${escHtml(trigger.battleId || '')}" style="font-size:11px;"></div>`;
+        case 'game_start':
+        case 'dialogue_effect':
+        default: return '';
+    }
+}
+
+function updateRegTriggerFields(selectEl) {
+    const type = selectEl.value;
+    const fieldsDiv = selectEl.closest('div[style]').querySelector('.reg-trigger-fields');
+    fieldsDiv.innerHTML = buildRegTriggerFields({ type });
+}
+
+function addRegistryEntry() {
+    if (!csState.registry) csState.registry = { cutscenes: [] };
+    csState.registry.cutscenes.push({
+        id: csState.cutscene ? csState.cutscene.id : 'new_cutscene',
+        name: csState.cutscene ? csState.cutscene.name : 'New Cutscene',
+        trigger: { type: 'dialogue_effect' },
+        onceTrigger: ''
+    });
+    renderRegistryList();
+}
+
+function removeRegistryEntry(idx) {
+    csState.registry.cutscenes.splice(idx, 1);
+    renderRegistryList();
+}
+
+async function saveRegistry() {
+    // Collect data from DOM
+    const entries = document.getElementById('registry-list').children;
+    const cutscenes = [];
+    for (const div of entries) {
+        const entry = {};
+        entry.id = div.querySelector('.reg-id').value.trim();
+        entry.name = div.querySelector('.reg-name').value.trim();
+        const trigType = div.querySelector('.reg-trigger-type').value;
+        entry.trigger = { type: trigType };
+        if (trigType === 'map_enter') {
+            const m = div.querySelector('.reg-trig-map');
+            if (m) entry.trigger.map = m.value.trim();
+            const r = div.querySelector('.reg-trig-req');
+            if (r && r.value.trim()) entry.trigger.requireTrigger = r.value.trim();
+        } else if (trigType === 'quest_complete') {
+            const q = div.querySelector('.reg-trig-quest');
+            if (q) entry.trigger.questId = q.value.trim();
+        } else if (trigType === 'battle_victory') {
+            const b = div.querySelector('.reg-trig-battle');
+            if (b) entry.trigger.battleId = b.value.trim();
+        }
+        entry.onceTrigger = div.querySelector('.reg-once')?.value.trim() || '';
+        const note = div.querySelector('.reg-note');
+        if (note && note.value.trim()) entry.note = note.value.trim();
+        cutscenes.push(entry);
+    }
+    csState.registry = { cutscenes };
+
+    if (csState.csDirHandle) {
+        try {
+            const handle = await csState.csDirHandle.getFileHandle('Cutscenes.json', { create: true });
+            const writable = await handle.createWritable();
+            await writable.write(JSON.stringify(csState.registry, null, 4) + '\n');
+            await writable.close();
+            setStatus('Registry saved to Cutscenes.json');
+        } catch (e) {
+            setStatus('Save failed: ' + e.message);
+        }
+    } else {
+        downloadFile('Cutscenes.json', JSON.stringify(csState.registry, null, 4) + '\n', 'application/json');
+        setStatus('Downloaded Cutscenes.json');
+    }
+    closeModal('modal-registry');
+}
+
+/* ──────────────────────────────────────────
+   CUTSCENE INIT
+   ────────────────────────────────────────── */
+
+function initArtColorPalette() {
+    const container = document.getElementById('art-color-palette');
+    container.innerHTML = '';
+
+    // FG/BG layer toggle buttons
+    const fgBtn = document.createElement('button');
+    fgBtn.className = 'layer-btn' + (csState.artPaintLayer === 'fg' ? ' active' : '');
+    fgBtn.textContent = 'FG';
+    fgBtn.title = 'Paint foreground (text) color';
+    fgBtn.id = 'layer-fg-btn';
+    fgBtn.onclick = () => { csState.artPaintLayer = 'fg'; rebuildSwatches(); };
+    container.appendChild(fgBtn);
+
+    const bgBtn = document.createElement('button');
+    bgBtn.className = 'layer-btn' + (csState.artPaintLayer === 'bg' ? ' active' : '');
+    bgBtn.textContent = 'BG';
+    bgBtn.title = 'Paint background (fill) color';
+    bgBtn.id = 'layer-bg-btn';
+    bgBtn.onclick = () => { csState.artPaintLayer = 'bg'; rebuildSwatches(); };
+    container.appendChild(bgBtn);
+
+    const sep = document.createElement('div');
+    sep.style.cssText = 'width:1px; height:20px; background:#555; margin:0 4px;';
+    container.appendChild(sep);
+
+    // Swatch container
+    const swatchWrap = document.createElement('span');
+    swatchWrap.id = 'art-swatch-wrap';
+    swatchWrap.style.cssText = 'display:flex; gap:3px; align-items:center; flex-wrap:wrap;';
+    container.appendChild(swatchWrap);
+
+    // Eye note
+    const eyeLabel = document.createElement('span');
+    eyeLabel.className = 'palette-label';
+    eyeLabel.style.marginLeft = '8px';
+    eyeLabel.textContent = '(Right-click cell → eyedropper)';
+    container.appendChild(eyeLabel);
+
+    rebuildSwatches();
+}
+
+function rebuildSwatches() {
+    const wrap = document.getElementById('art-swatch-wrap');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const isBg = csState.artPaintLayer === 'bg';
+
+    document.getElementById('layer-fg-btn').className = 'layer-btn' + (!isBg ? ' active' : '');
+    document.getElementById('layer-bg-btn').className = 'layer-btn' + (isBg ? ' active' : '');
+
+    const currentColor = isBg ? csState.artPaintBgColor : csState.artPaintColor;
+
+    // Label
+    const label = document.createElement('span');
+    label.className = 'palette-label';
+    label.textContent = isBg ? '🎨 BG:' : '🎨 FG:';
+    wrap.appendChild(label);
+
+    // For BG layer, add a "None" swatch to clear background
+    if (isBg) {
+        const none = document.createElement('div');
+        none.className = 'swatch-none' + (currentColor === '' ? ' selected' : '');
+        none.title = 'None (transparent / black)';
+        none.textContent = '✕';
+        none.onclick = () => {
+            if (isBg) selectPaintBgColor(''); else selectPaintColor('');
+        };
+        wrap.appendChild(none);
+    }
+
+    for (const [name, hex] of Object.entries(PS_COLORS)) {
+        // For FG, skip Black (invisible). For BG, include all.
+        if (!isBg && name === 'Black') continue;
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch' + (name === currentColor ? ' selected' : '');
+        swatch.style.background = hex;
+        swatch.title = name;
+        swatch.dataset.color = name;
+        swatch.onclick = () => {
+            if (isBg) selectPaintBgColor(name); else selectPaintColor(name);
+        };
+        wrap.appendChild(swatch);
+    }
+}
+
+function selectPaintColor(colorName) {
+    csState.artPaintColor = colorName;
+    if (csState.artPaintLayer === 'fg') {
+        rebuildSwatches();
+    }
+}
+
+function selectPaintBgColor(colorName) {
+    csState.artPaintBgColor = colorName;
+    if (csState.artPaintLayer === 'bg') {
+        rebuildSwatches();
+    }
+}
+
+/* ──────────────────────────────────────────
+   FRAME STRIP — Mini-thumbnails for animated_art
+   ────────────────────────────────────────── */
+
+function renderFrameStrip() {
+    const container = document.getElementById('frame-strip');
+    const step = csState.cutscene && csState.cutscene.steps[csState.selectedStep];
+    if (!step || step.type !== 'animated_art') {
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = 'flex';
+    container.innerHTML = '';
+
+    const thumbScale = 3; // pixels per cell in thumbnail
+    const totalFrames = csState.artFrames.length;
+
+    for (let f = 0; f < totalFrames; f++) {
+        const grid = csState.artFrames[f];
+        const colorMap = csState.artColorFrames[f] || [];
+        const bgColorMap = csState.artBgColorFrames[f] || [];
+        const w = csState.artW;
+        const h = csState.artH;
+
+        const thumbCanvas = document.createElement('canvas');
+        thumbCanvas.width = w * thumbScale;
+        thumbCanvas.height = h * thumbScale;
+        thumbCanvas.className = 'frame-thumb' + (f === csState.artFrameIdx ? ' active' : '');
+        thumbCanvas.title = `Frame ${f + 1}`;
+        thumbCanvas.style.width = (w * thumbScale) + 'px';
+        thumbCanvas.style.height = (h * thumbScale) + 'px';
+
+        const ctx = thumbCanvas.getContext('2d');
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, thumbCanvas.width, thumbCanvas.height);
+
+        // Draw cells
+        for (let r = 0; r < h; r++) {
+            for (let c = 0; c < w; c++) {
+                const ch = grid[r] && grid[r][c] ? grid[r][c] : ' ';
+                const bgName = bgColorMap[r] && bgColorMap[r][c] ? bgColorMap[r][c] : '';
+                if (bgName && PS_COLORS[bgName]) {
+                    ctx.fillStyle = PS_COLORS[bgName];
+                    ctx.fillRect(c * thumbScale, r * thumbScale, thumbScale, thumbScale);
+                }
+                if (ch !== ' ') {
+                    const fgName = colorMap[r] && colorMap[r][c] ? colorMap[r][c] : '';
+                    ctx.fillStyle = fgName && PS_COLORS[fgName] ? PS_COLORS[fgName] : '#ccc';
+                    // Draw a tiny dot/pixel to represent the character
+                    const dotSize = Math.max(1, thumbScale - 1);
+                    ctx.fillRect(c * thumbScale, r * thumbScale, dotSize, dotSize);
+                }
+            }
+        }
+
+        // Click to navigate to this frame
+        thumbCanvas.onclick = () => {
+            saveCurrentFrame();
+            loadFrame(f);
+            refreshAfterFrameChange();
+        };
+
+        // Drag to reorder
+        thumbCanvas.draggable = true;
+        thumbCanvas.dataset.frameIdx = f;
+        thumbCanvas.ondragstart = (e) => {
+            e.dataTransfer.setData('text/plain', String(f));
+            e.dataTransfer.effectAllowed = 'move';
+        };
+        thumbCanvas.ondragover = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+        thumbCanvas.ondrop = (e) => {
+            e.preventDefault();
+            const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+            const toIdx = f;
+            if (fromIdx !== toIdx) {
+                moveArtFrame(fromIdx, toIdx);
+            }
+        };
+
+        container.appendChild(thumbCanvas);
+    }
+}
+
+function initCutscene() {
+    setupArtCanvasEvents();
+    setupMapSeqCanvasEvents();
+    initArtColorPalette();
+    // Tile char input for map sequence
+    document.getElementById('mseq-tile-char').addEventListener('input', function() {
+        if (this.value) csState.mseqTileChar = this.value;
+    });
+    // Escape: finalize path
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && csState.mseqPathPoints.length > 0) {
+            finalizePath();
+            setMapSeqTool('paint');
+        }
+    });
+}
+
 /* ──────────────────────────────────────────
    INIT
    ────────────────────────────────────────── */
 init();
+initCutscene();
 
 </script>
 </body>

@@ -1,0 +1,85 @@
+{
+    "id": "testCutscene",
+    "name": "TestCutscene",
+    "steps": [
+        {
+            "type": "animated_art",
+            "frames": [
+                [
+                    ""
+                ]
+            ],
+            "frameDelayMs": 250,
+            "loops": 10,
+            "artColor": "White",
+            "caption": "",
+            "holdLastFrame": true,
+            "waitForKey": true
+        },
+        {
+            "type": "animated_art",
+            "frames": [
+                [
+                    "",
+                    "",
+                    "",
+                    "                      iiiiii",
+                    "                     i      i",
+                    "                    i        i",
+                    "                   i   i  i   i",
+                    "                   i          i",
+                    "                   i          i",
+                    "                   i i      i i",
+                    "                   i  i    i  i",
+                    "                    i  iiii  i",
+                    "                     i      i",
+                    "                      iiiiii",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ],
+                [
+                    "",
+                    "",
+                    "",
+                    "                      iiiiii",
+                    "                     i      i",
+                    "                    i        i",
+                    "                   i   i  -   i",
+                    "                   i          i",
+                    "                   i          i",
+                    "                   i i      i i",
+                    "                   i  i    i  i",
+                    "                    i  iiii  i",
+                    "                     i      i",
+                    "                      iiiiii",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ]
+            ],
+            "frameDelayMs": 250,
+            "loops": 10,
+            "artColor": "White",
+            "caption": "",
+            "holdLastFrame": true,
+            "waitForKey": true
+        }
+    ]
+}

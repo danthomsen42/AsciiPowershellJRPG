@@ -7,7 +7,7 @@ $Script:SecretDefinitions = $null
 function Load-QuestDefinitions {
     $path = Join-Path $Script:GameRoot "Data\Quests.json"
     if (Test-Path $path) {
-        $Script:QuestDefinitions = (Get-Content $path -Raw | ConvertFrom-Json).quests
+        $Script:QuestDefinitions = (Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json).quests
     } else {
         $Script:QuestDefinitions = @()
     }
@@ -16,7 +16,7 @@ function Load-QuestDefinitions {
 function Load-SecretDefinitions {
     $path = Join-Path $Script:GameRoot "Data\Secrets.json"
     if (Test-Path $path) {
-        $Script:SecretDefinitions = (Get-Content $path -Raw | ConvertFrom-Json).secrets
+        $Script:SecretDefinitions = (Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json).secrets
     } else {
         $Script:SecretDefinitions = $null
     }

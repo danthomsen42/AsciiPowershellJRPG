@@ -13,7 +13,7 @@ function Get-ItemDefinition {
     if ($null -eq $Script:ItemDefinitions) {
         $path = Join-Path $Script:GameRoot "Data\Items\Items.json"
         if (Test-Path $path) {
-            $Script:ItemDefinitions = (Get-Content $path -Raw | ConvertFrom-Json).items
+            $Script:ItemDefinitions = (Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json).items
         } else {
             $Script:ItemDefinitions = @()
         }
@@ -25,7 +25,7 @@ function Get-ShopData {
     param([string]$ShopId)
     $path = Join-Path $Script:GameRoot "Data\Shops.json"
     if (-not (Test-Path $path)) { return $null }
-    $data = Get-Content $path -Raw | ConvertFrom-Json
+    $data = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
     $prop = $data.shops.PSObject.Properties[$ShopId]
     if ($prop) { return $prop.Value }
     return $null

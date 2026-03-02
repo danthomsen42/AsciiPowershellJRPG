@@ -11,7 +11,7 @@ function Load-CutsceneDefinitions {
     #>
     $path = Join-Path $Script:GameRoot "Cutscenes\Cutscenes.json"
     if (Test-Path $path) {
-        $Script:CutsceneDefinitions = (Get-Content $path -Raw | ConvertFrom-Json).cutscenes
+        $Script:CutsceneDefinitions = (Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json).cutscenes
     } else {
         $Script:CutsceneDefinitions = @()
     }
@@ -102,7 +102,7 @@ function Play-Cutscene {
         return
     }
 
-    $csData = Get-Content $csPath -Raw | ConvertFrom-Json
+    $csData = Get-Content $csPath -Raw -Encoding UTF8 | ConvertFrom-Json
 
     foreach ($step in $csData.steps) {
         switch ($step.type) {
@@ -241,6 +241,76 @@ function Invoke-CutsceneNarration {
     Wait-ForKey | Out-Null
 }
 
+function Invoke-CutsceneArtLines {
+    <#
+    .SYNOPSIS  Renders art lines with optional per-cell FG/BG color maps.
+    .DESCRIPTION  Groups consecutive characters that share the same fg+bg color
+                  into runs, calling Set-Text once per run for efficiency.
+    #>
+    param(
+        [string[]]$Lines,
+        [int]$StartX,
+        [int]$StartY,
+        [ConsoleColor]$DefaultFg,
+        [object]$ColorMap,
+        [object]$BgColorMap
+    )
+    $defaultBg = [ConsoleColor]::Black
+    $hasFg = $null -ne $ColorMap -and $ColorMap.Count -gt 0
+    $hasBg = $null -ne $BgColorMap -and $BgColorMap.Count -gt 0
+
+    for ($i = 0; $i -lt $Lines.Count; $i++) {
+        $line = $Lines[$i]
+        if ($line.Length -eq 0) { continue }
+
+        $lineFg = $null
+        $lineBg = $null
+        if ($hasFg -and $i -lt $ColorMap.Count -and $null -ne $ColorMap[$i]) {
+            $lineFg = @($ColorMap[$i])
+        }
+        if ($hasBg -and $i -lt $BgColorMap.Count -and $null -ne $BgColorMap[$i]) {
+            $lineBg = @($BgColorMap[$i])
+        }
+
+        if ($null -eq $lineFg -and $null -eq $lineBg) {
+            # No per-cell colors — fast path
+            Set-Text -X $StartX -Y ($StartY + $i) -Text $line -FgColor $DefaultFg
+            continue
+        }
+
+        # Per-cell rendering with color runs
+        $runStart = 0
+        $runFg = $DefaultFg
+        $runBg = $defaultBg
+        if ($null -ne $lineFg -and $lineFg.Count -gt 0 -and $lineFg[0] -and $lineFg[0] -ne '') {
+            $runFg = Get-CutsceneColor -ColorName $lineFg[0] -Default $DefaultFg
+        }
+        if ($null -ne $lineBg -and $lineBg.Count -gt 0 -and $lineBg[0] -and $lineBg[0] -ne '') {
+            $runBg = Get-CutsceneColor -ColorName $lineBg[0] -Default $defaultBg
+        }
+
+        for ($ci = 1; $ci -le $line.Length; $ci++) {
+            $cellFg = $DefaultFg
+            $cellBg = $defaultBg
+            if ($ci -lt $line.Length) {
+                if ($null -ne $lineFg -and $ci -lt $lineFg.Count -and $lineFg[$ci] -and $lineFg[$ci] -ne '') {
+                    $cellFg = Get-CutsceneColor -ColorName $lineFg[$ci] -Default $DefaultFg
+                }
+                if ($null -ne $lineBg -and $ci -lt $lineBg.Count -and $lineBg[$ci] -and $lineBg[$ci] -ne '') {
+                    $cellBg = Get-CutsceneColor -ColorName $lineBg[$ci] -Default $defaultBg
+                }
+            }
+            if ($ci -eq $line.Length -or $cellFg -ne $runFg -or $cellBg -ne $runBg) {
+                $runText = $line.Substring($runStart, $ci - $runStart)
+                Set-Text -X ($StartX + $runStart) -Y ($StartY + $i) -Text $runText -FgColor $runFg -BgColor $runBg
+                $runStart = $ci
+                $runFg = $cellFg
+                $runBg = $cellBg
+            }
+        }
+    }
+}
+
 function Invoke-CutsceneArt {
     <#
     .SYNOPSIS  Displays ASCII art from a file or inline, centered on screen.
@@ -253,7 +323,7 @@ function Invoke-CutsceneArt {
     if ($Step.artFile) {
         $artPath = Join-Path $Script:GameRoot "Cutscenes\$($Step.artFile)"
         if (Test-Path $artPath) {
-            $artLines = @(Get-Content $artPath)
+            $artLines = @(Get-Content $artPath -Encoding UTF8)
         }
     }
     elseif ($Step.art -is [array]) {
@@ -268,9 +338,10 @@ function Invoke-CutsceneArt {
     $artStartX = [math]::Max(0, [math]::Floor(($Script:SCREEN_WIDTH - $maxLen) / 2))
     $artStartY = [math]::Max(0, [math]::Floor(($Script:SCREEN_HEIGHT - $artLines.Count) / 2) - 2)
 
-    for ($i = 0; $i -lt $artLines.Count; $i++) {
-        Set-Text -X $artStartX -Y ($artStartY + $i) -Text $artLines[$i] -FgColor $artColor
-    }
+    $hasColorMap = $null -ne $Step.colorMap -and $Step.colorMap.Count -gt 0
+
+    Invoke-CutsceneArtLines -Lines $artLines -StartX $artStartX -StartY $artStartY `
+        -DefaultFg $artColor -ColorMap $Step.colorMap -BgColorMap $Step.bgColorMap
 
     # Optional caption under the art
     if ($Step.caption) {
@@ -370,6 +441,7 @@ function Invoke-CutsceneAnimatedArt {
             "frameDelayMs": 200,
             "loops": 3,
             "artColor": "Red",
+            "colorMaps": [ [[row0col0color, ...], ...], ... ],
             "caption": "Optional text below",
             "captionColor": "Gray",
             "holdLastFrame": true,
@@ -400,14 +472,26 @@ function Invoke-CutsceneAnimatedArt {
         $frameData += @{ Lines = $lines; StartX = $startX; StartY = $startY; MaxLen = $maxLen }
     }
 
+    $hasColorMaps   = $null -ne $Step.colorMaps   -and $Step.colorMaps.Count -gt 0
+    $hasBgColorMaps = $null -ne $Step.bgColorMaps -and $Step.bgColorMaps.Count -gt 0
+
     for ($loop = 0; $loop -lt $loops; $loop++) {
         for ($fi = 0; $fi -lt $frames.Count; $fi++) {
             $fd = $frameData[$fi]
             Clear-FrameBuffer
 
-            for ($li = 0; $li -lt $fd.Lines.Count; $li++) {
-                Set-Text -X $fd.StartX -Y ($fd.StartY + $li) -Text $fd.Lines[$li] -FgColor $artColor
+            # Get per-frame colorMaps if available
+            $frameColorMap = $null
+            $frameBgColorMap = $null
+            if ($hasColorMaps -and $fi -lt $Step.colorMaps.Count -and $null -ne $Step.colorMaps[$fi]) {
+                $frameColorMap = $Step.colorMaps[$fi]
             }
+            if ($hasBgColorMaps -and $fi -lt $Step.bgColorMaps.Count -and $null -ne $Step.bgColorMaps[$fi]) {
+                $frameBgColorMap = $Step.bgColorMaps[$fi]
+            }
+
+            Invoke-CutsceneArtLines -Lines $fd.Lines -StartX $fd.StartX -StartY $fd.StartY `
+                -DefaultFg $artColor -ColorMap $frameColorMap -BgColorMap $frameBgColorMap
 
             if ($caption) {
                 $cx = [math]::Floor(($Script:SCREEN_WIDTH - $caption.Length) / 2)
@@ -470,7 +554,7 @@ function Invoke-CutsceneMapSequence {
     if ($Step.mapFile) {
         $mapPath = Join-Path $Script:GameRoot "Data\Maps\$($Step.mapFile)"
         if (Test-Path $mapPath) {
-            $raw = Get-Content $mapPath
+            $raw = Get-Content $mapPath -Encoding UTF8
             foreach ($line in $raw) {
                 if ([string]::IsNullOrWhiteSpace($line)) { continue }
                 if ($line.TrimStart().StartsWith(';')) { continue }

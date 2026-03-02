@@ -266,7 +266,7 @@ function Load-EnemySprite {
     $spritePath = Join-Path $Script:GameRoot "Data\Enemies\$SpriteId.txt"
     if (-not (Test-Path $spritePath)) { return @{ Lines = @('???'); Width = 3; Height = 1; Color = [ConsoleColor]::Red } }
 
-    $rawLines = Get-Content $spritePath
+    $rawLines = Get-Content $spritePath -Encoding UTF8
     $spriteLines = @()
     foreach ($line in $rawLines) {
         if ([string]::IsNullOrWhiteSpace($line)) { continue }
@@ -286,7 +286,7 @@ function Load-EnemySprite {
     $jsonPath = Join-Path $Script:GameRoot "Data\Enemies\$SpriteId.json"
     $color = [ConsoleColor]::Red
     if (Test-Path $jsonPath) {
-        $data = Get-Content $jsonPath -Raw | ConvertFrom-Json
+        $data = Get-Content $jsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($data.color) { try { $color = [ConsoleColor]($data.color) } catch {} }
     }
 
@@ -301,7 +301,7 @@ function Load-EnemyStats {
         return @{ Name='Unknown'; HP=10; MaxHP=10; MP=0; Strength=5; Intelligence=3; Speed=5; Defense=3; Accuracy=70; EXP=10; Gold=5; Abilities=@('Scratch'); Drops=@(); StatusEffects=@() }
     }
 
-    $data = Get-Content $jsonPath -Raw | ConvertFrom-Json
+    $data = Get-Content $jsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $lvlBonus = [math]::Max(0, $Level - 1)
     $sc = $data.levelScaling
 
@@ -335,7 +335,7 @@ $Script:ScriptedBattleDefinitions = $null
 function Load-ScriptedBattleDefinitions {
     $path = Join-Path $Script:GameRoot "Data\ScriptedBattles.json"
     if (Test-Path $path) {
-        $Script:ScriptedBattleDefinitions = (Get-Content $path -Raw | ConvertFrom-Json).battles
+        $Script:ScriptedBattleDefinitions = (Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json).battles
     }
 }
 
@@ -1124,7 +1124,7 @@ function Add-InventoryItem {
     # Look up item definition (match by id or name to handle display-name drops)
     $itemsPath = Join-Path $Script:GameRoot "Data\Items\Items.json"
     if (Test-Path $itemsPath) {
-        $itemData = (Get-Content $itemsPath -Raw | ConvertFrom-Json).items | Where-Object { $_.id -eq $ItemId -or $_.name -eq $ItemId } | Select-Object -First 1
+        $itemData = (Get-Content $itemsPath -Raw -Encoding UTF8 | ConvertFrom-Json).items | Where-Object { $_.id -eq $ItemId -or $_.name -eq $ItemId } | Select-Object -First 1
         if ($itemData) {
             $Script:GameState.Inventory += @{
                 id          = $itemData.id

@@ -27,7 +27,7 @@ function Get-SaveSlots {
 
     foreach ($f in $files) {
         try {
-            $data = Get-Content $f.FullName -Raw | ConvertFrom-Json
+            $data = Get-Content $f.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
             $leader = ''
             $level  = 0
             if ($data.Party -and $data.Party.Count -gt 0) {
@@ -154,7 +154,7 @@ function Load-GameState {
     }
 
     try {
-        $saveData = Get-Content $saveFile -Raw | ConvertFrom-Json
+        $saveData = Get-Content $saveFile -Raw -Encoding UTF8 | ConvertFrom-Json
 
         # Load the saved map
         $Script:GameState.CurrentMapName = $saveData.CurrentMapName

@@ -9,7 +9,7 @@ function Load-ClassDefinitions {
     if (-not (Test-Path $classPath)) {
         throw "Class definitions not found: $classPath"
     }
-    $Script:ClassDefinitions = Get-Content $classPath -Raw | ConvertFrom-Json
+    $Script:ClassDefinitions = Get-Content $classPath -Raw -Encoding UTF8 | ConvertFrom-Json
 }
 
 function New-PartyMember {

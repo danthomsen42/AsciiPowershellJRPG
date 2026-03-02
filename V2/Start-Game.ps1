@@ -19,6 +19,11 @@ try {
     [Console]::BackgroundColor = 'Black'
     [Console]::ForegroundColor = 'Gray'
 
+    # Enable UTF-8 for proper Unicode character display (box-drawing, special chars, etc.)
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    $OutputEncoding = [System.Text.Encoding]::UTF8
+    chcp 65001 | Out-Null
+
     # Attempt to set console size
     try {
         # Buffer must be >= window, so set buffer first if enlarging

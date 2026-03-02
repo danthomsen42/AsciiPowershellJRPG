@@ -23,7 +23,7 @@ function Load-Settings {
     }
     if (Test-Path $path) {
         try {
-            $json = Get-Content $path -Raw | ConvertFrom-Json
+            $json = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
             foreach ($prop in $json.PSObject.Properties) {
                 if ($prop.Name -ne '_comment' -and $Script:Settings.ContainsKey($prop.Name)) {
                     $Script:Settings[$prop.Name] = [bool]$prop.Value
